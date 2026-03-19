@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+deploy/node_modules/
+
+# next.js
+.next/
+out/
+
+# environment
+.env.local
+.env*.local
+
+# system
+.DS_Store
+*.tsbuildinfo
+
+# misc
+outputs/
+.github_token

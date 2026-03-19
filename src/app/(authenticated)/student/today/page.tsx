@@ -92,7 +92,7 @@ export default function TodayPage() {
               </div>
             </div>
           ) : (
-            <div className="task-grid">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {tasks.map((task) => {
                 const isDone = task.status === "done" || task.status === "review";
                 return (
@@ -182,7 +182,7 @@ export default function TodayPage() {
           )}
         </div>
         {/* RIGHT — weather + calendar */}
-        <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           <WeatherWidget color={student.color} />
           <CalendarWidget color={student.color} />
         </div>

@@ -1,52 +1,73 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   role: "admin" | "student";
-  studentId: string | null;
+  studentId: string | null; // maps to profiles.student_key ('deven', 'shaan', null for admin)
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
-  signIn: (who: string, pin: string) => { success: boolean; error?: string };
-  signOut: () => void;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const DEMO_CREDENTIALS: Record<string, { pin: string; role: "admin" | "student"; studentId: string | null }> = {
-  admin: { pin: "1234", role: "admin", studentId: null },
-  deven: { pin: "0001", role: "student", studentId: "deven" },
-  shaan: { pin: "0002", role: "student", studentId: "shaan" },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const signIn = useCallback(
-    (who: string, pin: string): { success: boolean; error?: string } => {
-      const cred = DEMO_CREDENTIALS[who];
-      if (!cred || cred.pin !== pin) {
-        return { success: false, error: "Incorrect PIN." };
-      }
-      setUser({ id: who, role: cred.role, studentId: cred.studentId });
-      if (cred.role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/student/today");
-      }
-      return { success: true };
-    },
-    [router],
-  );
+  const loadProfile = useCallback(async (userId: string) => {
+    const supabase = createClient();
+    const { data } = await supabase.from("profiles").select("role, student_key").eq("id", userId).single();
+    if (data) {
+      setUser({ id: userId, role: data.role as "admin" | "student", studentId: data.student_key ?? null });
+    } else {
+      setUser(null);
+    }
+  }, []);
 
-  const signOut = useCallback(() => {
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id).finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
+
+  const signIn = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     setUser(null);
     router.push("/login");
   }, [router]);
@@ -58,8 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

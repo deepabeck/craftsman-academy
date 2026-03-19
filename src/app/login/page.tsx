@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Rivet } from "@/components/ui";
 import { BASE_STUDENTS } from "@/lib/constants";
 import { rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
+// Email addresses must match what you created in Supabase Auth.
+// Update these to match your actual Supabase user emails.
 const PROFILES = [
-  { id: "admin", color: "#C8860A", label: "DEE", sub: "Operations Engineer", img: "/assets/profile-admin-framed.png" },
+  {
+    id: "admin",
+    email: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "dee@craftsmanacademy.app",
+    color: "#C8860A",
+    label: "DEE",
+    sub: "Operations Engineer",
+    img: "/assets/profile-admin-framed.png",
+  },
   {
     id: "deven",
+    email: process.env.NEXT_PUBLIC_DEVEN_EMAIL ?? "deven@craftsmanacademy.app",
     color: BASE_STUDENTS.deven.color,
     label: "DEVEN",
     sub: BASE_STUDENTS.deven.tagline,
@@ -17,6 +28,7 @@ const PROFILES = [
   },
   {
     id: "shaan",
+    email: process.env.NEXT_PUBLIC_SHAAN_EMAIL ?? "shaan@craftsmanacademy.app",
     color: BASE_STUDENTS.shaan.color,
     label: "SHAAN",
     sub: BASE_STUDENTS.shaan.tagline,
@@ -24,25 +36,36 @@ const PROFILES = [
   },
 ];
 
-const PIN_HINTS: Record<string, string> = {
-  admin: "Demo PIN: 1234",
-  deven: "Demo PIN: 0001",
-  shaan: "Demo PIN: 0002",
-};
-
 export default function LoginPage() {
   const [who, setWho] = useState<string | null>(null);
-  const [pin, setPin] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
-  const { signIn } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { user, signIn } = useAuth();
+  const router = useRouter();
 
-  const attempt = () => {
-    if (!who) return;
-    const result = signIn(who, pin);
-    if (!result.success) {
-      setErr(result.error || "Incorrect PIN.");
-      setPin("");
+  // Redirect once Supabase session is loaded and user profile is set
+  useEffect(() => {
+    if (user) {
+      router.push(user.role === "admin" ? "/admin/dashboard" : "/student/today");
     }
+  }, [user, router]);
+
+  const attempt = async () => {
+    if (!who) return;
+    const profile = PROFILES.find((p) => p.id === who);
+    if (!profile) return;
+
+    setLoading(true);
+    setErr("");
+    const result = await signIn(profile.email, password);
+    setLoading(false);
+
+    if (!result.success) {
+      setErr(result.error || "Incorrect password.");
+      setPassword("");
+    }
+    // On success: onAuthStateChange in auth-provider sets user, useEffect above redirects
   };
 
   return (
@@ -152,7 +175,7 @@ export default function LoginPage() {
                 className="btn-ghost"
                 onClick={() => {
                   setWho(null);
-                  setPin("");
+                  setPassword("");
                   setErr("");
                 }}
                 style={{ marginBottom: 16, fontSize: 12, padding: "5px 12px" }}
@@ -170,18 +193,16 @@ export default function LoginPage() {
                     textShadow: "0 1px 0 rgba(255,200,80,0.18), 0 -1px 2px rgba(0,0,0,0.8)",
                   }}
                 >
-                  {who === "admin" ? "PARENT ACCESS" : `${who.toUpperCase()} — ENTER PIN`}
+                  {who === "admin" ? "PARENT ACCESS" : `${who.toUpperCase()} — ENTER PASSWORD`}
                 </div>
-                <div style={{ fontSize: 10, color: "#506070", marginTop: 3 }}>{PIN_HINTS[who] || ""}</div>
               </div>
               <input
                 className="inp"
                 type="password"
-                maxLength={6}
-                placeholder="Enter PIN..."
-                value={pin}
+                placeholder="Password"
+                value={password}
                 onChange={(e) => {
-                  setPin(e.target.value);
+                  setPassword(e.target.value);
                   setErr("");
                 }}
                 onKeyDown={(e) => e.key === "Enter" && attempt()}
@@ -193,8 +214,9 @@ export default function LoginPage() {
                 className="btn-brass"
                 style={{ width: "100%", padding: "12px", fontSize: 14, letterSpacing: "0.1em" }}
                 onClick={attempt}
+                disabled={loading}
               >
-                ENGAGE
+                {loading ? "..." : "ENGAGE"}
               </button>
             </>
           )}

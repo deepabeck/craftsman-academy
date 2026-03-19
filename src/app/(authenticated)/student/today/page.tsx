@@ -73,7 +73,7 @@ export default function TodayPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <PageHeader
-          icon="todays-tasks"
+          icon="today"
           title="Today's Missions"
           sub={`${getTodayLabel()} \u00B7 ${done}/${tasks.length} complete`}
           color={student.color}
@@ -83,7 +83,7 @@ export default function TodayPage() {
 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         {/* LEFT — mission cards */}
-        <div style={{ width: 250, flexShrink: 0 }}>
+        <div style={{ width: 250, flexShrink: 0, marginLeft: 40 }}>
           {tasks.length === 0 ? (
             <div style={{ textAlign: "center", padding: 40, color: "#506070" }}>
               <Icon name="completed" size={52} style={{ margin: "0 auto 12px" }} />

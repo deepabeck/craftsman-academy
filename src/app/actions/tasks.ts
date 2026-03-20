@@ -77,3 +77,48 @@ export async function submitTaskProof(
 
   return { success: true, status: newStatus };
 }
+
+/**
+ * Admin approves a task in the review queue.
+ * Sets status → 'approved', saves parent score, computes overall score.
+ */
+export async function approveTask(taskId: string, score: number, reviewerNotes?: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  // overall_score = 60% completion (100 since submitted) + 40% quality (score)
+  const overallScore = Math.round(0.6 * 100 + 0.4 * score);
+
+  const { error } = await supabase
+    .from("tasks")
+    .update({
+      status: "approved",
+      parent_score: score,
+      final_score: score,
+      overall_score: overallScore,
+      admin_note: reviewerNotes ?? "",
+    })
+    .eq("id", taskId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/**
+ * Admin sends a task back for revision.
+ * Sets status → 'pending' so the student sees it again in Today's Missions.
+ */
+export async function requestRevision(taskId: string, reviewerNotes?: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({
+      status: "pending",
+      admin_note: reviewerNotes ?? "",
+    })
+    .eq("id", taskId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

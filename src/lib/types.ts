@@ -26,10 +26,15 @@ export interface Task {
   subjectColor: string;
   detail: string;
   proofType: "photo" | "timer" | "checkbox";
+  proofTypes?: string[];       // full array from DB (proof_types[0] = proofType)
   duration: number;
+  scoringApproach?: string;    // 'completion' | 'review_based' | 'time_based' | etc.
+  requiresReview?: boolean;    // if true, submission goes to 'review' not 'done'
+  adminNote?: string;          // per-task note from admin
   status: "pending" | "done" | "review" | "missed" | "approved";
   notes: string;
   files: FileEntry[];
+  timerSeconds?: number;       // elapsed timer seconds
   completedAt: string | null;
 }
 

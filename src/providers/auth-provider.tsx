@@ -23,19 +23,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const supabase = useMemo(() => {
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  }, []);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const supabase = createClient();
+    if (!supabase) return;
     const { data } = await supabase.from("profiles").select("role, student_key").eq("id", userId).single();
     if (data) {
       setUser({ id: userId, role: data.role as "admin" | "student", studentId: data.student_key ?? null });
     } else {
       setUser(null);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
-    const supabase = createClient();
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -56,21 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [loadProfile]);
+  }, [supabase, loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const supabase = createClient();
+    if (!supabase) return { success: false, error: "Supabase not configured. Add credentials to .env.local." };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: error.message };
     return { success: true };
-  }, []);
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
     router.push("/login");
-  }, [router]);
+  }, [supabase, router]);
 
   const value = useMemo(() => ({ user, isLoading, signIn, signOut }), [user, isLoading, signIn, signOut]);
 

@@ -4,27 +4,24 @@ import { ReviewClient, type ReviewItem } from "./review-client";
 export default async function ReviewPage() {
   const supabase = await createClient();
 
-  // Fetch all tasks in 'review' status with full joins
+  // ── Step 1: fetch tasks (no profiles join — avoids FK ambiguity) ──────────
   const { data: reviewTasks, error: reviewError } = await supabase
     .from("tasks")
     .select(
-      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
-       profiles!inner (id, display_name, color, avatar_url, student_key),
+      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
        subjects!inner (id, name, icon, color),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
     .eq("status", "review")
     .order("task_date", { ascending: false });
 
-  if (reviewError) console.error("Review queue fetch error:", reviewError.message);
+  if (reviewError) console.error("Review tasks fetch error:", reviewError.message);
 
-  // Fetch recently approved/rejected tasks (last 7 days) for the completed section
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const { data: completedTasks } = await supabase
     .from("tasks")
     .select(
-      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
-       profiles!inner (id, display_name, color, avatar_url, student_key),
+      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
        subjects!inner (id, name, icon, color),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
@@ -33,9 +30,37 @@ export default async function ReviewPage() {
     .order("task_date", { ascending: false })
     .limit(20);
 
-  // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+  // ── Step 2: fetch profiles for all unique student_ids ─────────────────────
+  const allTasks = [...(reviewTasks ?? []), ...(completedTasks ?? [])];
+  // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+  const studentIds = [...new Set(allTasks.map((t: any) => t.student_id).filter(Boolean))];
+
+  const profileMap: Record<
+    string,
+    { id: string; display_name: string; color: string; avatar_url: string | null; student_key: string }
+  > = {};
+
+  if (studentIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name, color, avatar_url, student_key")
+      .in("id", studentIds);
+
+    for (const p of profiles ?? []) {
+      profileMap[p.id] = p;
+    }
+  }
+
+  // ── Map rows → ReviewItem ─────────────────────────────────────────────────
+  // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const mapItem = (t: any): ReviewItem => {
-    const profile = t.profiles;
+    const profile = profileMap[t.student_id] ?? {
+      id: t.student_id,
+      display_name: "Unknown",
+      color: "#4A90D0",
+      avatar_url: null,
+      student_key: "",
+    };
     const subject = t.subjects;
     return {
       taskId: t.id,
@@ -58,7 +83,7 @@ export default async function ReviewPage() {
         icon: subject.icon,
         color: subject.color,
       },
-      // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+      // biome-ignore lint/suspicious/noExplicitAny: supabase row type
       submissions: (t.submissions ?? []).map((s: any) => ({
         id: s.id,
         type: s.submission_type,

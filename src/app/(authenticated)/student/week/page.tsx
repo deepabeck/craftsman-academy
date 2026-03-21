@@ -4,13 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 import type { Student, Task } from "@/lib/types";
 import { WeekClient } from "./week-client";
 
-/** Monday of the week containing `date`. */
+/** YYYY-MM-DD from a Date using local (not UTC) components. */
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Monday of the week containing `date` (uses local date). */
 function getMondayOf(date: Date): Date {
   const d = new Date(date);
-  const dow = d.getDay(); // 0=Sun
+  const dow = d.getDay(); // 0=Sun, 1=Mon …
   const diff = dow === 0 ? -6 : 1 - dow;
   d.setDate(d.getDate() + diff);
-  d.setHours(12, 0, 0, 0);
   return d;
 }
 
@@ -29,12 +33,12 @@ export default async function WeekPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Compute Mon–Fri of this week
+  // Compute Mon–Fri using LOCAL date so evening hours don't flip to next UTC day
   const monday = getMondayOf(new Date());
-  const weekStart = monday.toISOString().split("T")[0];
+  const weekStart = localDateStr(monday);
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
-  const weekEnd = friday.toISOString().split("T")[0];
+  const weekEnd = localDateStr(friday);
 
   // Ensure tasks exist for every day this week (idempotent)
   try {

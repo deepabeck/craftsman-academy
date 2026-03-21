@@ -20,8 +20,10 @@ export default async function TodayPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Use local date string (server UTC — acceptable for single-timezone household)
-  const today = new Date().toISOString().split("T")[0];
+  // Use the server machine's LOCAL date so weekend/weekday is correct.
+  // toISOString() is UTC and causes off-by-one errors in evening hours.
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
 
   // Mark yesterday's missed tasks + generate today's (idempotent)
   try {

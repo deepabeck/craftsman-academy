@@ -21,9 +21,10 @@ export async function ensureWeekTasks(weekStart: string) {
   const { error: missedErr } = await service.rpc("mark_missed_tasks");
   if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
   for (let i = 0; i < 5; i++) {
-    const d = new Date(`${weekStart}T12:00:00`);
+    // Use T00:00:00 (no Z) so JS parses as LOCAL date, avoiding UTC day-shift
+    const d = new Date(`${weekStart}T00:00:00`);
     d.setDate(d.getDate() + i);
-    const date = d.toISOString().split("T")[0];
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const { error } = await service.rpc("generate_daily_tasks", { p_date: date });
     if (error) console.error(`generate_daily_tasks error for ${date}:`, error.message);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { SubmitModal } from "@/components/modals/submit-modal";
+import { SubmitModal, type StoragePath } from "@/components/modals/submit-modal";
 import { Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
 import { CalendarWidget } from "@/components/widgets/calendar-widget";
 import { WeatherWidget } from "@/components/widgets/weather-widget";
@@ -51,7 +51,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
   // Submission modal: save proof + notes, persist to DB
   const submit = (
     tid: string,
-    data: { files: { name: string; url: string }[]; text: string; timer: number },
+    data: { storagePaths: StoragePath[]; text: string; timer: number },
   ) => {
     const task = tasks.find((t) => t.id === tid);
     if (!task) return;
@@ -71,6 +71,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
       const result = await submitTaskProof(tid, {
         text: data.text,
         timerSeconds: data.timer > 0 ? data.timer : undefined,
+        fileDetails: data.storagePaths,
         requiresReview: task.requiresReview ?? false,
       });
       if (!result.success) {

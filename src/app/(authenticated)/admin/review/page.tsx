@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { ReviewClient, type ReviewItem } from "./review-client";
 
 export default async function ReviewPage() {
@@ -51,6 +52,36 @@ export default async function ReviewPage() {
     }
   }
 
+  // ── Step 3: generate signed URLs for file submissions (admin bypasses RLS) ─
+  const service = createServiceClient();
+
+  // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+  const resolveFileUrl = async (fileUrl: string | null): Promise<string | null> => {
+    if (!fileUrl) return null;
+    // Already a full signed URL (starts with http)
+    if (fileUrl.startsWith("http")) return fileUrl;
+    const { data } = await service.storage.from("submissions").createSignedUrl(fileUrl, 3600);
+    return data?.signedUrl ?? null;
+  };
+
+  // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+  const resolveSubmissions = async (subs: any[]) =>
+    Promise.all(
+      // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+      (subs ?? []).map(async (s: any) => ({
+        ...s,
+        file_url: await resolveFileUrl(s.file_url),
+      })),
+    );
+
+  // Resolve for all tasks in parallel
+  const [resolvedReview, resolvedCompleted] = await Promise.all([
+    // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+    Promise.all((reviewTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) }))),
+    // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+    Promise.all((completedTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) }))),
+  ]);
+
   // ── Map rows → ReviewItem ─────────────────────────────────────────────────
   // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const mapItem = (t: any): ReviewItem => {
@@ -96,8 +127,8 @@ export default async function ReviewPage() {
     };
   };
 
-  const pendingItems: ReviewItem[] = (reviewTasks ?? []).map(mapItem);
-  const completedItems: ReviewItem[] = (completedTasks ?? []).map(mapItem);
+  const pendingItems: ReviewItem[] = resolvedReview.map(mapItem);
+  const completedItems: ReviewItem[] = resolvedCompleted.map(mapItem);
 
   return <ReviewClient initialItems={pendingItems} completedItems={completedItems} />;
 }

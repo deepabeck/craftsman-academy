@@ -25,16 +25,16 @@ export async function markTaskDone(taskId: string, done: boolean) {
 }
 
 /**
- * Save a submission (text / timer) and mark the task as 'review' or 'done'.
- * File uploads are handled client-side via Supabase Storage and passed as
- * an array of already-uploaded storage paths.
+ * Save a submission (text / timer / files) and mark the task as 'review' or 'done'.
+ * Files are uploaded client-side first, then their storage paths are passed here.
+ * One submissions row is inserted per file; timer and text each get their own row.
  */
 export async function submitTaskProof(
   taskId: string,
   data: {
     text?: string;
     timerSeconds?: number;
-    filePaths?: string[]; // Supabase Storage paths, already uploaded
+    fileDetails?: { path: string; name: string; mimeType: string }[];
     requiresReview: boolean;
   },
 ) {
@@ -44,25 +44,73 @@ export async function submitTaskProof(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
 
-  // Determine submission type
-  const submissionType = data.timerSeconds
-    ? "timer"
-    : (data.filePaths?.length ?? 0) > 0
-      ? "file"
-      : "text";
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic submission rows
+  const rows: any[] = [];
 
-  // Insert submission record
-  const { error: subError } = await supabase.from("submissions").insert({
-    task_id: taskId,
-    student_id: user.id,
-    submission_type: submissionType,
-    content: data.text || null,
-    timer_seconds: data.timerSeconds || null,
-    file_url: data.filePaths?.[0] ?? null, // primary file
-  });
+  // One row per uploaded file
+  for (const f of data.fileDetails ?? []) {
+    const isImage = f.mimeType.startsWith("image/");
+    const isAudio = f.mimeType.startsWith("audio/");
+    const isVideo = f.mimeType.startsWith("video/");
+    const submissionType = isImage ? "photo" : isAudio ? "audio" : isVideo ? "video" : "file";
+    rows.push({
+      task_id: taskId,
+      student_id: user.id,
+      submission_type: submissionType,
+      content: null,
+      timer_seconds: null,
+      file_url: f.path,
+      file_name: f.name,
+      file_mime_type: f.mimeType,
+    });
+  }
+
+  // Timer row (includes any text note as content)
+  if (data.timerSeconds) {
+    rows.push({
+      task_id: taskId,
+      student_id: user.id,
+      submission_type: "timer",
+      content: data.text || null,
+      timer_seconds: data.timerSeconds,
+      file_url: null,
+      file_name: null,
+      file_mime_type: null,
+    });
+  }
+
+  // Text-only row (when no files and no timer)
+  if (!data.timerSeconds && !(data.fileDetails?.length) && data.text) {
+    rows.push({
+      task_id: taskId,
+      student_id: user.id,
+      submission_type: "text",
+      content: data.text,
+      timer_seconds: null,
+      file_url: null,
+      file_name: null,
+      file_mime_type: null,
+    });
+  }
+
+  // Fallback: at least record something
+  if (rows.length === 0) {
+    rows.push({
+      task_id: taskId,
+      student_id: user.id,
+      submission_type: "text",
+      content: data.text || "",
+      timer_seconds: null,
+      file_url: null,
+      file_name: null,
+      file_mime_type: null,
+    });
+  }
+
+  const { error: subError } = await supabase.from("submissions").insert(rows);
   if (subError) return { success: false, error: subError.message };
 
-  // Update task status — goes to 'review' if parent review required, else 'done'
+  // Update task — goes to 'review' if parent approval required, else 'done'
   const newStatus = data.requiresReview ? "review" : "done";
   const { error: taskError } = await supabase
     .from("tasks")

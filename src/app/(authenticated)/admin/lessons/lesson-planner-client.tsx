@@ -444,17 +444,41 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
         ))}
       </div>
 
-      {/* Edit panel */}
+      {/* Edit panel — lightbox overlay */}
       {editing && editingSubject && (
-        <div
-          className="glass-warm"
-          style={{
-            padding: 20,
-            borderColor: rgba(editingSubject.color, 0.4),
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-          }}
+        <>
+          {/* Backdrop */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss */}
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 100,
+              background: "rgba(4,10,22,0.75)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+            }}
+            onClick={() => setEditing(null)}
+          />
+          {/* Panel */}
+          <div
+            className="glass-warm"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 101,
+              width: "calc(100% - 32px)",
+              maxWidth: 560,
+              maxHeight: "88vh",
+              overflowY: "auto",
+              padding: 24,
+              borderColor: rgba(editingSubject.color, 0.4),
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
         >
           {/* Panel header */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -493,9 +517,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
 
           {/* Proof types */}
           <div>
-            <p style={{ fontSize: 11, color: "#8A9AAA", margin: "0 0 8px" }}>
-              HOW DOES THE STUDENT PROVE COMPLETION?
-            </p>
+            <p style={{ fontSize: 11, color: "#8A9AAA", margin: "0 0 8px" }}>HOW DOES THE STUDENT PROVE COMPLETION?</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {PROOF_OPTIONS.map((opt) => {
                 const active = editing.proofTypes.includes(opt.value);
@@ -528,7 +550,9 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
           {/* Duration — only shown if timer selected */}
           {editing.proofTypes.includes("timer") && (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <label htmlFor="edit-duration" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>TIMER GOAL (MINUTES)</label>
+              <label htmlFor="edit-duration" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>
+                TIMER GOAL (MINUTES)
+              </label>
               <input
                 id="edit-duration"
                 className="inp"
@@ -550,7 +574,9 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
 
           {/* Scoring approach */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <label htmlFor="edit-scoring" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>SCORING</label>
+            <label htmlFor="edit-scoring" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>
+              SCORING
+            </label>
             <select
               id="edit-scoring"
               className="inp"
@@ -623,7 +649,8 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
               Cancel
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

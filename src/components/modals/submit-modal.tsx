@@ -1,24 +1,45 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Divider, Icon } from "@/components/ui";
 import type { Student, Task } from "@/lib/types";
 import { formatTime, rgba } from "@/lib/utils";
+
+export interface StoragePath {
+  path: string;
+  name: string;
+  mimeType: string;
+}
+
+interface FileEntry {
+  file: File;
+  preview: string; // blob URL for images, "" for non-images
+}
 
 interface SubmitModalProps {
   task: Task;
   student: Student;
   onClose: () => void;
-  onSubmit: (taskId: string, data: { files: { name: string; url: string }[]; text: string; timer: number }) => void;
+  onSubmit: (taskId: string, data: { storagePaths: StoragePath[]; text: string; timer: number }) => void;
   onCheck: (taskId: string) => void;
 }
 
 export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: SubmitModalProps) {
-  const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
+  const [entries, setEntries] = useState<FileEntry[]>([]);
   const [text, setText] = useState("");
   const [sec, setSec] = useState(0);
   const [running, setRunning] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Support both proofTypes array and legacy proofType field
+  const proofTypes: string[] = task.proofTypes?.length ? task.proofTypes : [task.proofType ?? "checkbox"];
+  const needsFile = proofTypes.some((pt) => pt === "photo" || pt === "file");
+  const needsTimer = proofTypes.includes("timer");
+  const isCheckbox = proofTypes.includes("checkbox") && !needsFile && !needsTimer;
+  const acceptAttr = proofTypes.includes("photo") ? "image/*" : "*/*";
 
   useEffect(() => {
     if (running) {
@@ -34,8 +55,56 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const addFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList) return;
-    setFiles((p) => [...p, ...Array.from(fileList).map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))]);
+    const newEntries: FileEntry[] = Array.from(fileList).map((f) => ({
+      file: f,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
+    }));
+    setEntries((p) => [...p, ...newEntries]);
+    // reset input so same file can be re-selected
+    e.target.value = "";
   };
+
+  const removeEntry = (i: number) => {
+    setEntries((p) => {
+      const next = [...p];
+      if (next[i].preview) URL.revokeObjectURL(next[i].preview);
+      next.splice(i, 1);
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    setUploadErr("");
+    setUploading(true);
+
+    const storagePaths: StoragePath[] = [];
+
+    if (entries.length > 0) {
+      const supabase = createClient();
+      const today = new Date().toISOString().split("T")[0];
+
+      for (const entry of entries) {
+        const safeName = entry.file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        // Path within bucket: {student_key}/{date}/{subjectId}/{timestamp}-{filename}
+        const path = `${student.id}/${today}/${task.subjectId}/${Date.now()}-${safeName}`;
+        const { data, error } = await supabase.storage.from("submissions").upload(path, entry.file, {
+          contentType: entry.file.type || "application/octet-stream",
+          upsert: false,
+        });
+        if (error) {
+          setUploadErr(`Upload failed: ${error.message}`);
+          setUploading(false);
+          return;
+        }
+        storagePaths.push({ path: data.path, name: entry.file.name, mimeType: entry.file.type || "application/octet-stream" });
+      }
+    }
+
+    setUploading(false);
+    onSubmit(task.id, { storagePaths, text, timer: sec });
+  };
+
+  const fileExt = (name: string) => name.split(".").pop()?.toUpperCase() ?? "FILE";
 
   return (
     <div className="modal-bg" onClick={onClose} onKeyDown={() => {}}>
@@ -46,6 +115,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
         className="glass-warm"
         style={{ width: "100%", maxWidth: 460, padding: 24, borderColor: rgba(student.color, 0.45) }}
       >
+        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <Icon name={task.subjectIcon} size={48} />
           <div style={{ flex: 1 }}>
@@ -64,7 +134,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
             &times;
           </button>
         </div>
+
         <Divider />
+
+        {/* Assignment detail */}
         <div
           style={{
             fontSize: 12,
@@ -80,32 +153,58 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           {task.detail}
         </div>
 
-        {task.proofType === "photo" && (
+        {/* File / photo upload */}
+        {needsFile && (
           <div style={{ marginTop: 12 }}>
             <label className="upload-zone" style={{ display: "block", cursor: "pointer" }}>
               <Icon name="submit" size={32} style={{ margin: "0 auto 6px" }} />
-              <div style={{ fontSize: 12 }}>Tap to add photos — multiple pages OK</div>
-              <input type="file" accept="image/*" multiple onChange={addFiles} style={{ display: "none" }} />
+              <div style={{ fontSize: 12 }}>
+                {proofTypes.includes("photo") ? "Tap to add photos — multiple pages OK" : "Tap to attach a file (photo, PDF, doc, audio…)"}
+              </div>
+              <input type="file" accept={acceptAttr} multiple onChange={addFiles} style={{ display: "none" }} />
             </label>
-            {files.length > 0 && (
+
+            {entries.length > 0 && (
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 8 }}>
-                {files.map((f, i) => (
-                  <div key={f.name} style={{ position: "relative" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt=""
-                      style={{
-                        width: 56,
-                        height: 56,
-                        objectFit: "cover",
-                        borderRadius: 5,
-                        border: `1px solid ${rgba(task.subjectColor, 0.45)}`,
-                      }}
-                    />
+                {entries.map((entry, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: file list with index
+                  <div key={`${entry.file.name}-${i}`} style={{ position: "relative" }}>
+                    {entry.preview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={entry.preview}
+                        alt=""
+                        style={{
+                          width: 56,
+                          height: 56,
+                          objectFit: "cover",
+                          borderRadius: 5,
+                          border: `1px solid ${rgba(task.subjectColor, 0.45)}`,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 5,
+                          border: `1px solid ${rgba(task.subjectColor, 0.45)}`,
+                          background: "rgba(0,0,0,0.2)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          color: "#7A8B9C",
+                          textAlign: "center",
+                          padding: 4,
+                        }}
+                      >
+                        {fileExt(entry.file.name)}
+                      </div>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                      onClick={() => removeEntry(i)}
                       style={{
                         position: "absolute",
                         top: -4,
@@ -126,6 +225,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                     </button>
                   </div>
                 ))}
+                {/* Add more button */}
                 <label
                   className="upload-zone"
                   style={{
@@ -140,14 +240,15 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                   }}
                 >
                   <span style={{ fontSize: 20, color: "#C8860A" }}>+</span>
-                  <input type="file" accept="image/*" multiple onChange={addFiles} style={{ display: "none" }} />
+                  <input type="file" accept={acceptAttr} multiple onChange={addFiles} style={{ display: "none" }} />
                 </label>
               </div>
             )}
           </div>
         )}
 
-        {task.proofType === "timer" && (
+        {/* Timer */}
+        {needsTimer && (
           <div style={{ textAlign: "center", padding: "14px 0" }}>
             <div
               style={{
@@ -184,6 +285,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           </div>
         )}
 
+        {/* Notes */}
         <textarea
           className="inp"
           value={text}
@@ -191,8 +293,14 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           placeholder="Notes or questions for your parent..."
           style={{ marginTop: 10, minHeight: 55, fontSize: 12 }}
         />
+
+        {uploadErr && (
+          <div style={{ color: "#F08080", fontSize: 12, marginTop: 6 }}>{uploadErr}</div>
+        )}
+
+        {/* Actions */}
         <div style={{ display: "flex", gap: 9, marginTop: 12 }}>
-          {task.proofType === "checkbox" ? (
+          {isCheckbox ? (
             <button
               type="button"
               className="btn-brass"
@@ -209,12 +317,13 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
               type="button"
               className="btn-brass"
               style={{ flex: 1, padding: "11px" }}
-              onClick={() => onSubmit(task.id, { files, text, timer: sec })}
+              onClick={handleSubmit}
+              disabled={uploading}
             >
-              Submit for Review
+              {uploading ? "Uploading…" : "Submit for Review"}
             </button>
           )}
-          <button type="button" className="btn-ghost" onClick={onClose}>
+          <button type="button" className="btn-ghost" onClick={onClose} disabled={uploading}>
             Cancel
           </button>
         </div>

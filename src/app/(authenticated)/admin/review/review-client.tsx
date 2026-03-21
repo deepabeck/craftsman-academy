@@ -184,6 +184,35 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={() => {}}
                 >
+                  {/* Image previews */}
+                  {item.submissions.filter(s => (s.type === "photo" || s.type === "file") && s.fileUrl && s.fileMimeType?.startsWith("image/")).map(sub => (
+                    <div key={sub.id} style={{ marginBottom: 10 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={sub.fileUrl ?? ""}
+                        alt={sub.fileName ?? "submission"}
+                        style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 7, border: "1px solid rgba(255,255,255,0.12)", display: "block" }}
+                      />
+                      {sub.fileName && (
+                        <div style={{ fontSize: 10, color: "#506070", marginTop: 3 }}>{sub.fileName}</div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Non-image file downloads */}
+                  {item.submissions.filter(s => (s.type === "photo" || s.type === "file" || s.type === "audio" || s.type === "video") && s.fileUrl && !s.fileMimeType?.startsWith("image/")).map(sub => (
+                    <div key={sub.id} style={{ marginBottom: 8 }}>
+                      <a
+                        href={sub.fileUrl ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: "#4ABCCC", display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+                      >
+                        📎 {sub.fileName ?? "Download file"}
+                      </a>
+                    </div>
+                  ))}
+
                   {/* Text submission content */}
                   {item.submissions.filter(s => s.type === "text" && s.content).map(sub => (
                     <div key={sub.id} style={{ fontSize: 12, color: "#B0C0D0", background: "rgba(0,0,0,0.2)", borderRadius: 6, padding: "8px 10px", marginBottom: 8, lineHeight: 1.6 }}>
@@ -191,12 +220,25 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                     </div>
                   ))}
 
+                  {/* Student notes from task (if not already shown as a text submission) */}
+                  {item.notes && !item.submissions.some(s => s.type === "text" && s.content === item.notes) && (
+                    <div style={{ fontSize: 12, color: "#B0C0D0", background: "rgba(0,0,0,0.2)", borderRadius: 6, padding: "8px 10px", marginBottom: 8, lineHeight: 1.6 }}>
+                      {item.notes}
+                    </div>
+                  )}
+
                   {/* Timer submissions */}
                   {item.submissions.filter(s => s.type === "timer").map(sub => (
                     <div key={sub.id} style={{ fontSize: 12, color: "#4ABCCC", marginBottom: 8 }}>
                       ⏱ Timer: {formatTime(sub.timerSeconds ?? 0)}
+                      {sub.content && <span style={{ color: "#9AABBC", marginLeft: 8 }}>{sub.content}</span>}
                     </div>
                   ))}
+
+                  {/* Fallback when nothing to show */}
+                  {item.submissions.length === 0 && !item.notes && (
+                    <div style={{ fontSize: 11, color: "#506070", marginBottom: 8 }}>No submission content</div>
+                  )}
 
                   <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 4 }}>
                     <input

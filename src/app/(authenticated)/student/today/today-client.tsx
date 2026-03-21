@@ -10,14 +10,21 @@ import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { getTodayLabel, rgba } from "@/lib/utils";
 import type { WeatherData } from "@/lib/weather";
 
+export interface WeekSummary {
+  total: number;
+  completed: number;
+  weekLabel: string;
+}
+
 interface TodayClientProps {
   initialTasks: Task[];
   student: Student;
   weather: WeatherData | null;
   calendarEvents: CalendarEvent[];
+  weekSummary: WeekSummary | null;
 }
 
-export function TodayClient({ initialTasks, student, weather, calendarEvents }: TodayClientProps) {
+export function TodayClient({ initialTasks, student, weather, calendarEvents, weekSummary }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
@@ -103,11 +110,88 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents }: 
         {/* LEFT — mission cards */}
         <div style={{ width: 250, flexShrink: 0, marginLeft: 40 }}>
           {tasks.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: "#506070" }}>
-              <Icon name="completed" size={52} style={{ margin: "0 auto 12px" }} />
-              <div className="cinzel" style={{ fontSize: 14 }}>
-                No missions today!
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Rest day panel */}
+              <div
+                className="glass"
+                style={{
+                  padding: "22px 18px",
+                  textAlign: "center",
+                  borderColor: rgba(student.color, 0.3),
+                  background: rgba(student.color, 0.06),
+                }}
+              >
+                <Icon name="completed" size={52} style={{ margin: "0 auto 10px" }} />
+                <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: student.color }}>
+                  Rest Day
+                </div>
+                <div style={{ fontSize: 11, color: "#506070", marginTop: 5 }}>
+                  No missions scheduled &mdash; recharge your engines.
+                </div>
               </div>
+
+              {/* Preceding week summary */}
+              {weekSummary &&
+                (weekSummary.completed === weekSummary.total ? (
+                  /* All done — congratulations */
+                  <div
+                    className="glass-warm"
+                    style={{
+                      padding: "18px 16px",
+                      textAlign: "center",
+                      borderColor: "rgba(232,168,32,0.45)",
+                    }}
+                  >
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+                    <div className="cinzel brass" style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+                      Perfect Week!
+                    </div>
+                    <div style={{ fontSize: 11, color: "#9AABBC", lineHeight: 1.6 }}>
+                      Every mission completed the week of {weekSummary.weekLabel}. Outstanding work, cadet!
+                    </div>
+                  </div>
+                ) : (
+                  /* Some incomplete — nudge */
+                  <div
+                    className="glass"
+                    style={{
+                      padding: "18px 16px",
+                      borderColor: "rgba(212,168,48,0.35)",
+                      background: "rgba(212,168,48,0.06)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 22 }}>📋</span>
+                      <div className="cinzel" style={{ fontSize: 12, color: "#D4A830", fontWeight: 700 }}>
+                        Last Week
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#9AABBC", lineHeight: 1.65 }}>
+                      {weekSummary.completed}/{weekSummary.total} missions finished the week of{" "}
+                      {weekSummary.weekLabel}.
+                    </div>
+                    <div style={{ fontSize: 11, color: "#D4A830", marginTop: 8, fontStyle: "italic" }}>
+                      {weekSummary.total - weekSummary.completed} still incomplete &mdash; use today&apos;s
+                      downtime to catch up!
+                    </div>
+                  </div>
+                ))}
+
+              {/* No data for preceding week */}
+              {!weekSummary && (
+                <div
+                  className="glass"
+                  style={{
+                    padding: "14px 16px",
+                    textAlign: "center",
+                    borderColor: "rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>
+                    No task history for the previous week yet.
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

@@ -4,7 +4,28 @@ import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { fetchWeather } from "@/lib/weather";
+import type { WeekSummary } from "./today-client";
 import { TodayClient } from "./today-client";
+
+/** Returns the Mon–Sun of the calendar week immediately preceding today. */
+function getPrecedingWeek(today: Date): { start: string; end: string; label: string } {
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const dow = today.getDay(); // 0=Sun, 1=Mon … 6=Sat
+  const daysSinceMonday = dow === 0 ? 6 : dow - 1;
+
+  // Last Sunday = this Monday − 1 day
+  const lastSunday = new Date(today);
+  lastSunday.setDate(today.getDate() - daysSinceMonday - 1);
+
+  // Last Monday = last Sunday − 6 days
+  const lastMonday = new Date(lastSunday);
+  lastMonday.setDate(lastSunday.getDate() - 6);
+
+  const label = `${lastMonday.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${lastSunday.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  return { start: fmt(lastMonday), end: fmt(lastSunday), label };
+}
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -87,6 +108,26 @@ export default async function TodayPage() {
       };
     });
 
+  // When there are no tasks today, fetch preceding week summary for the
+  // contextual message (all done vs. still incomplete).
+  let weekSummary: WeekSummary | null = null;
+  if (tasks.length === 0) {
+    const { start, end, label } = getPrecedingWeek(_d);
+    const { data: prevTasks } = await supabase
+      .from("tasks")
+      .select("id, status")
+      .eq("student_id", user.id)
+      .gte("task_date", start)
+      .lte("task_date", end)
+      .neq("status", "cancelled");
+
+    if (prevTasks && prevTasks.length > 0) {
+      const completedSet = new Set(["done", "approved", "review"]);
+      const completed = prevTasks.filter((t) => completedSet.has(t.status)).length;
+      weekSummary = { total: prevTasks.length, completed, weekLabel: label };
+    }
+  }
+
   const student: Student = {
     id: profile.student_key ?? "deven",
     name: profile.display_name,
@@ -97,5 +138,13 @@ export default async function TodayPage() {
     subjects: [],
   };
 
-  return <TodayClient initialTasks={tasks} student={student} weather={weatherData} calendarEvents={calendarEvents} />;
+  return (
+    <TodayClient
+      initialTasks={tasks}
+      student={student}
+      weather={weatherData}
+      calendarEvents={calendarEvents}
+      weekSummary={weekSummary}
+    />
+  );
 }

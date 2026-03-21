@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { uploadAvatar, updateProfile } from "@/app/actions/profiles";
+import { updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 import type { ProfileData } from "./page";
@@ -30,18 +30,12 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   const profile = profiles.find((p) => p.id === activeId) ?? profiles[0];
 
   if (!profile) {
-    return (
-      <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>
-        No student profiles found.
-      </div>
-    );
+    return <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>No student profiles found.</div>;
   }
 
   const upd = (key: keyof ProfileData, value: string) => {
     setSaved(false);
-    setProfiles((prev) =>
-      prev.map((p) => (p.id === profile.id ? { ...p, [key]: value } : p)),
-    );
+    setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, [key]: value } : p)));
   };
 
   const handleSave = () => {
@@ -71,9 +65,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
 
     // Show local preview immediately
     const localUrl = URL.createObjectURL(file);
-    setProfiles((prev) =>
-      prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: localUrl } : p)),
-    );
+    setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: localUrl } : p)));
 
     setUploading(true);
     setError(null);
@@ -96,9 +88,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         );
       } else {
         // Update to the real Supabase URL and save to DB
-        setProfiles((prev) =>
-          prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: url } : p)),
-        );
+        setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: url } : p)));
         // Auto-save avatar_url to DB
         startTransition(async () => {
           await updateProfile({
@@ -120,21 +110,17 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
     }
   };
 
-  const avatarSrc =
-    profile.avatarUrl ??
-    `/assets/avatar-${profile.studentKey || "deven"}.png`;
+  const avatarSrc = profile.avatarUrl ?? `/assets/avatar-${profile.studentKey || "deven"}.png`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
+      >
         <PageHeader icon="profile" title="Student Profiles" sub="Manage student settings and photo" />
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {saved && (
-            <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>
-          )}
-          {error && (
-            <span style={{ fontSize: 12, color: "#F08080" }}>{error}</span>
-          )}
+          {saved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+          {error && <span style={{ fontSize: 12, color: "#F08080" }}>{error}</span>}
           <button
             type="button"
             className="btn-brass"
@@ -153,11 +139,15 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
           <button
             key={p.id}
             type="button"
-            onClick={() => { setActiveId(p.id); setSaved(false); setError(null); }}
+            onClick={() => {
+              setActiveId(p.id);
+              setSaved(false);
+              setError(null);
+            }}
             className={p.id === activeId ? "btn-brass" : "btn-ghost"}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px" }}
           >
-            {/* biome-ignore lint/a11y/useAltText: decorative avatar tab */}
+            {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
             <img
               src={p.avatarUrl ?? `/assets/avatar-${p.studentKey || "deven"}.png`}
               alt={p.displayName}
@@ -170,19 +160,20 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, alignItems: "start" }}>
         {/* Photo */}
-        <div className="glass-warm" style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}>
+        <div
+          className="glass-warm"
+          style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}
+        >
           <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.1em", marginBottom: 12 }}>
             PROFILE PHOTO
           </div>
           {/* Avatar with hover-to-change overlay */}
-          <div
-            style={{ position: "relative", width: "78%", margin: "0 auto", lineHeight: 0, cursor: "pointer" }}
+          <button
+            type="button"
+            style={{ position: "relative", width: "78%", margin: "0 auto", lineHeight: 0, cursor: "pointer", padding: 0, border: "none", background: "none", display: "block" }}
             onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
-            role="button"
-            tabIndex={0}
           >
-            {/* biome-ignore lint/a11y/useAltText: profile photo */}
+            {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL, next/image requires domain config */}
             <img
               src={avatarSrc}
               alt={profile.displayName}
@@ -217,14 +208,8 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             >
               {uploading ? "Uploading…" : "Change Photo"}
             </div>
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={handleAvatarChange}
-          />
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
           <div style={{ fontSize: 10, color: "#506070", marginTop: 8, lineHeight: 1.5 }}>
             Click photo to upload. Saves automatically.
           </div>
@@ -238,11 +223,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
               <div style={labelStyle}>Display Name</div>
-              <input
-                className="inp"
-                value={profile.displayName}
-                onChange={(e) => upd("displayName", e.target.value)}
-              />
+              <input className="inp" value={profile.displayName} onChange={(e) => upd("displayName", e.target.value)} />
             </div>
             <div>
               <div style={labelStyle}>Tagline / Title</div>
@@ -309,9 +290,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {profile.subjects.length === 0 && (
-              <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>
-                No active subjects assigned.
-              </div>
+              <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>No active subjects assigned.</div>
             )}
             {profile.subjects.map((sub) => (
               <div
@@ -340,9 +319,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                   >
                     {sub.name}
                   </div>
-                  <div style={{ fontSize: 9, color: "#506070", marginTop: 1 }}>
-                    {sub.days.join(" · ")}
-                  </div>
+                  <div style={{ fontSize: 9, color: "#506070", marginTop: 1 }}>{sub.days.join(" · ")}</div>
                 </div>
               </div>
             ))}

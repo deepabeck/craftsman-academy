@@ -6,8 +6,27 @@ import { createServiceClient } from "@/lib/supabase/service";
 /** Called on page load — marks yesterday's missed tasks then generates today's. */
 export async function ensureDailyTasks(date: string) {
   const service = createServiceClient();
-  await service.rpc("mark_missed_tasks");
-  await service.rpc("generate_daily_tasks", { p_date: date });
+  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
+  const { error: genErr } = await service.rpc("generate_daily_tasks", { p_date: date });
+  if (genErr) console.error("generate_daily_tasks error:", genErr.message, "date:", date);
+}
+
+/**
+ * Called on the week page — generates tasks for every day Mon–Fri of the given week.
+ * Idempotent: ON CONFLICT DO NOTHING in the underlying function.
+ */
+export async function ensureWeekTasks(weekStart: string) {
+  const service = createServiceClient();
+  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(`${weekStart}T12:00:00`);
+    d.setDate(d.getDate() + i);
+    const date = d.toISOString().split("T")[0];
+    const { error } = await service.rpc("generate_daily_tasks", { p_date: date });
+    if (error) console.error(`generate_daily_tasks error for ${date}:`, error.message);
+  }
 }
 
 /** Toggle a checkbox task between pending ↔ done. */
@@ -80,7 +99,7 @@ export async function submitTaskProof(
   }
 
   // Text-only row (when no files and no timer)
-  if (!data.timerSeconds && !(data.fileDetails?.length) && data.text) {
+  if (!data.timerSeconds && !data.fileDetails?.length && data.text) {
     rows.push({
       task_id: taskId,
       student_id: user.id,

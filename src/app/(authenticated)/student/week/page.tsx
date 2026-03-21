@@ -1,75 +1,106 @@
-"use client";
+import { redirect } from "next/navigation";
+import { ensureWeekTasks } from "@/app/actions/tasks";
+import { createClient } from "@/lib/supabase/server";
+import type { Student, Task } from "@/lib/types";
+import { WeekClient } from "./week-client";
 
-import { Icon, PageHeader, ProgBar } from "@/components/ui";
-import { BASE_STUDENTS, SUBJECTS_ALL } from "@/lib/constants";
-import type { Student } from "@/lib/types";
-import { getTodayDow, rgba } from "@/lib/utils";
-import { useAuth } from "@/providers/auth-provider";
+/** Monday of the week containing `date`. */
+function getMondayOf(date: Date): Date {
+  const d = new Date(date);
+  const dow = d.getDay(); // 0=Sun
+  const diff = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diff);
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
 
-const WEEK_PROGRESS: Record<string, number> = {
-  Mon: 85,
-  Tue: 72,
-  Wed: 60,
-  Thu: 45,
-  Fri: 90,
-};
+export default async function WeekPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-export default function WeekPage() {
-  const { user } = useAuth();
-  const studentId = user?.studentId || "deven";
-  const base = BASE_STUDENTS[studentId] || BASE_STUDENTS.deven;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, display_name, color, grade, avatar_url, student_key")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
+
+  // Compute Mon–Fri of this week
+  const monday = getMondayOf(new Date());
+  const weekStart = monday.toISOString().split("T")[0];
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+  const weekEnd = friday.toISOString().split("T")[0];
+
+  // Ensure tasks exist for every day this week (idempotent)
+  try {
+    await ensureWeekTasks(weekStart);
+  } catch (e) {
+    console.error("ensureWeekTasks threw:", e);
+  }
+
+  // Fetch all this week's tasks
+  const { data: rawTasks, error } = await supabase
+    .from("tasks")
+    .select(
+      `id, task_date, status, proof_type, proof_types, duration,
+       lesson_detail, scoring_approach, requires_review,
+       admin_note, notes, timer_seconds, completed_at,
+       subjects!inner (id, name, icon, color, sort_order)`,
+    )
+    .eq("student_id", user.id)
+    .gte("task_date", weekStart)
+    .lte("task_date", weekEnd)
+    .neq("status", "cancelled");
+
+  if (error) console.error("Week tasks fetch error:", error.message);
+
+  // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+  const tasks: (Task & { taskDate: string })[] = (rawTasks ?? [])
+    .sort((a, b) => {
+      if (a.task_date !== b.task_date) return a.task_date.localeCompare(b.task_date);
+      // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+      return ((a.subjects as any).sort_order ?? 0) - ((b.subjects as any).sort_order ?? 0);
+    })
+    .map((t) => {
+      // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+      const sub = t.subjects as any;
+      const proofTypes: string[] = t.proof_types ?? [t.proof_type ?? "checkbox"];
+      return {
+        id: t.id,
+        taskDate: t.task_date,
+        subjectId: sub.id,
+        subjectName: sub.name,
+        subjectIcon: sub.icon,
+        subjectColor: sub.color,
+        detail: t.lesson_detail || "",
+        proofType: (proofTypes[0] ?? "checkbox") as "photo" | "timer" | "checkbox",
+        proofTypes,
+        duration: t.duration ?? 45,
+        scoringApproach: t.scoring_approach ?? "completion",
+        requiresReview: t.requires_review ?? false,
+        adminNote: t.admin_note ?? "",
+        status: t.status as Task["status"],
+        notes: t.notes ?? "",
+        files: [],
+        timerSeconds: t.timer_seconds ?? 0,
+        completedAt: t.completed_at ?? null,
+      };
+    });
+
   const student: Student = {
-    ...base,
-    subjects: SUBJECTS_ALL.filter((s) => !s.only || s.only === studentId),
+    id: profile.student_key ?? "deven",
+    name: profile.display_name,
+    color: profile.color ?? "#4A90D0",
+    grade: profile.grade ?? "",
+    avatar: profile.avatar_url ?? `/assets/avatar-${profile.student_key ?? "deven"}.png`,
+    tagline: "",
+    subjects: [],
   };
-  const todayDow = getTodayDow();
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <PageHeader icon="week" title="This Week" sub="Your mission map" color={student.color} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-        {days.map((day) => {
-          const subs = student.subjects.filter((s) => s.days.includes(day));
-          const isToday = day === todayDow;
-          const pct = WEEK_PROGRESS[day] || 50;
-          return (
-            <div
-              key={day}
-              className="glass"
-              style={{
-                padding: 12,
-                borderColor: isToday ? rgba(student.color, 0.5) : "rgba(184,134,11,0.18)",
-                background: isToday ? rgba(student.color, 0.1) : "rgba(8,17,30,0.70)",
-              }}
-            >
-              <div
-                className="cinzel"
-                style={{
-                  fontSize: 12,
-                  textAlign: "center",
-                  marginBottom: 7,
-                  color: isToday ? student.color : "#9AABBC",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {day}
-                {isToday && <div style={{ fontSize: 9, color: "#C8860A" }}>TODAY</div>}
-              </div>
-              <ProgBar value={pct} color={student.color} style={{ marginBottom: 9 }} />
-              {subs.map((s) => (
-                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                  <Icon name={s.icon} size={24} />
-                  <span style={{ fontSize: 11, color: "#9AABBC", flex: 1, lineHeight: 1.2 }}>{s.name}</span>
-                </div>
-              ))}
-              {subs.length === 0 && (
-                <div style={{ fontSize: 10, color: "#404858", textAlign: "center", padding: "6px 0" }}>Free day</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <WeekClient tasks={tasks} student={student} weekStart={weekStart} />;
 }

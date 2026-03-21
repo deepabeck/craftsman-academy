@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { ensureDailyTasks } from "@/app/actions/tasks";
+import { createClient } from "@/lib/supabase/server";
+import type { Student, Task } from "@/lib/types";
 import { TodayClient } from "./today-client";
-import type { Task, Student } from "@/lib/types";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -24,7 +24,11 @@ export default async function TodayPage() {
   const today = new Date().toISOString().split("T")[0];
 
   // Mark yesterday's missed tasks + generate today's (idempotent)
-  await ensureDailyTasks(today);
+  try {
+    await ensureDailyTasks(today);
+  } catch (e) {
+    console.error("ensureDailyTasks threw:", e);
+  }
 
   // Fetch today's tasks joined with subjects
   const { data: rawTasks, error } = await supabase
@@ -39,7 +43,8 @@ export default async function TodayPage() {
     .eq("task_date", today)
     .neq("status", "cancelled");
 
-  if (error) console.error("Today tasks fetch error:", error.message);
+  if (error) console.error("Today tasks fetch error:", error.message, "student:", user.id, "date:", today);
+  console.log(`Today tasks for ${profile.student_key} on ${today}: ${rawTasks?.length ?? 0} rows`);
 
   // Map DB rows → Task shape (compatible with existing UI components)
   const tasks: Task[] = (rawTasks ?? [])

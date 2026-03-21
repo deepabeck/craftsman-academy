@@ -1,7 +1,9 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { scoreTaskWithAI } from "./ai-score";
 
 /** Called on page load — marks yesterday's missed tasks then generates today's. */
 export async function ensureDailyTasks(date: string) {
@@ -142,6 +144,11 @@ export async function submitTaskProof(
     })
     .eq("id", taskId);
   if (taskError) return { success: false, error: taskError.message };
+
+  // Kick off AI scoring in the background after the response is sent
+  if (newStatus === "review") {
+    after(() => scoreTaskWithAI(taskId).catch((err) => console.error("[tasks] AI scoring error:", err)));
+  }
 
   return { success: true, status: newStatus };
 }

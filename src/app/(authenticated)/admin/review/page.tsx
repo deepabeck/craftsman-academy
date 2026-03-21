@@ -5,11 +5,12 @@ import { ReviewClient, type ReviewItem } from "./review-client";
 export default async function ReviewPage() {
   const supabase = await createClient();
 
-  // ── Step 1: fetch tasks (no profiles join — avoids FK ambiguity) ──────────
+  // ── Step 1: fetch all pending review tasks (no date limit) ────────────────
   const { data: reviewTasks, error: reviewError } = await supabase
     .from("tasks")
     .select(
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
+       ai_score, ai_feedback,
        subjects!inner (id, name, icon, color),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
@@ -18,20 +19,22 @@ export default async function ReviewPage() {
 
   if (reviewError) console.error("Review tasks fetch error:", reviewError.message);
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  // ── Step 2: fetch recently completed tasks (last 30 days for week nav) ────
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const { data: completedTasks } = await supabase
     .from("tasks")
     .select(
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
+       ai_score, ai_feedback,
        subjects!inner (id, name, icon, color),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
     .in("status", ["approved"])
-    .gte("task_date", sevenDaysAgo)
+    .gte("task_date", thirtyDaysAgo)
     .order("task_date", { ascending: false })
-    .limit(20);
+    .limit(100);
 
-  // ── Step 2: fetch profiles for all unique student_ids ─────────────────────
+  // ── Step 3: fetch profiles for all unique student_ids ─────────────────────
   const allTasks = [...(reviewTasks ?? []), ...(completedTasks ?? [])];
   // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const studentIds = [...new Set(allTasks.map((t: any) => t.student_id).filter(Boolean))];
@@ -46,21 +49,19 @@ export default async function ReviewPage() {
       .from("profiles")
       .select("id, display_name, color, avatar_url, student_key")
       .in("id", studentIds);
-
     for (const p of profiles ?? []) {
       profileMap[p.id] = p;
     }
   }
 
-  // ── Step 3: generate signed URLs for file submissions (admin bypasses RLS) ─
+  // ── Step 4: generate signed URLs (service role bypasses RLS) ─────────────
   const service = createServiceClient();
 
-  // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const resolveFileUrl = async (fileUrl: string | null): Promise<string | null> => {
     if (!fileUrl) return null;
-    // Already a full signed URL (starts with http)
     if (fileUrl.startsWith("http")) return fileUrl;
-    const { data } = await service.storage.from("submissions").createSignedUrl(fileUrl, 3600);
+    const { data, error } = await service.storage.from("submissions").createSignedUrl(fileUrl, 3600);
+    if (error) console.error(`[review] createSignedUrl failed for "${fileUrl}":`, error.message);
     return data?.signedUrl ?? null;
   };
 
@@ -68,21 +69,21 @@ export default async function ReviewPage() {
   const resolveSubmissions = async (subs: any[]) =>
     Promise.all(
       // biome-ignore lint/suspicious/noExplicitAny: supabase row type
-      (subs ?? []).map(async (s: any) => ({
-        ...s,
-        file_url: await resolveFileUrl(s.file_url),
-      })),
+      (subs ?? []).map(async (s: any) => ({ ...s, file_url: await resolveFileUrl(s.file_url) })),
     );
 
-  // Resolve for all tasks in parallel
   const [resolvedReview, resolvedCompleted] = await Promise.all([
-    // biome-ignore lint/suspicious/noExplicitAny: supabase row type
-    Promise.all((reviewTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) }))),
-    // biome-ignore lint/suspicious/noExplicitAny: supabase row type
-    Promise.all((completedTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) }))),
+    Promise.all(
+      // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+      (reviewTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) })),
+    ),
+    Promise.all(
+      // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+      (completedTasks ?? []).map(async (t: any) => ({ ...t, submissions: await resolveSubmissions(t.submissions) })),
+    ),
   ]);
 
-  // ── Map rows → ReviewItem ─────────────────────────────────────────────────
+  // ── Step 5: map to ReviewItem ─────────────────────────────────────────────
   // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const mapItem = (t: any): ReviewItem => {
     const profile = profileMap[t.student_id] ?? {
@@ -101,6 +102,8 @@ export default async function ReviewPage() {
       timerSeconds: t.timer_seconds ?? 0,
       adminNote: t.admin_note ?? "",
       status: t.status,
+      aiScore: t.ai_score ?? null,
+      aiFeedback: t.ai_feedback ?? null,
       student: {
         id: profile.id,
         name: profile.display_name,
@@ -127,8 +130,5 @@ export default async function ReviewPage() {
     };
   };
 
-  const pendingItems: ReviewItem[] = resolvedReview.map(mapItem);
-  const completedItems: ReviewItem[] = resolvedCompleted.map(mapItem);
-
-  return <ReviewClient initialItems={pendingItems} completedItems={completedItems} />;
+  return <ReviewClient initialItems={resolvedReview.map(mapItem)} completedItems={resolvedCompleted.map(mapItem)} />;
 }

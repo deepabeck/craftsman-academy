@@ -1,81 +1,179 @@
-"use client";
-
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
-import { BASE_STUDENTS, SUBJECTS_ALL } from "@/lib/constants";
-import type { Student } from "@/lib/types";
 import { rgba } from "@/lib/utils";
-import { useAuth } from "@/providers/auth-provider";
 
-// Deterministic mock history entries
-function buildHistory(student: Student) {
-  const statuses = ["done", "done", "done", "review", "done", "missed", "done", "done"] as const;
-  const scores = [92, 88, 95, null, 85, null, 90, 78];
-  return student.subjects
-    .flatMap((s, si) =>
-      [0, 1, 2, 3].map((i) => ({
-        id: `${s.id}-${i}`,
-        subjectName: s.name,
-        subjectIcon: s.icon,
-        subjectColor: s.color,
-        date: new Date(Date.now() - i * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        status: statuses[(si + i) % statuses.length],
-        score: scores[(si + i) % scores.length],
-      })),
-    )
-    .slice(0, 16);
+const STATUS_COLOR: Record<string, string> = {
+  done: "#70E090",
+  approved: "#70E090",
+  review: "#B0A0F0",
+  missed: "#F08080",
+};
+
+function formatDate(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function HistoryPage() {
-  const { user } = useAuth();
-  const studentId = user?.studentId || "deven";
-  const base = BASE_STUDENTS[studentId] || BASE_STUDENTS.deven;
-  const student: Student = {
-    ...base,
-    subjects: SUBJECTS_ALL.filter((s) => !s.only || s.only === studentId),
-  };
-  const entries = buildHistory(student);
+export default async function HistoryPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, display_name, color, student_key")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
+
+  // Fetch last 90 days of completed tasks (exclude pending and cancelled)
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select(
+      `id, task_date, status, lesson_detail, final_score, overall_score,
+       timer_seconds, admin_note,
+       subjects!inner (id, name, icon, color)`,
+    )
+    .eq("student_id", user.id)
+    .neq("status", "cancelled")
+    .neq("status", "pending")
+    .gte("task_date", ninetyDaysAgo)
+    .order("task_date", { ascending: false })
+    .limit(150);
+
+  const entries = tasks ?? [];
+  const studentColor = profile.color ?? "#4A90D0";
+
+  // Group by date for a cleaner timeline
+  const byDate: Record<string, typeof entries> = {};
+  for (const t of entries) {
+    if (!byDate[t.task_date]) byDate[t.task_date] = [];
+    byDate[t.task_date].push(t);
+  }
+  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <PageHeader icon="history" title="Mission Log" sub="Completed assignments" color={student.color} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {entries.map((e) => (
-          <div
-            key={e.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "11px 13px",
-              borderRadius: 9,
-              background: "rgba(0,0,0,0.26)",
-              border: `1px solid ${rgba(e.subjectColor, 0.18)}`,
-              opacity: e.status === "missed" ? 0.52 : 1,
-            }}
-          >
-            <Icon name={e.subjectIcon} size={34} />
-            <div style={{ flex: 1, minWidth: 0 }}>
+      <PageHeader
+        icon="history"
+        title="Mission Log"
+        sub={`${entries.length} entries · last 90 days`}
+        color={studentColor}
+      />
+
+      {entries.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>
+          <Icon name="history" size={48} style={{ margin: "0 auto 12px" }} />
+          <div className="cinzel" style={{ fontSize: 13 }}>
+            No completed missions yet. Get to work, cadet!
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {sortedDates.map((date) => (
+            <div key={date}>
+              {/* Date header */}
               <div
+                className="cinzel"
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#EEE4CC",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  fontSize: 11,
+                  color: "#7A8B9C",
+                  letterSpacing: "0.12em",
+                  marginBottom: 8,
+                  paddingLeft: 4,
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  paddingBottom: 4,
                 }}
               >
-                {e.subjectName}
+                {formatDate(date)}
               </div>
-              <div style={{ fontSize: 10, color: "#506070", marginTop: 2 }}>{e.date}</div>
+
+              {/* Tasks for this date */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {byDate[date].map((t) => {
+                  // biome-ignore lint/suspicious/noExplicitAny: supabase join type
+                  const sub = t.subjects as any;
+                  const score = t.final_score ?? t.overall_score;
+
+                  return (
+                    <div
+                      key={t.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "11px 13px",
+                        borderRadius: 9,
+                        background: "rgba(0,0,0,0.26)",
+                        border: `1px solid ${rgba(sub.color, 0.18)}`,
+                        opacity: t.status === "missed" ? 0.52 : 1,
+                      }}
+                    >
+                      <Icon name={sub.icon} size={34} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#EEE4CC",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {sub.name}
+                        </div>
+                        {t.lesson_detail && (
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "#506070",
+                              marginTop: 2,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {t.lesson_detail}
+                          </div>
+                        )}
+                        {t.admin_note && (
+                          <div style={{ fontSize: 10, color: "#B0A0F0", marginTop: 2 }}>
+                            💬 {t.admin_note}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                        {score != null && (
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: STATUS_COLOR[t.status] ?? studentColor,
+                            }}
+                          >
+                            {Math.round(Number(score))}%
+                          </span>
+                        )}
+                        <StatusBadge status={t.status} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            {e.score != null && (
-              <span style={{ fontSize: 13, fontWeight: 700, color: student.color, flexShrink: 0 }}>{e.score}%</span>
-            )}
-            <StatusBadge status={e.status} />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

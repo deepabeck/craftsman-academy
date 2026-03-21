@@ -11,17 +11,43 @@ interface SubjectModalProps {
   onClose: () => void;
 }
 
+const PROOF_TYPES = [
+  { value: "checkbox", label: "Checkbox", emoji: "✓" },
+  { value: "photo", label: "Photo", emoji: "📷" },
+  { value: "timer", label: "Timer", emoji: "⏱" },
+  { value: "text", label: "Written", emoji: "✍" },
+  { value: "audio", label: "Audio", emoji: "🎙" },
+  { value: "video", label: "Video", emoji: "🎬" },
+  { value: "file", label: "File", emoji: "📎" },
+];
+
+const CATEGORIES = ["Core Academic", "Elective", "Enrichment", "Physical", "Life Skills"] as const;
+
+const labelStyle = {
+  fontSize: 11,
+  color: "#506070",
+  marginBottom: 5,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+};
+
 export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
   const isNew = !subject;
   const [form, setForm] = useState<Subject>(
     subject ?? {
-      id: `subj_${Date.now()}`,
+      id: `new-${Date.now()}`,
       name: "",
       icon: "subjects",
       color: "#4A90D0",
       days: ["Mon", "Wed", "Fri"],
       only: null,
       detail: "",
+      active: true,
+      category: "Core Academic",
+      proofTypes: ["checkbox"],
+      requiresReview: false,
+      duration: 45,
+      externalPlatform: null,
     },
   );
 
@@ -32,8 +58,19 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
     }));
   };
 
+  const toggleProofType = (pt: string) => {
+    setForm((p) => {
+      const current = p.proofTypes ?? [];
+      return {
+        ...p,
+        proofTypes: current.includes(pt) ? current.filter((t) => t !== pt) : [...current, pt],
+      };
+    });
+  };
+
   const save = () => {
     if (!form.name.trim()) return;
+    if ((form.proofTypes ?? []).length === 0) return;
     onSave(form);
   };
 
@@ -44,7 +81,14 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
         onKeyDown={() => {}}
         role="dialog"
         className="glass-warm"
-        style={{ width: "100%", maxWidth: 520, padding: 26, position: "relative" }}
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          padding: 26,
+          position: "relative",
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
       >
         <div style={{ position: "absolute", top: 8, left: 8 }}>
           <Rivet />
@@ -52,60 +96,84 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
         <div style={{ position: "absolute", top: 8, right: 8 }}>
           <Rivet />
         </div>
-        <div style={{ position: "absolute", bottom: 8, left: 8 }}>
-          <Rivet />
-        </div>
-        <div style={{ position: "absolute", bottom: 8, right: 8 }}>
-          <Rivet />
-        </div>
 
         <div className="cinzel brass" style={{ fontSize: 17, fontWeight: 700, marginBottom: 18 }}>
           {isNew ? "Add New Subject" : "Edit Subject"}
         </div>
 
-        {/* Name */}
-        <div style={{ marginBottom: 14 }}>
-          <div
-            style={{
-              fontSize: 11,
-              color: "#506070",
-              marginBottom: 5,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Subject Name
+        {/* Name + Active toggle */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 14, alignItems: "end" }}>
+          <div>
+            <div style={labelStyle}>Subject Name</div>
+            <input
+              className="inp"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="e.g. Mathematics, Art, History..."
+            />
           </div>
-          <input
-            className="inp"
-            value={form.name}
-            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            placeholder="e.g. Mathematics, Art, History..."
-          />
+          <div style={{ textAlign: "center" }}>
+            <div style={{ ...labelStyle, marginBottom: 8 }}>Active</div>
+            <button
+              type="button"
+              onClick={() => setForm((p) => ({ ...p, active: !p.active }))}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 7,
+                border: `1px solid ${form.active ? "rgba(112,224,144,0.4)" : "rgba(255,255,255,0.12)"}`,
+                background: form.active ? "rgba(112,224,144,0.12)" : "rgba(0,0,0,0.3)",
+                color: form.active ? "#70E090" : "#506070",
+                fontSize: 12,
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              {form.active ? "On" : "Off"}
+            </button>
+          </div>
+        </div>
+
+        {/* Category + Duration */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 14, alignItems: "end" }}>
+          <div>
+            <div style={labelStyle}>Category</div>
+            <select
+              className="inp"
+              value={form.category ?? "Core Academic"}
+              onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+              style={{ cursor: "pointer" }}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ width: 90 }}>
+            <div style={labelStyle}>Duration (min)</div>
+            <input
+              className="inp"
+              type="number"
+              min={5}
+              max={480}
+              value={form.duration ?? 45}
+              onChange={(e) => setForm((p) => ({ ...p, duration: Number(e.target.value) }))}
+              style={{ textAlign: "center" }}
+            />
+          </div>
         </div>
 
         {/* Icon + Color row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#506070",
-                marginBottom: 5,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              Icon
-            </div>
+            <div style={labelStyle}>Icon</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {ICON_OPTIONS.map((ic) => (
-                <div
+                <button
                   key={ic}
+                  type="button"
                   onClick={() => setForm((p) => ({ ...p, icon: ic }))}
-                  onKeyDown={(e) => e.key === "Enter" && setForm((p) => ({ ...p, icon: ic }))}
-                  role="button"
-                  tabIndex={0}
                   style={{
                     padding: 5,
                     borderRadius: 6,
@@ -115,41 +183,21 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
                   }}
                 >
                   <Icon name={ic} size={24} />
-                </div>
+                </button>
               ))}
             </div>
           </div>
           <div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#506070",
-                marginBottom: 5,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              Color
-            </div>
+            <div style={labelStyle}>Color</div>
             <HexPicker value={form.color} onChange={(c) => setForm((p) => ({ ...p, color: c }))} />
             <div style={{ marginTop: 12 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#506070",
-                  marginBottom: 5,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Assigned To
-              </div>
+              <div style={labelStyle}>Assigned To</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {(
                   [
                     { v: null, l: "Both" },
-                    { v: "deven", l: "Deven Only" },
-                    { v: "shaan", l: "Shaan Only" },
+                    { v: "deven", l: "Deven" },
+                    { v: "shaan", l: "Shaan" },
                   ] as const
                 ).map((o) => (
                   <button
@@ -167,19 +215,9 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
           </div>
         </div>
 
-        {/* Days */}
+        {/* Schedule Days */}
         <div style={{ marginBottom: 14 }}>
-          <div
-            style={{
-              fontSize: 11,
-              color: "#506070",
-              marginBottom: 7,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Schedule Days
-          </div>
+          <div style={labelStyle}>Schedule Days</div>
           <div style={{ display: "flex", gap: 8 }}>
             {WEEKDAYS.map((d) => (
               <button
@@ -195,19 +233,68 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
           </div>
         </div>
 
-        {/* Detail */}
-        <div style={{ marginBottom: 18 }}>
-          <div
-            style={{
-              fontSize: 11,
-              color: "#506070",
-              marginBottom: 5,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Default Assignment Instructions
+        {/* Proof Types */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={labelStyle}>Proof Types (select all that apply)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+            {PROOF_TYPES.map((pt) => {
+              const selected = (form.proofTypes ?? []).includes(pt.value);
+              return (
+                <button
+                  key={pt.value}
+                  type="button"
+                  onClick={() => toggleProofType(pt.value)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 7,
+                    border: `1px solid ${selected ? "rgba(232,168,32,0.6)" : "rgba(255,255,255,0.12)"}`,
+                    background: selected ? "rgba(232,168,32,0.16)" : "rgba(0,0,0,0.3)",
+                    color: selected ? "#E8A820" : "#7A8B9C",
+                    fontSize: 12,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  <span>{pt.emoji}</span>
+                  <span>{pt.label}</span>
+                </button>
+              );
+            })}
           </div>
+          {(form.proofTypes ?? []).length === 0 && (
+            <div style={{ fontSize: 11, color: "#F08080", marginTop: 5 }}>Select at least one proof type.</div>
+          )}
+        </div>
+
+        {/* Requires Review + External Platform */}
+        <div
+          style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 14, marginBottom: 14, alignItems: "center" }}
+        >
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={form.requiresReview ?? false}
+              onChange={(e) => setForm((p) => ({ ...p, requiresReview: e.target.checked }))}
+              style={{ accentColor: "#B0A0F0", width: 15, height: 15 }}
+            />
+            <span style={{ fontSize: 12, color: "#B0A0F0" }}>Requires parent review</span>
+          </label>
+          <div>
+            <div style={labelStyle}>External Platform (optional)</div>
+            <input
+              className="inp"
+              value={form.externalPlatform ?? ""}
+              onChange={(e) => setForm((p) => ({ ...p, externalPlatform: e.target.value.trim() || null }))}
+              placeholder="e.g. Skoove, Pickcode, Duolingo…"
+            />
+          </div>
+        </div>
+
+        {/* Default Assignment Instructions */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={labelStyle}>Default Assignment Instructions</div>
           <textarea
             className="inp"
             value={form.detail}

@@ -14,8 +14,16 @@ export interface Subject {
   icon: string;
   color: string;
   days: string[];
-  only: string | null;
+  only: string | null; // maps to only_student_key in DB
   detail: string;
+  // Extended DB fields (optional for backward compat)
+  active?: boolean;
+  category?: string;
+  proofTypes?: string[];
+  requiresReview?: boolean;
+  duration?: number; // duration_minutes
+  externalPlatform?: string | null;
+  sortOrder?: number;
 }
 
 export interface Task {
@@ -26,15 +34,15 @@ export interface Task {
   subjectColor: string;
   detail: string;
   proofType: "photo" | "timer" | "checkbox";
-  proofTypes?: string[];       // full array from DB (proof_types[0] = proofType)
+  proofTypes?: string[]; // full array from DB (proof_types[0] = proofType)
   duration: number;
-  scoringApproach?: string;    // 'completion' | 'review_based' | 'time_based' | etc.
-  requiresReview?: boolean;    // if true, submission goes to 'review' not 'done'
-  adminNote?: string;          // per-task note from admin
+  scoringApproach?: string; // 'completion' | 'review_based' | 'time_based' | etc.
+  requiresReview?: boolean; // if true, submission goes to 'review' not 'done'
+  adminNote?: string; // per-task note from admin
   status: "pending" | "done" | "review" | "missed" | "approved";
   notes: string;
   files: FileEntry[];
-  timerSeconds?: number;       // elapsed timer seconds
+  timerSeconds?: number; // elapsed timer seconds
   completedAt: string | null;
 }
 

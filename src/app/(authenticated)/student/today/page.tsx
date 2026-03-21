@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { ensureDailyTasks } from "@/app/actions/tasks";
+import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { createClient } from "@/lib/supabase/server";
-import type { Student, Task } from "@/lib/types";
+import type { CalendarEvent, Student, Task } from "@/lib/types";
+import { fetchWeather } from "@/lib/weather";
 import { TodayClient } from "./today-client";
 
 export default async function TodayPage() {
@@ -25,12 +27,17 @@ export default async function TodayPage() {
   const _d = new Date();
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
 
-  // Mark yesterday's missed tasks + generate today's (idempotent)
-  try {
-    await ensureDailyTasks(today);
-  } catch (e) {
-    console.error("ensureDailyTasks threw:", e);
-  }
+  // Mark yesterday's missed tasks, generate today's tasks, and fetch
+  // weather + calendar data — all in parallel.
+  const icalUrl = process.env.CALENDAR_ICAL_URL ?? "";
+  const [, weatherData, calendarEvents] = await Promise.all([
+    ensureDailyTasks(today).catch((e) => {
+      console.error("ensureDailyTasks threw:", e);
+      return null;
+    }),
+    fetchWeather(),
+    icalUrl ? fetchCalendarEvents(icalUrl) : Promise.resolve([] as CalendarEvent[]),
+  ]);
 
   // Fetch today's tasks joined with subjects
   const { data: rawTasks, error } = await supabase
@@ -90,5 +97,5 @@ export default async function TodayPage() {
     subjects: [],
   };
 
-  return <TodayClient initialTasks={tasks} student={student} />;
+  return <TodayClient initialTasks={tasks} student={student} weather={weatherData} calendarEvents={calendarEvents} />;
 }

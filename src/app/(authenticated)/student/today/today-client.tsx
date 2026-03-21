@@ -1,20 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { SubmitModal, type StoragePath } from "@/components/modals/submit-modal";
+import { markTaskDone, submitTaskProof } from "@/app/actions/tasks";
+import { type StoragePath, SubmitModal } from "@/components/modals/submit-modal";
 import { Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
 import { CalendarWidget } from "@/components/widgets/calendar-widget";
 import { WeatherWidget } from "@/components/widgets/weather-widget";
-import type { Student, Task } from "@/lib/types";
+import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { getTodayLabel, rgba } from "@/lib/utils";
-import { markTaskDone, submitTaskProof } from "@/app/actions/tasks";
+import type { WeatherData } from "@/lib/weather";
 
 interface TodayClientProps {
   initialTasks: Task[];
   student: Student;
+  weather: WeatherData | null;
+  calendarEvents: CalendarEvent[];
 }
 
-export function TodayClient({ initialTasks, student }: TodayClientProps) {
+export function TodayClient({ initialTasks, student, weather, calendarEvents }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
@@ -49,10 +52,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
   };
 
   // Submission modal: save proof + notes, persist to DB
-  const submit = (
-    tid: string,
-    data: { storagePaths: StoragePath[]; text: string; timer: number },
-  ) => {
+  const submit = (tid: string, data: { storagePaths: StoragePath[]; text: string; timer: number }) => {
     const task = tasks.find((t) => t.id === tid);
     if (!task) return;
     const newStatus = (task.requiresReview ? "review" : "done") as Task["status"];
@@ -61,7 +61,13 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
     setTasks((prev) =>
       prev.map((t) =>
         t.id === tid
-          ? { ...t, status: newStatus, notes: data.text, timerSeconds: data.timer, completedAt: new Date().toISOString() }
+          ? {
+              ...t,
+              status: newStatus,
+              notes: data.text,
+              timerSeconds: data.timer,
+              completedAt: new Date().toISOString(),
+            }
           : t,
       ),
     );
@@ -76,9 +82,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
       });
       if (!result.success) {
         // Revert on failure
-        setTasks((prev) =>
-          prev.map((t) => (t.id === tid ? { ...t, status: task.status, notes: task.notes } : t)),
-        );
+        setTasks((prev) => prev.map((t) => (t.id === tid ? { ...t, status: task.status, notes: task.notes } : t)));
       }
     });
   };
@@ -108,8 +112,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {tasks.map((task) => {
-                const isDone =
-                  task.status === "done" || task.status === "review" || task.status === "approved";
+                const isDone = task.status === "done" || task.status === "review" || task.status === "approved";
                 return (
                   <div
                     key={task.id}
@@ -121,8 +124,12 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
                       opacity: isDone ? 0.65 : 1,
                       cursor: isDone ? "default" : "pointer",
                     }}
-                    onClick={() => { if (!isDone) setModal(task); }}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !isDone) setModal(task); }}
+                    onClick={() => {
+                      if (!isDone) setModal(task);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isDone) setModal(task);
+                    }}
                     role="button"
                     tabIndex={0}
                   >
@@ -147,9 +154,7 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
                           See assignment &rarr;
                         </div>
                       )}
-                      {isDone && (
-                        <div style={{ fontSize: 11, color: "#70C090", marginTop: 2 }}>✓ Complete</div>
-                      )}
+                      {isDone && <div style={{ fontSize: 11, color: "#70C090", marginTop: 2 }}>✓ Complete</div>}
                     </div>
                   </div>
                 );
@@ -198,8 +203,8 @@ export function TodayClient({ initialTasks, student }: TodayClientProps) {
 
         {/* RIGHT — weather + calendar */}
         <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          <WeatherWidget color={student.color} />
-          <CalendarWidget color={student.color} />
+          <WeatherWidget color={student.color} weather={weather} />
+          <CalendarWidget color={student.color} events={calendarEvents} />
         </div>
       </div>
 

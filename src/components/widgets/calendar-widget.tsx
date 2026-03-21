@@ -1,4 +1,4 @@
-import { MOCK_EVENTS } from "@/lib/constants";
+import type { CalendarEvent } from "@/lib/types";
 import { rgba } from "@/lib/utils";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -10,9 +10,10 @@ const TYPE_COLORS: Record<string, string> = {
 
 interface CalendarWidgetProps {
   color: string;
+  events: CalendarEvent[];
 }
 
-export function CalendarWidget({ color }: CalendarWidgetProps) {
+export function CalendarWidget({ color, events }: CalendarWidgetProps) {
   return (
     <div
       className="glass"
@@ -24,39 +25,43 @@ export function CalendarWidget({ color }: CalendarWidgetProps) {
           UPCOMING EVENTS
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {MOCK_EVENTS.map((e) => (
-          <div
-            key={`${e.date}-${e.label}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 9,
-              padding: "6px 9px",
-              borderRadius: 7,
-              background: "rgba(0,0,0,0.22)",
-              borderLeft: `3px solid ${TYPE_COLORS[e.type] || "#E8A820"}`,
-            }}
-          >
-            <span style={{ fontSize: 14, flexShrink: 0 }}>{e.icon}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#EEE4CC",
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {e.label}
+      {events.length === 0 ? (
+        <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic", padding: "6px 0" }}>No upcoming events.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {events.map((e) => (
+            <div
+              key={`${e.date}-${e.label}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                padding: "6px 9px",
+                borderRadius: 7,
+                background: "rgba(0,0,0,0.22)",
+                borderLeft: `3px solid ${TYPE_COLORS[e.type] ?? "#E8A820"}`,
+              }}
+            >
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{e.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#EEE4CC",
+                    fontWeight: 500,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {e.label}
+                </div>
+                <div style={{ fontSize: 10, color: "#506070" }}>{e.date}</div>
               </div>
-              <div style={{ fontSize: 10, color: "#506070" }}>{e.date}</div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

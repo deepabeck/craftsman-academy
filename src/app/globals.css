@@ -384,12 +384,17 @@ body {
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.84);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+}
+/* Modal panel needs a near-solid background so text reads cleanly */
+.modal-bg .glass-warm {
+  background: rgba(10, 6, 2, 0.96);
 }
 
 /* ── INPUT ── */
@@ -517,4 +522,10 @@ textarea.inp {
 }
 .metal-wrap {
   filter: drop-shadow(0 2px 7px rgba(0, 0, 0, 0.92));
+}
+
+/* ── REVIEW THUMBNAIL HOVER ── */
+button:has(> .thumb-hover):hover .thumb-hover {
+  background: rgba(0, 0, 0, 0.45) !important;
+  opacity: 1 !important;
 }

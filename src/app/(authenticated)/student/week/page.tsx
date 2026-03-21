@@ -59,7 +59,6 @@ export default async function WeekPage() {
 
   if (error) console.error("Week tasks fetch error:", error.message);
 
-  // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
   const tasks: (Task & { taskDate: string })[] = (rawTasks ?? [])
     .sort((a, b) => {
       if (a.task_date !== b.task_date) return a.task_date.localeCompare(b.task_date);

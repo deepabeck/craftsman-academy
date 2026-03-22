@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
-import { HexPicker, Icon, PageHeader } from "@/components/ui";
+import { Icon, PageHeader } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 import type { ProfileData } from "./page";
 
@@ -69,7 +69,6 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         displayName: profile.displayName,
         tagline: profile.tagline,
         grade: profile.grade,
-        color: profile.color,
         avatarUrl: profile.avatarUrl,
       });
       if (result.error) {
@@ -118,7 +117,6 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             displayName: profile.displayName,
             tagline: profile.tagline,
             grade: profile.grade,
-            color: profile.color,
             avatarUrl: url,
           });
         });
@@ -138,7 +136,9 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
+      >
         <PageHeader icon="profile" title="Student Profiles" sub="Manage student settings and photo" />
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
@@ -176,7 +176,9 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             <img
               src={p.avatarUrl ?? `/assets/profile-${p.studentKey || "deven"}.png`}
               alt={p.displayName}
-              onError={(e) => { e.currentTarget.src = `/assets/profile-${p.studentKey || "deven"}.png`; }}
+              onError={(e) => {
+                e.currentTarget.src = `/assets/profile-${p.studentKey || "deven"}.png`;
+              }}
               style={{ width: 24, height: 24, borderRadius: 3, objectFit: "cover", objectPosition: "top" }}
             />
             {p.displayName}
@@ -184,43 +186,79 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         ))}
       </div>
 
-      {/* Top row: Photo + 3 editing panels */}
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr 1fr", gap: 14, alignItems: "start" }}>
-
+      {/* Top row: Photo + 2 editing panels */}
+      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr", gap: 14, alignItems: "start" }}>
         {/* Photo */}
-        <div className="glass-warm" style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}>
+        <div
+          className="glass-warm"
+          style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}
+        >
           <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 12 }}>
             PROFILE PHOTO
           </div>
           <button
             type="button"
-            style={{ position: "relative", width: "85%", margin: "0 auto", lineHeight: 0, cursor: "pointer", padding: 0, border: "none", background: "none", display: "block" }}
+            style={{
+              position: "relative",
+              width: "85%",
+              margin: "0 auto",
+              lineHeight: 0,
+              cursor: "pointer",
+              padding: 0,
+              border: "none",
+              background: "none",
+              display: "block",
+            }}
             onClick={() => fileRef.current?.click()}
           >
             {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
             <img
               src={avatarSrc}
               alt={profile.displayName}
-              onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
+              onError={(e) => {
+                e.currentTarget.src = fallbackAvatar;
+              }}
               style={{ width: "100%", display: "block", borderRadius: 6 }}
             />
             <div
-              style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: uploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)", transition: "background 0.2s", fontSize: 12, color: uploading ? "#E8C870" : "transparent", fontWeight: 600, borderRadius: 6 }}
-              onMouseEnter={(e) => { if (!uploading) { e.currentTarget.style.background = "rgba(0,0,0,0.55)"; e.currentTarget.style.color = "#E8C870"; } }}
-              onMouseLeave={(e) => { if (!uploading) { e.currentTarget.style.background = "rgba(0,0,0,0)"; e.currentTarget.style.color = "transparent"; } }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: uploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+                transition: "background 0.2s",
+                fontSize: 12,
+                color: uploading ? "#E8C870" : "transparent",
+                fontWeight: 600,
+                borderRadius: 6,
+              }}
+              onMouseEnter={(e) => {
+                if (!uploading) {
+                  e.currentTarget.style.background = "rgba(0,0,0,0.55)";
+                  e.currentTarget.style.color = "#E8C870";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!uploading) {
+                  e.currentTarget.style.background = "rgba(0,0,0,0)";
+                  e.currentTarget.style.color = "transparent";
+                }
+              }}
             >
               {uploading ? "Uploading…" : "Change Photo"}
             </div>
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-          <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>
-            Click photo to upload
-          </div>
+          <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
         </div>
 
         {/* Identity */}
         <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>IDENTITY</div>
+          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+            IDENTITY
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <div style={labelStyle}>Display Name</div>
@@ -228,23 +266,48 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             </div>
             <div>
               <div style={labelStyle}>Tagline / Title</div>
-              <input className="inp" value={profile.tagline} onChange={(e) => upd("tagline", e.target.value)} placeholder="e.g. Explorer of Systems" />
+              <input
+                className="inp"
+                value={profile.tagline}
+                onChange={(e) => upd("tagline", e.target.value)}
+                placeholder="e.g. Explorer of Systems"
+              />
             </div>
             <div>
               <div style={labelStyle}>Grade</div>
-              <input className="inp" value={profile.grade} onChange={(e) => upd("grade", e.target.value)} placeholder="e.g. 5th Grade" />
+              <input
+                className="inp"
+                value={profile.grade}
+                onChange={(e) => upd("grade", e.target.value)}
+                placeholder="e.g. 5th Grade"
+              />
             </div>
           </div>
         </div>
 
         {/* Login & Access */}
         <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>LOGIN & ACCESS</div>
+          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+            LOGIN & ACCESS
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <div style={labelStyle}>Email</div>
-              <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12, color: "#6A7A8A", fontFamily: "monospace", wordBreak: "break-all" }}>
-                {profile.studentKey === "deven" ? process.env.NEXT_PUBLIC_DEVEN_EMAIL : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
+              <div
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: "rgba(0,0,0,0.3)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  fontSize: 12,
+                  color: "#6A7A8A",
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                }}
+              >
+                {profile.studentKey === "deven"
+                  ? process.env.NEXT_PUBLIC_DEVEN_EMAIL
+                  : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
               </div>
             </div>
             <div>
@@ -263,7 +326,19 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#506070", padding: 0, lineHeight: 1 }}
+                    style={{
+                      position: "absolute",
+                      right: 8,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      color: "#506070",
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
                   >
                     {showPassword ? "🙈" : "👁️"}
                   </button>
@@ -279,27 +354,16 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 </button>
               </div>
               {pwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{pwError}</div>}
-              {pwSaved && <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>}
-              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>Min 6 characters · takes effect immediately</div>
+              {pwSaved && (
+                <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>
+              )}
+              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
+                Min 6 characters · takes effect immediately
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Accent Color */}
-        <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>ACCENT COLOR</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 6, background: profile.color, boxShadow: `0 0 10px ${profile.color}`, border: "2px solid rgba(255,255,255,0.15)", flexShrink: 0 }} />
-            <div style={{ fontSize: 12, color: "#9AABBC" }}>Used on nav, cards, and progress bars</div>
-          </div>
-          <HexPicker value={profile.color} onChange={(c) => upd("color", c)} />
-          <div style={{ marginTop: 12 }}>
-            <div style={{ ...labelStyle, fontSize: 11, marginBottom: 5 }}>Preview</div>
-            <div style={{ padding: "8px 12px", borderRadius: 7, background: rgba(profile.color, 0.12), border: `1px solid ${rgba(profile.color, 0.35)}`, fontSize: 13, color: profile.color, fontWeight: 600 }}>
-              {profile.displayName} &mdash; {profile.grade || "Grade TBD"}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Bottom row: Enrolled Subjects full width */}
@@ -314,11 +378,28 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             {profile.subjects.map((sub) => (
               <div
                 key={sub.id}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(0,0,0,0.25)", border: `1px solid ${rgba(sub.color, 0.25)}` }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: "rgba(0,0,0,0.25)",
+                  border: `1px solid ${rgba(sub.color, 0.25)}`,
+                }}
               >
                 <Icon name={sub.icon} size={26} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: "#EEE4CC", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#EEE4CC",
+                      fontWeight: 500,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {sub.name}
                   </div>
                   <div style={{ fontSize: 11, color: "#506070", marginTop: 2 }}>{sub.days.join(" · ")}</div>

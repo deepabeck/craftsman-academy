@@ -9,8 +9,8 @@ export interface ProfileUpdateData {
   displayName: string;
   tagline: string;
   grade: string;
-  color: string;
   avatarUrl?: string | null;
+  // Note: color is intentionally omitted — students manage their own accent color via Customize
 }
 
 export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: string }> {
@@ -22,7 +22,6 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: 
       display_name: data.displayName,
       tagline: data.tagline,
       grade: data.grade,
-      color: data.color,
       ...(data.avatarUrl !== undefined ? { avatar_url: data.avatarUrl } : {}),
     })
     .eq("id", data.id);
@@ -37,10 +36,7 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: 
 /**
  * Set a student's password via the Supabase admin API (service role only).
  */
-export async function setStudentPassword(
-  userId: string,
-  password: string,
-): Promise<{ error?: string }> {
+export async function setStudentPassword(userId: string, password: string): Promise<{ error?: string }> {
   if (password.length < 6) return { error: "Password must be at least 6 characters." };
   const service = createServiceClient();
   const { error } = await service.auth.admin.updateUserById(userId, { password });

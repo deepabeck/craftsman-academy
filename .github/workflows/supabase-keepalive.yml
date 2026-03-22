@@ -1,0 +1,35 @@
+name: Supabase Keepalive
+
+# Runs every 5 days to prevent the Supabase free tier from pausing
+# (free projects pause after 7 days of inactivity).
+# Uses ~2 GitHub Actions minutes/month — well within the free 2,000 limit.
+
+on:
+  schedule:
+    # Every 5 days at 8:00 AM UTC  (cron: minute hour day month weekday)
+    - cron: "0 8 */5 * *"
+  workflow_dispatch: # allow manual trigger from GitHub Actions tab
+
+jobs:
+  keepalive:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "Response status: $STATUS"
+
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Supabase is alive."
+          else
+            echo "⚠️  Unexpected status $STATUS — check the project."
+            exit 1
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

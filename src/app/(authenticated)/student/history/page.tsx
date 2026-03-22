@@ -31,9 +31,7 @@ export default async function HistoryPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Fetch last 90 days of completed tasks (exclude pending and cancelled)
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-
+  // Fetch ALL completed tasks ever — no date cap so historical data is always accessible
   const { data: tasks } = await supabase
     .from("tasks")
     .select(
@@ -44,9 +42,8 @@ export default async function HistoryPage() {
     .eq("student_id", user.id)
     .neq("status", "cancelled")
     .neq("status", "pending")
-    .gte("task_date", ninetyDaysAgo)
     .order("task_date", { ascending: false })
-    .limit(150);
+    .limit(500);
 
   const entries = tasks ?? [];
   const studentColor = profile.color ?? "#4A90D0";
@@ -64,7 +61,7 @@ export default async function HistoryPage() {
       <PageHeader
         icon="history"
         title="Mission Log"
-        sub={`${entries.length} entries · last 90 days`}
+        sub={`${entries.length} completed missions · all time`}
         color={studentColor}
       />
 

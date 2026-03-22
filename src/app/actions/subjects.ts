@@ -64,6 +64,22 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 }
 
 export async function deleteSubject(id: string): Promise<{ error?: string }> {
+  const service = createServiceClient();
+
+  // Guard: block deletion if any completed/reviewed tasks exist for this subject.
+  // Deactivate instead — historical records must be preserved.
+  const { count } = await service
+    .from("tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("subject_id", id)
+    .in("status", ["done", "approved", "review", "missed"]);
+
+  if ((count ?? 0) > 0) {
+    return {
+      error: `Cannot delete: ${count} historical task record(s) exist for this subject. Deactivate it instead to hide it from the schedule while preserving all data.`,
+    };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("subjects").delete().eq("id", id);
   if (error) return { error: error.message };

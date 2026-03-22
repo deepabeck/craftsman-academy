@@ -53,7 +53,8 @@ function todayStr(): string {
 function getMondayOf(date: Date, weekOffset = 0): Date {
   const d = new Date(date);
   const dow = d.getDay();
-  const diff = dow === 0 ? -6 : 1 - dow;
+  // On Sunday show the upcoming week (next Monday); otherwise show current week's Monday
+  const diff = dow === 0 ? 1 : 1 - dow;
   d.setDate(d.getDate() + diff + weekOffset * 7);
   return d;
 }

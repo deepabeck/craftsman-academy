@@ -35,6 +35,20 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: 
 }
 
 /**
+ * Set a student's password via the Supabase admin API (service role only).
+ */
+export async function setStudentPassword(
+  userId: string,
+  password: string,
+): Promise<{ error?: string }> {
+  if (password.length < 6) return { error: "Password must be at least 6 characters." };
+  const service = createServiceClient();
+  const { error } = await service.auth.admin.updateUserById(userId, { password });
+  if (error) return { error: error.message };
+  return {};
+}
+
+/**
  * Upload an avatar image server-side using the service role client (bypasses RLS).
  * Returns the public URL of the uploaded file.
  */

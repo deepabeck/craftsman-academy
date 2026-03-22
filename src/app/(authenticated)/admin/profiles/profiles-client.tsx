@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { updateProfile, uploadAvatar } from "@/app/actions/profiles";
+import { setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 import type { ProfileData } from "./page";
@@ -27,11 +27,33 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Password reset state
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwSaved, setPwSaved] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [isPwPending, startPwTransition] = useTransition();
+
   const profile = profiles.find((p) => p.id === activeId) ?? profiles[0];
 
   if (!profile) {
     return <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>No student profiles found.</div>;
   }
+
+  const handleSetPassword = () => {
+    setPwError(null);
+    setPwSaved(false);
+    startPwTransition(async () => {
+      const result = await setStudentPassword(profile.id, newPassword);
+      if (result.error) {
+        setPwError(result.error);
+      } else {
+        setPwSaved(true);
+        setNewPassword("");
+        setTimeout(() => setPwSaved(false), 3000);
+      }
+    });
+  };
 
   const upd = (key: keyof ProfileData, value: string) => {
     setSaved(false);
@@ -143,6 +165,9 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
               setActiveId(p.id);
               setSaved(false);
               setError(null);
+              setNewPassword("");
+              setPwSaved(false);
+              setPwError(null);
             }}
             className={p.id === activeId ? "btn-brass" : "btn-ghost"}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px" }}
@@ -158,7 +183,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, alignItems: "start" }}>
         {/* Photo */}
         <div
           className="glass-warm"
@@ -252,6 +277,88 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 onChange={(e) => upd("grade", e.target.value)}
                 placeholder="e.g. 5th Grade"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Login & Access */}
+        <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 14 }}>
+            LOGIN & ACCESS
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div>
+              <div style={labelStyle}>Email</div>
+              <div
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: "rgba(0,0,0,0.3)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  fontSize: 13,
+                  color: "#6A7A8A",
+                  fontFamily: "monospace",
+                }}
+              >
+                {profile.studentKey === "deven"
+                  ? process.env.NEXT_PUBLIC_DEVEN_EMAIL
+                  : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
+              </div>
+            </div>
+            <div>
+              <div style={labelStyle}>Set New Password</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <input
+                    className="inp"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password…"
+                    style={{ paddingRight: 36, width: "100%", boxSizing: "border-box" }}
+                    onKeyDown={(e) => e.key === "Enter" && newPassword.length >= 6 && handleSetPassword()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    style={{
+                      position: "absolute",
+                      right: 8,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      color: "#506070",
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="btn-brass"
+                  style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
+                  onClick={handleSetPassword}
+                  disabled={isPwPending || newPassword.length < 6}
+                >
+                  {isPwPending ? "…" : "Set"}
+                </button>
+              </div>
+              {pwError && (
+                <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{pwError}</div>
+              )}
+              {pwSaved && (
+                <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>
+                  ✓ Password updated
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "#404858", marginTop: 5, lineHeight: 1.5 }}>
+                Min 6 characters. Takes effect immediately.
+              </div>
             </div>
           </div>
         </div>

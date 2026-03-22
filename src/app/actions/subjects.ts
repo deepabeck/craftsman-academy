@@ -2,7 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { Subject } from "@/lib/types";
+
+/** Today as YYYY-MM-DD in local time */
+function todayLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Monday of the current week as YYYY-MM-DD */
+function currentWeekMonday(): string {
+  const d = new Date();
+  const dow = d.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diff);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 /** Slugify a subject name into a stable ID for new subjects. */
 function slugify(name: string): string {
@@ -58,11 +74,43 @@ export async function deleteSubject(id: string): Promise<{ error?: string }> {
 
 export async function toggleSubjectActive(id: string, active: boolean): Promise<{ error?: string }> {
   const supabase = await createClient();
+  const service = createServiceClient();
+
+  // 1. Flip the active flag on the subject
   const { error } = await supabase
     .from("subjects")
     .update({ active, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) return { error: error.message };
+
+  const today = todayLocal();
+
+  if (!active) {
+    // 2. Deactivating — delete all pending/future tasks for this subject
+    //    (today and later, so already-completed past tasks are untouched)
+    const { error: delErr } = await service
+      .from("tasks")
+      .delete()
+      .eq("subject_id", id)
+      .eq("status", "pending")
+      .gte("task_date", today);
+    if (delErr) console.error("Failed to clean up tasks for deactivated subject:", delErr.message);
+  } else {
+    // 3. Reactivating — regenerate any missing tasks for the rest of this week
+    const monday = currentWeekMonday();
+    for (let i = 0; i <= 4; i++) {
+      const d = new Date(`${monday}T00:00:00`);
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (dateStr >= today) {
+        const { error: genErr } = await service.rpc("generate_daily_tasks", { p_date: dateStr });
+        if (genErr) console.error(`Failed to regenerate tasks for ${dateStr}:`, genErr.message);
+      }
+    }
+  }
+
   revalidatePath("/admin/subjects");
+  revalidatePath("/student/week");
+  revalidatePath("/student/today");
   return {};
 }

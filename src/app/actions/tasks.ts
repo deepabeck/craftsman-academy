@@ -116,18 +116,9 @@ export async function submitTaskProof(
     });
   }
 
-  // Fallback: at least record something
+  // Reject empty submissions — no content means nothing to review or score
   if (rows.length === 0) {
-    rows.push({
-      task_id: taskId,
-      student_id: user.id,
-      submission_type: "text",
-      content: data.text || "",
-      timer_seconds: null,
-      file_url: null,
-      file_name: null,
-      file_mime_type: null,
-    });
+    return { success: false, error: "Nothing to submit — please write a response or attach a file." };
   }
 
   const { error: subError } = await supabase.from("submissions").insert(rows);

@@ -89,6 +89,16 @@ export async function scoreTaskWithAI(
     (s) => s.file_url && !imageSubs.includes(s), // audio, video, pdf, other
   );
 
+  // Guard: if there's genuinely no content to evaluate, score 0 — don't call Claude
+  const hasContent = textSubs.length > 0 || imageSubs.length > 0 || timerSubs.length > 0 || otherFileSubs.length > 0;
+
+  if (!hasContent) {
+    const score = 0;
+    const feedback = "No submission content was found — please write your response before submitting.";
+    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    return { score, feedback };
+  }
+
   // Build context text
   let context = `Subject: ${subjectName}\n`;
   if (lessonDetail) context += `Assignment: ${lessonDetail}\n`;

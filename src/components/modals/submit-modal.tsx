@@ -39,6 +39,8 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const needsFile = proofTypes.some((pt) => pt === "photo" || pt === "file");
   const needsTimer = proofTypes.includes("timer");
   const isCheckbox = proofTypes.includes("checkbox") && !needsFile && !needsTimer;
+  // Text is the primary proof when it's the only (or dominant) submission type
+  const needsText = proofTypes.includes("text") && !needsFile && !needsTimer;
   const acceptAttr = proofTypes.includes("photo") ? "image/*" : "*/*";
 
   useEffect(() => {
@@ -291,14 +293,32 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           </div>
         )}
 
-        {/* Notes */}
-        <textarea
-          className="inp"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Notes or questions for your parent..."
-          style={{ marginTop: 10, minHeight: 55, fontSize: 13 }}
-        />
+        {/* Written response (required for text tasks) or optional notes */}
+        {needsText ? (
+          <div style={{ marginTop: 10 }}>
+            <div
+              style={{ fontSize: 12, color: "#9BA4F0", letterSpacing: "0.07em", marginBottom: 5 }}
+              className="cinzel"
+            >
+              YOUR RESPONSE <span style={{ color: "#F08080" }}>*</span>
+            </div>
+            <textarea
+              className="inp"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Write your response here…"
+              style={{ minHeight: 100, fontSize: 14, lineHeight: 1.7 }}
+            />
+          </div>
+        ) : (
+          <textarea
+            className="inp"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Notes or questions for your parent… (optional)"
+            style={{ marginTop: 10, minHeight: 55, fontSize: 13 }}
+          />
+        )}
 
         {uploadErr && <div style={{ color: "#F08080", fontSize: 13, marginTop: 6 }}>{uploadErr}</div>}
 
@@ -322,8 +342,14 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
               className="btn-brass"
               style={{ flex: 1, padding: "11px" }}
               onClick={handleSubmit}
-              disabled={uploading || (needsFile && entries.length === 0)}
-              title={needsFile && entries.length === 0 ? "Please attach a file before submitting" : undefined}
+              disabled={uploading || (needsFile && entries.length === 0) || (needsText && !text.trim())}
+              title={
+                needsFile && entries.length === 0
+                  ? "Please attach a file before submitting"
+                  : needsText && !text.trim()
+                    ? "Please write your response before submitting"
+                    : undefined
+              }
             >
               {uploading ? "Uploading…" : "Submit for Review"}
             </button>

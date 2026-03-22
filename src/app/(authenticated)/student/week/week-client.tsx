@@ -125,7 +125,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
       />
 
       {/* 5-column day grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, alignItems: "start" }}>
         {dayData.map((d, i) => {
           const isSelected = selectedDay === i;
           return (

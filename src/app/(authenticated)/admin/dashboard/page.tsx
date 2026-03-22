@@ -67,7 +67,7 @@ export default async function DashboardPage() {
   // ── Step 1: Fetch all student profiles ──────────────────────────────────────
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, display_name, color, avatar_url, grade, tagline, student_key")
+    .select("id, display_name, color, avatar_url, tagline, student_key")
     .eq("role", "student")
     .order("display_name");
 
@@ -76,6 +76,18 @@ export default async function DashboardPage() {
 
   if (studentIds.length === 0) {
     return <DashboardClient students={[]} />;
+  }
+
+  // ── Step 1b: Fetch current grade for all students from school_years ──────────
+  const gradeMap: Record<string, number | null> = {};
+  const { data: schoolYears } = await supabase
+    .from("school_years")
+    .select("student_id, grade")
+    .in("student_id", studentIds)
+    .lte("start_date", today)
+    .gte("end_date", today);
+  for (const sy of schoolYears ?? []) {
+    gradeMap[sy.student_id] = sy.grade;
   }
 
   // ── Step 2: Today's tasks for all students ───────────────────────────────────
@@ -108,7 +120,7 @@ export default async function DashboardPage() {
   }
 
   // ── Step 5: Resolve avatar URLs ──────────────────────────────────────────────
-  const resolveAvatar = async (url: string | null, key: string): Promise<string | null> => {
+  const resolveAvatar = async (url: string | null, _key: string): Promise<string | null> => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
     const { data } = await service.storage.from("avatars").createSignedUrl(url, 3600);
@@ -168,7 +180,7 @@ export default async function DashboardPage() {
         name: profile.display_name,
         color: profile.color ?? "#4A90D0",
         avatarUrl,
-        grade: profile.grade ?? "",
+        currentGrade: gradeMap[profile.id] ?? null,
         tagline: profile.tagline ?? "",
         studentKey: profile.student_key ?? "",
         todayPct,

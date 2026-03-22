@@ -21,7 +21,7 @@ export default async function JournalPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, color, grade, avatar_url, student_key")
+    .select("id, display_name, color, avatar_url, student_key")
     .eq("id", user.id)
     .single();
 
@@ -29,6 +29,16 @@ export default async function JournalPage() {
 
   const _d = new Date();
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+
+  // Fetch current grade from school_years
+  const { data: schoolYear } = await supabase
+    .from("school_years")
+    .select("grade")
+    .eq("student_id", user.id)
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .maybeSingle();
+  const currentGrade: number | null = schoolYear?.grade ?? null;
 
   // Fetch all writing-journal tasks for this student, newest first
   const { data: rawTasks } = await supabase
@@ -64,7 +74,7 @@ export default async function JournalPage() {
     id: profile.student_key ?? "",
     name: profile.display_name,
     color: profile.color ?? "#9BA4F0",
-    grade: profile.grade ?? "",
+    currentGrade,
     avatar: profile.avatar_url ?? "",
     tagline: "",
     subjects: [],

@@ -38,3 +38,20 @@ export function getTodayDow(): string {
 export function getTodayLabel(): string {
   return new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
+
+/**
+ * Convert a numeric grade (1–12) to an ordinal label like "4th Grade".
+ * Returns "—" if grade is null.
+ */
+export function gradeLabel(grade: number | null): string {
+  if (grade === null) return "—";
+  // 11, 12, 13 are exceptions to the last-digit rule
+  let suffix: string;
+  if (grade === 11 || grade === 12 || grade === 13) {
+    suffix = "th";
+  } else {
+    const last = grade % 10;
+    suffix = last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th";
+  }
+  return `${grade}${suffix} Grade`;
+}

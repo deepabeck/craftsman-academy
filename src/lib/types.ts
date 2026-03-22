@@ -3,7 +3,7 @@ export interface Student {
   name: string;
   color: string;
   avatar: string;
-  grade: string;
+  currentGrade: number | null;
   tagline: string;
   subjects: Subject[];
 }

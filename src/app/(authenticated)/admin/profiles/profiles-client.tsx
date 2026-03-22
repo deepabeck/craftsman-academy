@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { Icon, PageHeader } from "@/components/ui";
-import { rgba } from "@/lib/utils";
+import { gradeLabel, rgba } from "@/lib/utils";
 import type { ProfileData } from "./page";
 
 interface Props {
@@ -68,7 +68,6 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         id: profile.id,
         displayName: profile.displayName,
         tagline: profile.tagline,
-        grade: profile.grade,
         avatarUrl: profile.avatarUrl,
       });
       if (result.error) {
@@ -116,7 +115,6 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             id: profile.id,
             displayName: profile.displayName,
             tagline: profile.tagline,
-            grade: profile.grade,
             avatarUrl: url,
           });
         });
@@ -275,12 +273,22 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             </div>
             <div>
               <div style={labelStyle}>Grade</div>
-              <input
-                className="inp"
-                value={profile.grade}
-                onChange={(e) => upd("grade", e.target.value)}
-                placeholder="e.g. 5th Grade"
-              />
+              <div
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: "rgba(0,0,0,0.3)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  fontSize: 13,
+                  color: "#9AABBC",
+                }}
+              >
+                {gradeLabel(profile.currentGrade)}
+                {profile.yearLabel && <span style={{ color: "#506070", marginLeft: 8 }}>· {profile.yearLabel}</span>}
+              </div>
+              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
+                Auto-advances on the 2nd Monday of August
+              </div>
             </div>
           </div>
         </div>
@@ -363,7 +371,6 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Bottom row: Enrolled Subjects full width */}

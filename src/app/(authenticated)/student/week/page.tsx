@@ -28,7 +28,7 @@ export default async function WeekPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, color, grade, avatar_url, student_key")
+    .select("id, display_name, color, avatar_url, student_key")
     .eq("id", user.id)
     .single();
 
@@ -63,6 +63,16 @@ export default async function WeekPage() {
     .neq("status", "cancelled");
 
   if (error) console.error("Week tasks fetch error:", error.message);
+
+  // Fetch current grade from school_years
+  const { data: schoolYear } = await supabase
+    .from("school_years")
+    .select("grade")
+    .eq("student_id", user.id)
+    .lte("start_date", weekStart)
+    .gte("end_date", weekStart)
+    .maybeSingle();
+  const currentGrade: number | null = schoolYear?.grade ?? null;
 
   const tasks: (Task & { taskDate: string })[] = (rawTasks ?? [])
     .sort((a, b) => {
@@ -100,7 +110,7 @@ export default async function WeekPage() {
     id: profile.student_key ?? "deven",
     name: profile.display_name,
     color: profile.color ?? "#4A90D0",
-    grade: profile.grade ?? "",
+    currentGrade,
     avatar: profile.avatar_url ?? `/assets/avatar-${profile.student_key ?? "deven"}.png`,
     tagline: "",
     subjects: [],

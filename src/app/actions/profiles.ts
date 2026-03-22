@@ -8,9 +8,9 @@ export interface ProfileUpdateData {
   id: string;
   displayName: string;
   tagline: string;
-  grade: string;
   avatarUrl?: string | null;
   // Note: color is intentionally omitted — students manage their own accent color via Customize
+  // Note: grade is intentionally omitted — grade is derived from school_years table, not stored on profiles
 }
 
 export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: string }> {
@@ -21,7 +21,6 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: 
     .update({
       display_name: data.displayName,
       tagline: data.tagline,
-      grade: data.grade,
       ...(data.avatarUrl !== undefined ? { avatar_url: data.avatarUrl } : {}),
     })
     .eq("id", data.id);

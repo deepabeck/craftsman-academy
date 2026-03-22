@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { saveParentNote } from "@/app/actions/ai-notes";
 import { Divider, Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
-import { getTodayLabel, rgba } from "@/lib/utils";
+import { getTodayLabel, gradeLabel, rgba } from "@/lib/utils";
 
 export interface AiTag {
   l: string;
@@ -24,7 +24,7 @@ export interface StudentDashData {
   name: string;
   color: string;
   avatarUrl: string | null;
-  grade: string;
+  currentGrade: number | null;
   tagline: string;
   studentKey: string;
   todayPct: number;
@@ -220,7 +220,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: s.color }}>
                   {s.name}
                 </div>
-                <div style={{ fontSize: 13, color: "#506070" }}>{s.grade}</div>
+                <div style={{ fontSize: 13, color: "#506070" }}>{gradeLabel(s.currentGrade)}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.todayPct}%</div>

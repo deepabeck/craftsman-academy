@@ -37,7 +37,7 @@ export default async function TodayPage() {
   // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, color, grade, avatar_url, student_key")
+    .select("id, display_name, color, avatar_url, student_key")
     .eq("id", user.id)
     .single();
 
@@ -47,6 +47,16 @@ export default async function TodayPage() {
   // toISOString() is UTC and causes off-by-one errors in evening hours.
   const _d = new Date();
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+
+  // Fetch current grade from school_years
+  const { data: schoolYear } = await supabase
+    .from("school_years")
+    .select("grade")
+    .eq("student_id", user.id)
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .maybeSingle();
+  const currentGrade: number | null = schoolYear?.grade ?? null;
 
   // Mark yesterday's missed tasks, generate today's tasks, and fetch
   // weather + calendar data — all in parallel.
@@ -133,7 +143,7 @@ export default async function TodayPage() {
     id: profile.student_key ?? "deven",
     name: profile.display_name,
     color: profile.color ?? "#4A90D0",
-    grade: profile.grade ?? "",
+    currentGrade,
     avatar: profile.avatar_url ?? `/assets/avatar-${profile.student_key ?? "deven"}.png`,
     tagline: "",
     subjects: [],

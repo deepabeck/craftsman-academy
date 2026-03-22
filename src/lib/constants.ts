@@ -150,11 +150,11 @@ export const MOCK_WEATHER: MockWeather = {
 
 /** Mock calendar events. */
 export const MOCK_EVENTS: CalendarEvent[] = [
-  { date: "Mon Mar 17", label: "St. Patrick's Day", type: "holiday", icon: "\uD83C\uDF40" },
-  { date: "Tue Mar 18", label: "APEX Program \u2014 9am", type: "activity", icon: "\uD83C\uDF92" },
-  { date: "Thu Mar 20", label: "Science Museum Field Trip", type: "trip", icon: "\uD83D\uDD2C" },
-  { date: "Fri Mar 21", label: "Grandma's Birthday", type: "birthday", icon: "\uD83C\uDF82" },
-  { date: "Mon Mar 24", label: "Piano Recital Rehearsal", type: "activity", icon: "\uD83C\uDFB9" },
+  { date: "Mon Mar 17", label: "St. Patrick's Day", type: "holiday", icon: "\uD83C\uDF40", isoDate: "2025-03-17", durationHours: 0 },
+  { date: "Tue Mar 18", label: "APEX Program \u2014 9am", type: "activity", icon: "\uD83C\uDF92", isoDate: "2025-03-18", durationHours: 1 },
+  { date: "Thu Mar 20", label: "Science Museum Field Trip", type: "trip", icon: "\uD83D\uDD2C", isoDate: "2025-03-20", durationHours: 3 },
+  { date: "Fri Mar 21", label: "Grandma's Birthday", type: "birthday", icon: "\uD83C\uDF82", isoDate: "2025-03-21", durationHours: 0 },
+  { date: "Mon Mar 24", label: "Piano Recital Rehearsal", type: "activity", icon: "\uD83C\uDFB9", isoDate: "2025-03-24", durationHours: 1 },
 ];
 
 /** Initial AI notes per student. */

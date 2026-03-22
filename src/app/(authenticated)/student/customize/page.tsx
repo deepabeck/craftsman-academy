@@ -25,7 +25,7 @@ export default function CustomizePage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <PageHeader icon="customize" title="Customize" sub="Make it yours" color={student.color} />
       <div className="glass-warm" style={{ padding: 22 }}>
-        <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 16 }}>
+        <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 16 }}>
           YOUR SIGNATURE COLOR
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 4 }}>
@@ -36,7 +36,7 @@ export default function CustomizePage() {
             style={{ width: 70, height: "auto", borderRadius: 6, border: `2px solid ${rgba(student.color, 0.6)}` }}
           />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
               This color appears on your dashboard, progress bars, and cards.
             </div>
             <HexPicker value={student.color} onChange={setStudentColor} />
@@ -44,10 +44,10 @@ export default function CustomizePage() {
         </div>
       </div>
       <div className="glass-warm" style={{ padding: 22 }}>
-        <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 16 }}>
+        <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 16 }}>
           WORLD BACKGROUND COLOR
         </div>
-        <div style={{ fontSize: 12, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
           Tint the Academy&apos;s atmosphere. The steampunk details stay fixed — only the ambient color shifts.
         </div>
         <HexPicker value={bgColor} onChange={setBgColor} label="Hue Tint" />
@@ -57,7 +57,7 @@ export default function CustomizePage() {
             padding: 10,
             borderRadius: 7,
             background: "rgba(0,0,0,0.28)",
-            fontSize: 11,
+            fontSize: 13,
             color: "#404858",
             lineHeight: 1.6,
           }}

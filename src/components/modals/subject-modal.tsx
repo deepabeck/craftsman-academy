@@ -24,7 +24,7 @@ const PROOF_TYPES = [
 const CATEGORIES = ["Core Academic", "Elective", "Enrichment", "Physical", "Life Skills"] as const;
 
 const labelStyle = {
-  fontSize: 11,
+  fontSize: 13,
   color: "#506070",
   marginBottom: 5,
   letterSpacing: "0.08em",
@@ -123,7 +123,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
                 border: `1px solid ${form.active ? "rgba(112,224,144,0.4)" : "rgba(255,255,255,0.12)"}`,
                 background: form.active ? "rgba(112,224,144,0.12)" : "rgba(0,0,0,0.3)",
                 color: form.active ? "#70E090" : "#506070",
-                fontSize: 12,
+                fontSize: 13,
                 cursor: "pointer",
                 fontWeight: 600,
               }}
@@ -205,7 +205,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, only: o.v }))}
                     className={form.only === o.v ? "btn-brass" : "btn-ghost"}
-                    style={{ padding: "5px 10px", fontSize: 11 }}
+                    style={{ padding: "5px 10px", fontSize: 13 }}
                   >
                     {o.l}
                   </button>
@@ -225,7 +225,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
                 type="button"
                 onClick={() => toggleDay(d)}
                 className={form.days.includes(d) ? "btn-brass" : "btn-ghost"}
-                style={{ padding: "6px 12px", fontSize: 12, fontWeight: 700 }}
+                style={{ padding: "6px 12px", fontSize: 13, fontWeight: 700 }}
               >
                 {d}
               </button>
@@ -250,7 +250,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
                     border: `1px solid ${selected ? "rgba(232,168,32,0.6)" : "rgba(255,255,255,0.12)"}`,
                     background: selected ? "rgba(232,168,32,0.16)" : "rgba(0,0,0,0.3)",
                     color: selected ? "#E8A820" : "#7A8B9C",
-                    fontSize: 12,
+                    fontSize: 13,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -264,7 +264,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
             })}
           </div>
           {(form.proofTypes ?? []).length === 0 && (
-            <div style={{ fontSize: 11, color: "#F08080", marginTop: 5 }}>Select at least one proof type.</div>
+            <div style={{ fontSize: 13, color: "#F08080", marginTop: 5 }}>Select at least one proof type.</div>
           )}
         </div>
 
@@ -279,7 +279,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
               onChange={(e) => setForm((p) => ({ ...p, requiresReview: e.target.checked }))}
               style={{ accentColor: "#B0A0F0", width: 15, height: 15 }}
             />
-            <span style={{ fontSize: 12, color: "#B0A0F0" }}>Requires parent review</span>
+            <span style={{ fontSize: 13, color: "#B0A0F0" }}>Requires parent review</span>
           </label>
           <div>
             <div style={labelStyle}>External Platform (optional)</div>
@@ -300,7 +300,7 @@ export function SubjectModal({ subject, onSave, onClose }: SubjectModalProps) {
             value={form.detail}
             onChange={(e) => setForm((p) => ({ ...p, detail: e.target.value }))}
             placeholder="What should the student do? This text appears on their task card."
-            style={{ minHeight: 80, fontSize: 12, lineHeight: 1.6 }}
+            style={{ minHeight: 80, fontSize: 13, lineHeight: 1.6 }}
           />
         </div>
 

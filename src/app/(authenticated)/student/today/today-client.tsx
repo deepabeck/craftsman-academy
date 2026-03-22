@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { markTaskDone, submitTaskProof } from "@/app/actions/tasks";
 import { type StoragePath, SubmitModal } from "@/components/modals/submit-modal";
 import { Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
@@ -24,13 +24,37 @@ interface TodayClientProps {
   weekSummary: WeekSummary | null;
 }
 
+/** Hour (24h local time) at which tech time unlocks — change to taste */
+const TECH_TIME_HOUR = 17; // 5:00 PM
+
+function formatUnlockTime(hour: number): string {
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 ? "AM" : "PM";
+  return `${h}:00 ${ampm}`;
+}
+
 export function TodayClient({ initialTasks, student, weather, calendarEvents, weekSummary }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
+  const [isEvening, setIsEvening] = useState(() => new Date().getHours() >= TECH_TIME_HOUR);
 
-  const done = tasks.filter((t) => t.status === "done" || t.status === "review" || t.status === "approved").length;
-  const allDone = done === tasks.length && tasks.length > 0;
+  // Re-check the clock every minute so the banner flips automatically at unlock time
+  useEffect(() => {
+    const tick = () => setIsEvening(new Date().getHours() >= TECH_TIME_HOUR);
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Cancelled tasks don't count as active missions — treat as excused
+  const activeTasks = tasks.filter((t) => t.status !== "cancelled");
+  const done = activeTasks.filter(
+    (t) => t.status === "done" || t.status === "review" || t.status === "approved",
+  ).length;
+  const allDone = done === activeTasks.length && activeTasks.length > 0;
+  const isRestDay = activeTasks.length === 0;
+  // Tech time is earned when all tasks are done OR it's a rest day
+  const techTimeEarned = allDone || isRestDay;
 
   // Checkbox-style task: toggle pending ↔ done, persist to DB
   const check = (tid: string) => {
@@ -106,9 +130,10 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
         <ProgBar value={tasks.length ? (done / tasks.length) * 100 : 0} color={student.color} style={{ height: 10 }} />
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        {/* LEFT — mission cards */}
-        <div style={{ width: 250, flexShrink: 0, marginLeft: 40 }}>
+      {/* Top row: missions (left) + tech time (right) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, alignItems: "start" }}>
+        {/* LEFT — mission cards or rest day */}
+        <div style={{ paddingLeft: tasks.length > 0 ? 36 : 0 }}>
           {tasks.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {/* Rest day panel */}
@@ -118,14 +143,13 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
                   padding: "22px 18px",
                   textAlign: "center",
                   borderColor: rgba(student.color, 0.3),
-                  background: rgba(student.color, 0.06),
                 }}
               >
                 <Icon name="completed" size={52} style={{ margin: "0 auto 10px" }} />
                 <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: student.color }}>
                   Rest Day
                 </div>
-                <div style={{ fontSize: 11, color: "#506070", marginTop: 5 }}>
+                <div style={{ fontSize: 13, color: "#506070", marginTop: 5 }}>
                   No missions scheduled &mdash; recharge your engines.
                 </div>
               </div>
@@ -133,7 +157,6 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
               {/* Preceding week summary */}
               {weekSummary &&
                 (weekSummary.completed === weekSummary.total ? (
-                  /* All done — congratulations */
                   <div
                     className="glass-warm"
                     style={{
@@ -143,41 +166,37 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
                     }}
                   >
                     <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
-                    <div className="cinzel brass" style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+                    <div className="cinzel brass" style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
                       Perfect Week!
                     </div>
-                    <div style={{ fontSize: 11, color: "#9AABBC", lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 13, color: "#9AABBC", lineHeight: 1.6 }}>
                       Every mission completed the week of {weekSummary.weekLabel}. Outstanding work, cadet!
                     </div>
                   </div>
                 ) : (
-                  /* Some incomplete — nudge */
                   <div
                     className="glass"
                     style={{
                       padding: "18px 16px",
                       borderColor: "rgba(212,168,48,0.35)",
-                      background: "rgba(212,168,48,0.06)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                       <span style={{ fontSize: 22 }}>📋</span>
-                      <div className="cinzel" style={{ fontSize: 12, color: "#D4A830", fontWeight: 700 }}>
+                      <div className="cinzel" style={{ fontSize: 13, color: "#D4A830", fontWeight: 700 }}>
                         Last Week
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: "#9AABBC", lineHeight: 1.65 }}>
-                      {weekSummary.completed}/{weekSummary.total} missions finished the week of{" "}
-                      {weekSummary.weekLabel}.
+                    <div style={{ fontSize: 13, color: "#9AABBC", lineHeight: 1.65 }}>
+                      {weekSummary.completed}/{weekSummary.total} missions finished the week of {weekSummary.weekLabel}.
                     </div>
-                    <div style={{ fontSize: 11, color: "#D4A830", marginTop: 8, fontStyle: "italic" }}>
-                      {weekSummary.total - weekSummary.completed} still incomplete &mdash; use today&apos;s
-                      downtime to catch up!
+                    <div style={{ fontSize: 13, color: "#D4A830", marginTop: 8, fontStyle: "italic" }}>
+                      {weekSummary.total - weekSummary.completed} still incomplete &mdash; use today&apos;s downtime to
+                      catch up!
                     </div>
                   </div>
                 ))}
 
-              {/* No data for preceding week */}
               {!weekSummary && (
                 <div
                   className="glass"
@@ -187,7 +206,7 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
                     borderColor: "rgba(255,255,255,0.06)",
                   }}
                 >
-                  <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>
+                  <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic" }}>
                     No task history for the previous week yet.
                   </div>
                 </div>
@@ -196,17 +215,23 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {tasks.map((task) => {
+                const isCancelled = task.status === "cancelled";
                 const isDone = task.status === "done" || task.status === "review" || task.status === "approved";
                 return (
                   <div
                     key={task.id}
                     className="task-card"
                     style={{
-                      background: isDone ? "rgba(5,10,18,0.55)" : "rgba(4,10,22,0.88)",
-                      borderColor: rgba(task.subjectColor, isDone ? 0.18 : 0.45),
-                      boxShadow: isDone ? "none" : `0 4px 22px ${rgba(task.subjectColor, 0.18)}`,
-                      opacity: isDone ? 0.65 : 1,
-                      cursor: isDone ? "default" : "pointer",
+                      background: isCancelled
+                        ? "rgba(4,8,16,0.4)"
+                        : isDone
+                          ? "rgba(5,10,18,0.55)"
+                          : "rgba(4,10,22,0.88)",
+                      borderColor: isCancelled ? "rgba(60,70,90,0.3)" : rgba(task.subjectColor, isDone ? 0.18 : 0.45),
+                      boxShadow: isCancelled || isDone ? "none" : `0 4px 22px ${rgba(task.subjectColor, 0.18)}`,
+                      opacity: isCancelled ? 0.5 : isDone ? 0.65 : 1,
+                      cursor: isCancelled || isDone ? "default" : "pointer",
+                      pointerEvents: isCancelled ? "none" : undefined,
                     }}
                     onClick={() => {
                       if (!isDone) setModal(task);
@@ -229,54 +254,149 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
                       <Icon name={task.subjectIcon} size={80} />
                     </div>
                     <div className="task-card-body">
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#F0E8D8", lineHeight: 1.2 }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 15,
+                          color: isCancelled ? "#506070" : "#F0E8D8",
+                          lineHeight: 1.2,
+                        }}
+                      >
                         {task.subjectName}
                       </div>
-                      <StatusBadge status={task.status} />
-                      {!isDone && (
-                        <div style={{ fontSize: 11, color: "#4ABCCC", marginTop: 2, letterSpacing: "0.02em" }}>
-                          See assignment &rarr;
+                      {isCancelled ? (
+                        <div style={{ fontSize: 12, color: "#4A5A70", marginTop: 3 }}>
+                          Excused · {task.cancelledReason ?? "Cancelled"}
                         </div>
+                      ) : (
+                        <>
+                          <StatusBadge status={task.status} />
+                          {!isDone && (
+                            <div style={{ fontSize: 13, color: "#4ABCCC", marginTop: 2, letterSpacing: "0.02em" }}>
+                              See assignment &rarr;
+                            </div>
+                          )}
+                          {isDone && <div style={{ fontSize: 13, color: "#70C090", marginTop: 2 }}>✓ Complete</div>}
+                        </>
                       )}
-                      {isDone && <div style={{ fontSize: 11, color: "#70C090", marginTop: 2 }}>✓ Complete</div>}
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+        </div>
 
-          {/* Tech time banner — unlocks when all missions done */}
-          {allDone && (
-            <div
-              className="glass tech-glow"
-              style={{ padding: 20, textAlign: "center", borderColor: "rgba(184,134,11,0.5)", marginTop: 14 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/icon-techtime-unlocked.png"
-                alt="Tech Time"
-                className="coin-spin"
-                style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 10 }}
-              />
-              <div className="cinzel brass" style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>
-                TECH TIME UNLOCKED!
+        {/* RIGHT — tech time */}
+        <div>
+          {/* Locked — tasks still in progress */}
+          {!techTimeEarned && tasks.length > 0 && (
+            <div className="glass" style={{ padding: "20px 22px", borderColor: "rgba(60,75,95,0.3)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/icon-techtime-unlocked.png"
+                  alt="Tech Time"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    objectFit: "contain",
+                    flexShrink: 0,
+                    filter: "grayscale(85%) brightness(0.35)",
+                    opacity: 0.5,
+                  }}
+                />
+                <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: "#2A3848" }}>
+                  TECH TIME
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: "#9AABBC", marginBottom: 12 }}>
-                All missions complete. Show this code to unlock your device.
+              <div style={{ fontSize: 13, color: "#2A3848", lineHeight: 1.7 }}>
+                Complete today&apos;s missions to earn your tech time this evening.
+              </div>
+            </div>
+          )}
+
+          {/* Earned — waiting for evening */}
+          {techTimeEarned && !isEvening && (
+            <div className="glass" style={{ padding: "20px 22px", borderColor: "rgba(184,134,11,0.35)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/icon-techtime-unlocked.png"
+                  alt="Tech Time"
+                  style={{
+                    width: 48,
+                    height: 48,
+                    objectFit: "contain",
+                    flexShrink: 0,
+                    filter: "grayscale(55%) brightness(0.72)",
+                    opacity: 0.8,
+                  }}
+                />
+                <div>
+                  <div className="cinzel" style={{ fontSize: 16, fontWeight: 700, color: "#D4A830" }}>
+                    TECH TIME EARNED
+                  </div>
+                  <div style={{ fontSize: 13, color: "#506070", marginTop: 2 }}>
+                    {isRestDay ? "Rest day" : "All missions done"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#9AABBC", lineHeight: 1.7, marginBottom: 16 }}>
+                {isRestDay ? "No missions today — enjoy your day." : "Outstanding work, cadet!"} Your tech time unlocks
+                at <span style={{ color: "#E8A820", fontWeight: 600 }}>{formatUnlockTime(TECH_TIME_HOUR)}</span>.
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "7px 18px",
+                  borderRadius: 20,
+                  background: "rgba(0,0,0,0.4)",
+                  border: "1px solid rgba(184,134,11,0.28)",
+                  fontSize: 13,
+                  color: "#506070",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                🔒 Locked until {formatUnlockTime(TECH_TIME_HOUR)}
+              </div>
+            </div>
+          )}
+
+          {/* Fully unlocked */}
+          {techTimeEarned && isEvening && (
+            <div className="glass tech-glow" style={{ padding: "20px 22px", borderColor: "rgba(184,134,11,0.5)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/icon-techtime-unlocked.png"
+                  alt="Tech Time"
+                  className="coin-spin"
+                  style={{ width: 52, height: 52, objectFit: "contain", flexShrink: 0 }}
+                />
+                <div>
+                  <div className="cinzel brass" style={{ fontSize: 18, fontWeight: 700 }}>
+                    TECH TIME UNLOCKED!
+                  </div>
+                  <div style={{ fontSize: 13, color: "#9AABBC", marginTop: 3 }}>
+                    Show this code to unlock your device.
+                  </div>
+                </div>
               </div>
               <div
                 style={{
                   fontFamily: "monospace",
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: 700,
                   color: "#F5D680",
-                  letterSpacing: "0.25em",
-                  padding: "10px 24px",
-                  display: "inline-block",
+                  letterSpacing: "0.22em",
+                  padding: "14px 20px",
                   background: "rgba(0,0,0,0.5)",
                   borderRadius: 8,
                   border: "1px solid rgba(184,134,11,0.5)",
+                  textAlign: "center",
                 }}
               >
                 {student.id === "deven" ? "CRAFT-7734" : "CRAFT-5521"}
@@ -284,12 +404,12 @@ export function TodayClient({ initialTasks, student, weather, calendarEvents, we
             </div>
           )}
         </div>
+      </div>
 
-        {/* RIGHT — weather + calendar */}
-        <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          <WeatherWidget color={student.color} weather={weather} />
-          <CalendarWidget color={student.color} events={calendarEvents} />
-        </div>
+      {/* Bottom row: weather (wide) + upcoming events */}
+      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 14 }}>
+        <WeatherWidget color={student.color} weather={weather} wide />
+        <CalendarWidget color={student.color} events={calendarEvents} />
       </div>
 
       {modal && (

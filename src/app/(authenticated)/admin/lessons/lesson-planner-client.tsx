@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
+import { cancelTask, fulfillTask, restoreTask } from "@/app/actions/calendar-adjustments";
 import {
   copyWeekPlans,
   deleteLessonPlan,
@@ -8,7 +9,10 @@ import {
   type LessonPlanRow,
   upsertLessonPlan,
 } from "@/app/actions/lesson-plans";
+import { generateWritingJournalPrompt } from "@/app/actions/writing-journal";
 import { Icon, PageHeader } from "@/components/ui";
+import { type CalendarAdjustment, proposeAdjustments, type TaskSummary } from "@/lib/calendar-task-matcher";
+import type { CalendarEvent } from "@/lib/types";
 import { rgba } from "@/lib/utils";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -60,10 +64,28 @@ interface EditState {
   scoringApproach: string;
 }
 
+interface StudentTaskRow {
+  id: string;
+  status: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCategory?: string;
+  cancelledReason: string | null;
+}
+
+interface StudentTaskGroup {
+  studentKey: string;
+  studentId: string;
+  tasks: StudentTaskRow[];
+}
+
 interface Props {
   subjects: SubjectInfo[];
   initialWeekStart: string;
   initialPlans: LessonPlanRow[];
+  weekCalendarEvents: CalendarEvent[];
+  todayDate: string; // YYYY-MM-DD
+  initialStudentTasks: StudentTaskGroup[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -75,20 +97,20 @@ function addWeeks(weekStart: string, delta: number): string {
 }
 
 function formatWeekLabel(weekStart: string): string {
-  const d = new Date(`${weekStart}T12:00:00`);
-  const end = new Date(d);
-  end.setDate(end.getDate() + 4);
+  // weekStart is Sunday; school days are Mon (Sun+1) – Fri (Sun+5)
+  const mon = new Date(`${weekStart}T12:00:00`);
+  mon.setDate(mon.getDate() + 1);
+  const fri = new Date(`${weekStart}T12:00:00`);
+  fri.setDate(fri.getDate() + 5);
   const fmt = (date: Date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${fmt(d)} – ${fmt(end)}`;
+  return `${fmt(mon)} – ${fmt(fri)}`;
 }
 
 function isThisWeek(weekStart: string): boolean {
   const today = new Date();
-  const day = today.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const currentMonday = new Date(today);
-  currentMonday.setDate(today.getDate() + diff);
-  return weekStart === currentMonday.toISOString().split("T")[0];
+  const currentSunday = new Date(today);
+  currentSunday.setDate(today.getDate() - today.getDay()); // back to Sunday
+  return weekStart === currentSunday.toISOString().split("T")[0];
 }
 
 function inferScoringApproach(proofTypes: string[]): string {
@@ -104,13 +126,117 @@ function inferScoringApproach(proofTypes: string[]): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }: Props) {
+export function LessonPlannerClient({
+  subjects,
+  initialWeekStart,
+  initialPlans,
+  weekCalendarEvents,
+  todayDate,
+  initialStudentTasks,
+}: Props) {
   const [weekStart, setWeekStart] = useState(initialWeekStart);
   const [plans, setPlans] = useState<LessonPlanRow[]>(initialPlans);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [isSaving, startSaving] = useTransition();
   const [isLoading, startLoading] = useTransition();
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
+
+  // ── Calendar adjustments state ────────────────────────────────────────────
+  const [studentTasks, setStudentTasks] = useState<StudentTaskGroup[]>(initialStudentTasks);
+  const [appliedAdjustments, setAppliedAdjustments] = useState<Set<string>>(new Set());
+  const [isApplying, setIsApplying] = useState(false);
+
+  // Build proposals for today's events only (tasks already exist)
+  const todayEvents = weekCalendarEvents.filter((e) => e.isoDate === todayDate);
+
+  const proposalsByStudent = studentTasks.map((group) => {
+    const taskSummaries: TaskSummary[] = group.tasks.map((t) => ({
+      id: t.id,
+      subjectId: t.subjectId,
+      subjectName: t.subjectName,
+      subjectCategory: t.subjectCategory,
+      status: t.status,
+    }));
+    return {
+      studentKey: group.studentKey,
+      proposals: proposeAdjustments(todayEvents, taskSummaries, group.studentKey),
+    };
+  });
+
+  const allProposals = proposalsByStudent.flatMap((g) => g.proposals.map((p) => ({ ...p, studentKey: g.studentKey })));
+
+  // Toggleable selection — start with all non-protected proposals checked
+  const [selectedAdjustments, setSelectedAdjustments] = useState<Set<string>>(
+    () => new Set(allProposals.filter((p) => !p.isProtected).map((p) => p.taskId)),
+  );
+
+  const toggleAdjustment = (taskId: string) => {
+    setSelectedAdjustments((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
+  const applyAdjustments = async () => {
+    setIsApplying(true);
+    const toApply = allProposals.filter((p) => selectedAdjustments.has(p.taskId) && !appliedAdjustments.has(p.taskId));
+    for (const adj of toApply) {
+      if (adj.action === "cancel") {
+        await cancelTask(adj.taskId, adj.reason);
+      } else if (adj.action === "fulfill" && adj.fulfilledByEvent) {
+        await fulfillTask(adj.taskId, adj.fulfilledByEvent);
+      }
+      setAppliedAdjustments((prev) => new Set([...prev, adj.taskId]));
+    }
+    // Refresh task statuses
+    setStudentTasks((prev) =>
+      prev.map((group) => ({
+        ...group,
+        tasks: group.tasks.map((t) => {
+          const adj = toApply.find((a) => a.taskId === t.id);
+          if (!adj) return t;
+          return {
+            ...t,
+            status: adj.action === "cancel" ? "cancelled" : "approved",
+            cancelledReason: adj.action === "cancel" ? adj.reason : null,
+          };
+        }),
+      })),
+    );
+    setIsApplying(false);
+  };
+
+  const undoAdjustment = async (taskId: string) => {
+    await restoreTask(taskId);
+    setAppliedAdjustments((prev) => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
+    setStudentTasks((prev) =>
+      prev.map((group) => ({
+        ...group,
+        tasks: group.tasks.map((t) => (t.id === taskId ? { ...t, status: "pending", cancelledReason: null } : t)),
+      })),
+    );
+  };
+
+  // ── Generate AI writing prompt ────────────────────────────────────────────
+  const generatePrompt = async () => {
+    setIsGenerating(true);
+    setPromptError(null);
+    const result = await generateWritingJournalPrompt();
+    setIsGenerating(false);
+    if (result.prompt) {
+      setEditing((prev) => (prev ? { ...prev, assignmentDetail: result.prompt! } : prev));
+    } else {
+      setPromptError(result.error ?? "Failed to generate prompt");
+    }
+  };
 
   // ── Week navigation ──────────────────────────────────────────────────────
   const goToWeek = useCallback((newWeek: string) => {
@@ -141,6 +267,15 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
       scoringApproach:
         existing?.scoringApproach ?? inferScoringApproach(existing?.proofTypes ?? subject.defaultProofTypes),
     });
+    // Auto-generate a fresh AI prompt whenever a Writing Journal cell is opened
+    // without a real custom prompt (no plan, empty, or still the placeholder default).
+    const hasCustomPrompt =
+      existing?.assignmentDetail &&
+      existing.assignmentDetail.trim() !== "" &&
+      existing.assignmentDetail !== "Write your journal entry for today.";
+    if (subject.id === "writing-journal" && !hasCustomPrompt) {
+      generatePrompt();
+    }
   };
 
   // ── Save plan ────────────────────────────────────────────────────────────
@@ -223,7 +358,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
         <button
           type="button"
           className="btn-ghost"
-          style={{ fontSize: 12, padding: "7px 14px" }}
+          style={{ fontSize: 13, padding: "7px 14px" }}
           onClick={copyForward}
           disabled={isSaving || plans.length === 0}
           title="Copy this week's plans to next week"
@@ -235,7 +370,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
       {copyMsg && (
         <div
           style={{
-            fontSize: 12,
+            fontSize: 13,
             color: "#70E090",
             padding: "8px 14px",
             background: "rgba(80,200,100,0.08)",
@@ -252,7 +387,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
         <button
           type="button"
           className="btn-ghost"
-          style={{ padding: "6px 14px", fontSize: 13 }}
+          style={{ padding: "6px 14px", fontSize: 14 }}
           onClick={() => goToWeek(addWeeks(weekStart, -1))}
         >
           ← Prev
@@ -266,7 +401,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
         <button
           type="button"
           className="btn-ghost"
-          style={{ padding: "6px 14px", fontSize: 13 }}
+          style={{ padding: "6px 14px", fontSize: 14 }}
           onClick={() => goToWeek(addWeeks(weekStart, 1))}
         >
           Next →
@@ -275,7 +410,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
           <button
             type="button"
             className="btn-brass"
-            style={{ padding: "6px 14px", fontSize: 12 }}
+            style={{ padding: "6px 14px", fontSize: 13 }}
             onClick={() => goToWeek(initialWeekStart)}
           >
             Today
@@ -283,7 +418,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
         )}
       </div>
 
-      {isLoading && <div style={{ textAlign: "center", fontSize: 12, color: "#506070", padding: 8 }}>Loading…</div>}
+      {isLoading && <div style={{ textAlign: "center", fontSize: 13, color: "#506070", padding: 8 }}>Loading…</div>}
 
       {/* Grid */}
       <div className="glass" style={{ padding: 16, overflowX: "auto" }}>
@@ -298,23 +433,52 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
           }}
         >
           <div />
-          {DAYS_FULL.map((d) => (
-            <div
-              key={d}
-              className="cinzel"
-              style={{
-                fontSize: 11,
-                textAlign: "center",
-                letterSpacing: "0.07em",
-                color: "#E8A820",
-                padding: "6px 0",
-                background: "rgba(184,134,11,0.08)",
-                borderRadius: 5,
-              }}
-            >
-              {d}
-            </div>
-          ))}
+          {DAYS.map((dayCode, idx) => {
+            const isoDate = (() => {
+              const d = new Date(`${weekStart}T12:00:00`);
+              d.setDate(d.getDate() + idx + 1); // weekStart=Sunday; Mon=+1 … Fri=+5
+              return d.toISOString().split("T")[0];
+            })();
+            const dayEvents = weekCalendarEvents.filter((e) => e.isoDate === isoDate);
+            const isToday = isoDate === todayDate;
+            return (
+              <div
+                key={dayCode}
+                style={{
+                  fontSize: 13,
+                  textAlign: "center",
+                  padding: "6px 4px 4px",
+                  background: isToday ? "rgba(184,134,11,0.14)" : "rgba(184,134,11,0.08)",
+                  borderRadius: 5,
+                  border: isToday ? "1px solid rgba(232,168,32,0.3)" : "none",
+                }}
+              >
+                <span className="cinzel" style={{ letterSpacing: "0.07em", color: "#E8A820" }}>
+                  {DAYS_FULL[idx]}
+                </span>
+                {dayEvents.map((ev) => (
+                  <div
+                    key={ev.label}
+                    title={`${ev.label} (${ev.durationHours < 2 ? `${ev.durationHours}h` : `${ev.durationHours}h — long event`})`}
+                    style={{
+                      fontSize: 10,
+                      marginTop: 3,
+                      padding: "2px 5px",
+                      borderRadius: 3,
+                      background: ev.durationHours >= 2 ? "rgba(200,80,80,0.18)" : "rgba(74,144,208,0.18)",
+                      color: ev.durationHours >= 2 ? "#F08080" : "#7AB4E0",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {ev.icon} {ev.label}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
 
         {/* Subject rows */}
@@ -333,11 +497,11 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
             <div style={{ display: "flex", alignItems: "center", gap: 8, paddingRight: 8 }}>
               <Icon name={subject.icon} size={24} />
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: subject.color, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: subject.color, lineHeight: 1.2 }}>
                   {subject.name}
                 </div>
                 {subject.onlyStudentKey && (
-                  <div style={{ fontSize: 10, color: "#506070" }}>{subject.onlyStudentKey} only</div>
+                  <div style={{ fontSize: 13, color: "#506070" }}>{subject.onlyStudentKey} only</div>
                 )}
               </div>
             </div>
@@ -396,7 +560,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
                     <>
                       <div
                         style={{
-                          fontSize: 10,
+                          fontSize: 13,
                           color: "#C0B080",
                           lineHeight: 1.3,
                           overflow: "hidden",
@@ -412,7 +576,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
                           <span
                             key={pt}
                             style={{
-                              fontSize: 9,
+                              fontSize: 13,
                               padding: "1px 4px",
                               borderRadius: 3,
                               background: rgba(subject.color, 0.2),
@@ -435,7 +599,7 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
                       </div>
                     </>
                   ) : (
-                    <div style={{ fontSize: 10, color: "#3A4858", textAlign: "center" }}>+ Add plan</div>
+                    <div style={{ fontSize: 13, color: "#3A4858", textAlign: "center" }}>+ Add plan</div>
                   )}
                 </button>
               );
@@ -443,6 +607,154 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
           </div>
         ))}
       </div>
+
+      {/* Calendar Adjustments panel — only shown when today has events */}
+      {todayEvents.length > 0 && allProposals.length > 0 && (
+        <div
+          className="glass"
+          style={{
+            padding: 16,
+            border: "1px solid rgba(74,144,208,0.3)",
+            background: "rgba(8,20,40,0.6)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+              flexWrap: "wrap",
+              gap: 8,
+            }}
+          >
+            <div>
+              <div className="cinzel" style={{ fontSize: 13, color: "#7AB4E0", letterSpacing: "0.06em" }}>
+                📅 CALENDAR ADJUSTMENTS — TODAY
+              </div>
+              <div style={{ fontSize: 12, color: "#506070", marginTop: 2 }}>
+                {todayEvents.map((e) => `${e.icon} ${e.label} (${e.durationHours}h)`).join(" · ")}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ fontSize: 13, padding: "7px 16px" }}
+              onClick={applyAdjustments}
+              disabled={isApplying || selectedAdjustments.size === 0}
+            >
+              {isApplying ? "Applying…" : "Apply Selected"}
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {proposalsByStudent.map(({ studentKey, proposals }) =>
+              proposals.length === 0 ? null : (
+                <div key={studentKey}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#506070",
+                      marginBottom: 5,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {studentKey}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {proposals.map((adj) => {
+                      const applied = appliedAdjustments.has(adj.taskId);
+                      const selected = selectedAdjustments.has(adj.taskId);
+                      const actionColor = adj.action === "cancel" ? "#F08080" : "#70E090";
+                      const actionLabel = adj.action === "cancel" ? "Cancel" : "Fulfill";
+                      return (
+                        <div
+                          key={adj.taskId}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "8px 10px",
+                            borderRadius: 7,
+                            background: applied
+                              ? "rgba(80,80,80,0.15)"
+                              : selected
+                                ? `rgba(${adj.action === "cancel" ? "200,80,80" : "80,200,100"},0.08)`
+                                : "rgba(255,255,255,0.03)",
+                            border: `1px solid ${applied ? "rgba(255,255,255,0.06)" : selected ? `rgba(${adj.action === "cancel" ? "200,80,80" : "80,200,100"},0.25)` : "rgba(255,255,255,0.08)"}`,
+                            opacity: applied ? 0.7 : 1,
+                          }}
+                        >
+                          {/* Toggle checkbox */}
+                          {!applied && (
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleAdjustment(adj.taskId)}
+                              style={{ width: 14, height: 14, cursor: "pointer", flexShrink: 0 }}
+                            />
+                          )}
+                          {/* Action badge */}
+                          <span
+                            style={{
+                              fontSize: 11,
+                              padding: "2px 6px",
+                              borderRadius: 3,
+                              background: `rgba(${adj.action === "cancel" ? "200,80,80" : "80,200,100"},0.15)`,
+                              color: actionColor,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {actionLabel}
+                          </span>
+                          {/* Subject name */}
+                          <span style={{ fontSize: 13, color: "#C0B080", flex: 1 }}>{adj.subjectName}</span>
+                          {/* Reason */}
+                          <span style={{ fontSize: 12, color: "#506070" }}>{adj.reason}</span>
+                          {/* Protected flag */}
+                          {adj.isProtected && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                color: "#D4A830",
+                                padding: "2px 5px",
+                                border: "1px solid rgba(212,168,48,0.3)",
+                                borderRadius: 3,
+                              }}
+                            >
+                              protected
+                            </span>
+                          )}
+                          {/* Applied + undo */}
+                          {applied && (
+                            <button
+                              type="button"
+                              onClick={() => undoAdjustment(adj.taskId)}
+                              style={{
+                                fontSize: 11,
+                                color: "#506070",
+                                background: "none",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: 4,
+                                padding: "2px 7px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Undo
+                            </button>
+                          )}
+                          {applied && <span style={{ fontSize: 11, color: "#70E090" }}>✓ Applied</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit panel — lightbox overlay */}
       {editing && editingSubject && (
@@ -479,176 +791,204 @@ export function LessonPlannerClient({ subjects, initialWeekStart, initialPlans }
               flexDirection: "column",
               gap: 14,
             }}
-        >
-          {/* Panel header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Icon name={editingSubject.icon} size={32} />
-            <div style={{ flex: 1 }}>
-              <div className="cinzel" style={{ fontSize: 14, color: editingSubject.color }}>
-                {editingSubject.name}
+          >
+            {/* Panel header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Icon name={editingSubject.icon} size={32} />
+              <div style={{ flex: 1 }}>
+                <div className="cinzel" style={{ fontSize: 14, color: editingSubject.color }}>
+                  {editingSubject.name}
+                </div>
+                <div style={{ fontSize: 13, color: "#506070" }}>
+                  {DAYS_FULL[editing.dayOfWeek]} · week of {formatWeekLabel(weekStart)}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: "#506070" }}>
-                {DAYS_FULL[editing.dayOfWeek]} · week of {formatWeekLabel(weekStart)}
-              </div>
+              <button
+                type="button"
+                style={{ background: "none", border: "none", color: "#506070", cursor: "pointer", fontSize: 18 }}
+                onClick={() => setEditing(null)}
+              >
+                ×
+              </button>
             </div>
-            <button
-              type="button"
-              style={{ background: "none", border: "none", color: "#506070", cursor: "pointer", fontSize: 18 }}
-              onClick={() => setEditing(null)}
-            >
-              ×
-            </button>
-          </div>
 
-          {/* Assignment detail */}
-          <div>
-            <label htmlFor="edit-detail" style={{ fontSize: 11, color: "#8A9AAA", display: "block", marginBottom: 5 }}>
-              ASSIGNMENT INSTRUCTIONS
-            </label>
-            <textarea
-              id="edit-detail"
-              className="inp"
-              value={editing.assignmentDetail}
-              onChange={(e) => setEditing({ ...editing, assignmentDetail: e.target.value })}
-              placeholder="What should the student do? (e.g. Complete pages 42–44 in the workbook)"
-              style={{ minHeight: 72, fontSize: 13, lineHeight: 1.6 }}
-            />
-          </div>
-
-          {/* Proof types */}
-          <div>
-            <p style={{ fontSize: 11, color: "#8A9AAA", margin: "0 0 8px" }}>HOW DOES THE STUDENT PROVE COMPLETION?</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {PROOF_OPTIONS.map((opt) => {
-                const active = editing.proofTypes.includes(opt.value);
-                return (
+            {/* Assignment detail */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                <label htmlFor="edit-detail" style={{ fontSize: 13, color: "#8A9AAA" }}>
+                  {editing.subjectId === "writing-journal" ? "AI WRITING PROMPT" : "ASSIGNMENT INSTRUCTIONS"}
+                </label>
+                {editing.subjectId === "writing-journal" && (
                   <button
-                    key={opt.value}
                     type="button"
-                    onClick={() => toggleProofType(opt.value)}
-                    title={opt.tip}
+                    onClick={generatePrompt}
+                    disabled={isGenerating}
                     style={{
-                      padding: "7px 13px",
-                      borderRadius: 7,
-                      border: active
-                        ? `1.5px solid ${rgba(editingSubject.color, 0.7)}`
-                        : "1px solid rgba(255,255,255,0.12)",
-                      background: active ? rgba(editingSubject.color, 0.18) : "rgba(0,0,0,0.2)",
-                      color: active ? editingSubject.color : "#506070",
                       fontSize: 12,
-                      cursor: "pointer",
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      border: "1px solid rgba(155,164,240,0.5)",
+                      background: isGenerating ? "rgba(155,164,240,0.06)" : "rgba(155,164,240,0.14)",
+                      color: isGenerating ? "#506070" : "#9BA4F0",
+                      cursor: isGenerating ? "default" : "pointer",
                       transition: "all 0.15s",
                     }}
                   >
-                    {opt.label}
+                    {isGenerating ? "✦ Generating…" : "✦ Generate Prompt"}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Duration — only shown if timer selected */}
-          {editing.proofTypes.includes("timer") && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <label htmlFor="edit-duration" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>
-                TIMER GOAL (MINUTES)
-              </label>
-              <input
-                id="edit-duration"
+                )}
+              </div>
+              {promptError && <div style={{ fontSize: 12, color: "#F08080", marginBottom: 5 }}>{promptError}</div>}
+              <textarea
+                id="edit-detail"
                 className="inp"
-                type="number"
-                min={1}
-                max={240}
-                value={editing.durationMinutes ?? ""}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    durationMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : null,
-                  })
+                value={editing.assignmentDetail}
+                onChange={(e) => setEditing({ ...editing, assignmentDetail: e.target.value })}
+                placeholder={
+                  editing.subjectId === "writing-journal"
+                    ? "Click ✦ Generate Prompt to create an AI writing prompt, or type one manually."
+                    : "What should the student do? (e.g. Complete pages 42–44 in the workbook)"
                 }
-                style={{ width: 90 }}
-                placeholder="30"
+                style={{ minHeight: 72, fontSize: 14, lineHeight: 1.6 }}
               />
             </div>
-          )}
 
-          {/* Scoring approach */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <label htmlFor="edit-scoring" style={{ fontSize: 11, color: "#8A9AAA", whiteSpace: "nowrap" }}>
-              SCORING
+            {/* Proof types */}
+            <div>
+              <p style={{ fontSize: 13, color: "#8A9AAA", margin: "0 0 8px" }}>
+                HOW DOES THE STUDENT PROVE COMPLETION?
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {PROOF_OPTIONS.map((opt) => {
+                  const active = editing.proofTypes.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleProofType(opt.value)}
+                      title={opt.tip}
+                      style={{
+                        padding: "7px 13px",
+                        borderRadius: 7,
+                        border: active
+                          ? `1.5px solid ${rgba(editingSubject.color, 0.7)}`
+                          : "1px solid rgba(255,255,255,0.12)",
+                        background: active ? rgba(editingSubject.color, 0.18) : "rgba(0,0,0,0.2)",
+                        color: active ? editingSubject.color : "#506070",
+                        fontSize: 13,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Duration — only shown if timer selected */}
+            {editing.proofTypes.includes("timer") && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <label htmlFor="edit-duration" style={{ fontSize: 13, color: "#8A9AAA", whiteSpace: "nowrap" }}>
+                  TIMER GOAL (MINUTES)
+                </label>
+                <input
+                  id="edit-duration"
+                  className="inp"
+                  type="number"
+                  min={1}
+                  max={240}
+                  value={editing.durationMinutes ?? ""}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      durationMinutes: e.target.value ? Number.parseInt(e.target.value, 10) : null,
+                    })
+                  }
+                  style={{ width: 90 }}
+                  placeholder="30"
+                />
+              </div>
+            )}
+
+            {/* Scoring approach */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <label htmlFor="edit-scoring" style={{ fontSize: 13, color: "#8A9AAA", whiteSpace: "nowrap" }}>
+                SCORING
+              </label>
+              <select
+                id="edit-scoring"
+                className="inp"
+                value={editing.scoringApproach}
+                onChange={(e) => setEditing({ ...editing, scoringApproach: e.target.value })}
+                style={{ flex: 1, minWidth: 200 }}
+              >
+                {SCORING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Requires review toggle */}
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={editing.requiresReview}
+                onChange={(e) => setEditing({ ...editing, requiresReview: e.target.checked })}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              <span style={{ fontSize: 13, color: "#9AABBC" }}>Requires parent review before marking complete</span>
             </label>
-            <select
-              id="edit-scoring"
-              className="inp"
-              value={editing.scoringApproach}
-              onChange={(e) => setEditing({ ...editing, scoringApproach: e.target.value })}
-              style={{ flex: 1, minWidth: 200 }}
-            >
-              {SCORING_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
 
-          {/* Requires review toggle */}
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={editing.requiresReview}
-              onChange={(e) => setEditing({ ...editing, requiresReview: e.target.checked })}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            <span style={{ fontSize: 12, color: "#9AABBC" }}>Requires parent review before marking complete</span>
-          </label>
+            {/* Admin notes */}
+            <div>
+              <label htmlFor="edit-notes" style={{ fontSize: 13, color: "#8A9AAA", display: "block", marginBottom: 5 }}>
+                PRIVATE NOTES (not shown to students)
+              </label>
+              <textarea
+                id="edit-notes"
+                className="inp"
+                value={editing.adminNotes}
+                onChange={(e) => setEditing({ ...editing, adminNotes: e.target.value })}
+                placeholder="Reminders for yourself…"
+                style={{ minHeight: 48, fontSize: 13 }}
+              />
+            </div>
 
-          {/* Admin notes */}
-          <div>
-            <label htmlFor="edit-notes" style={{ fontSize: 11, color: "#8A9AAA", display: "block", marginBottom: 5 }}>
-              PRIVATE NOTES (not shown to students)
-            </label>
-            <textarea
-              id="edit-notes"
-              className="inp"
-              value={editing.adminNotes}
-              onChange={(e) => setEditing({ ...editing, adminNotes: e.target.value })}
-              placeholder="Reminders for yourself…"
-              style={{ minHeight: 48, fontSize: 12 }}
-            />
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              type="button"
-              className="btn-brass"
-              style={{ flex: 1, padding: "10px" }}
-              onClick={savePlan}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving…" : "Save Plan"}
-            </button>
-            {editing.planId && (
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="btn-brass"
+                style={{ flex: 1, padding: "10px" }}
+                onClick={savePlan}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving…" : "Save Plan"}
+              </button>
+              {editing.planId && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ padding: "10px 16px", color: "#F08080", borderColor: "rgba(200,60,60,0.4)", fontSize: 13 }}
+                  onClick={clearPlan}
+                  disabled={isSaving}
+                >
+                  Clear
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-ghost"
-                style={{ padding: "10px 16px", color: "#F08080", borderColor: "rgba(200,60,60,0.4)", fontSize: 12 }}
-                onClick={clearPlan}
-                disabled={isSaving}
+                style={{ padding: "10px 16px" }}
+                onClick={() => setEditing(null)}
               >
-                Clear
+                Cancel
               </button>
-            )}
-            <button
-              type="button"
-              className="btn-ghost"
-              style={{ padding: "10px 16px" }}
-              onClick={() => setEditing(null)}
-            >
-              Cancel
-            </button>
-          </div>
+            </div>
           </div>
         </>
       )}

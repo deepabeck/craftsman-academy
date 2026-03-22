@@ -39,7 +39,8 @@ export interface Task {
   scoringApproach?: string; // 'completion' | 'review_based' | 'time_based' | etc.
   requiresReview?: boolean; // if true, submission goes to 'review' not 'done'
   adminNote?: string; // per-task note from admin
-  status: "pending" | "done" | "review" | "missed" | "approved";
+  status: "pending" | "done" | "review" | "missed" | "approved" | "cancelled";
+  cancelledReason?: string | null; // reason shown when status === 'cancelled'
   notes: string;
   files: FileEntry[];
   timerSeconds?: number; // elapsed timer seconds
@@ -83,13 +84,16 @@ export interface MockWeather {
 }
 
 export interface CalendarEvent {
-  date: string;
+  date: string; // formatted display date e.g. "Wed, Mar 25"
+  isoDate: string; // YYYY-MM-DD for comparisons
   label: string;
   type: "holiday" | "activity" | "trip" | "birthday";
   icon: string;
+  durationHours: number; // event length in hours (all-day = 8)
 }
+
+export type TaskStatus = "pending" | "done" | "review" | "missed" | "approved" | "cancelled";
 
 export type UserRole = "admin" | "student";
 export type AdminPage = "dashboard" | "subjects" | "schedule" | "review" | "profiles";
 export type StudentPage = "today" | "week" | "progress" | "history" | "customize";
-export type TaskStatus = "pending" | "done" | "review" | "missed" | "approved";

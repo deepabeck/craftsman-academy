@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
+import { deleteSubject, saveSubject, toggleSubjectActive } from "@/app/actions/subjects";
 import { SubjectModal } from "@/components/modals/subject-modal";
 import { Icon, PageHeader } from "@/components/ui";
 import { WEEKDAYS } from "@/lib/constants";
 import type { Subject } from "@/lib/types";
 import { rgba } from "@/lib/utils";
-import { deleteSubject, saveSubject, toggleSubjectActive } from "@/app/actions/subjects";
 
 interface Props {
   initialSubjects: Subject[];
@@ -38,9 +38,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
       // Optimistic update
       const isNew = modal === "add";
       setSubjects((prev) =>
-        isNew
-          ? [...prev, { ...form, id: `new-${Date.now()}` }]
-          : prev.map((s) => (s.id === form.id ? form : s)),
+        isNew ? [...prev, { ...form, id: `new-${Date.now()}` }] : prev.map((s) => (s.id === form.id ? form : s)),
       );
       setModal(null);
       setError(null);
@@ -115,7 +113,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             {sub.category && (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 13,
                   padding: "2px 7px",
                   borderRadius: 10,
                   background: "rgba(255,255,255,0.06)",
@@ -128,7 +126,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             )}
             <span
               style={{
-                fontSize: 10,
+                fontSize: 13,
                 padding: "2px 7px",
                 borderRadius: 10,
                 background: rgba(sub.color, 0.15),
@@ -146,7 +144,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
               <span
                 key={d}
                 style={{
-                  fontSize: 10,
+                  fontSize: 13,
                   padding: "2px 7px",
                   borderRadius: 4,
                   fontWeight: 600,
@@ -158,15 +156,13 @@ export function SubjectsClient({ initialSubjects }: Props) {
                 {d}
               </span>
             ))}
-            {sub.duration && (
-              <span style={{ fontSize: 10, color: "#506070", marginLeft: 4 }}>{sub.duration} min</span>
-            )}
+            {sub.duration && <span style={{ fontSize: 13, color: "#506070", marginLeft: 4 }}>{sub.duration} min</span>}
             {/* Proof type chips */}
             {(sub.proofTypes ?? []).map((pt) => (
               <span
                 key={pt}
                 style={{
-                  fontSize: 10,
+                  fontSize: 13,
                   padding: "1px 6px",
                   borderRadius: 4,
                   background: "rgba(232,168,32,0.1)",
@@ -180,7 +176,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             {sub.requiresReview && (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 13,
                   padding: "1px 6px",
                   borderRadius: 4,
                   background: "rgba(176,160,240,0.12)",
@@ -191,16 +187,14 @@ export function SubjectsClient({ initialSubjects }: Props) {
                 review
               </span>
             )}
-            {sub.externalPlatform && (
-              <span style={{ fontSize: 10, color: "#506070" }}>🔗 {sub.externalPlatform}</span>
-            )}
+            {sub.externalPlatform && <span style={{ fontSize: 13, color: "#506070" }}>🔗 {sub.externalPlatform}</span>}
           </div>
 
           {/* Default detail */}
           {sub.detail ? (
             <div
               style={{
-                fontSize: 12,
+                fontSize: 13,
                 color: "#8A9AAA",
                 lineHeight: 1.55,
                 fontStyle: "italic",
@@ -214,7 +208,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
               {sub.detail.length > 120 ? `${sub.detail.slice(0, 120)}…` : sub.detail}
             </div>
           ) : (
-            <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>
+            <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic" }}>
               No default assignment instructions.
             </div>
           )}
@@ -228,7 +222,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             className="btn-ghost"
             style={{
               padding: "5px 10px",
-              fontSize: 11,
+              fontSize: 13,
               color: isInactive ? "#70E090" : "#F08080",
               borderColor: isInactive ? "rgba(80,160,100,0.4)" : "rgba(200,60,60,0.35)",
             }}
@@ -240,7 +234,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
           <button
             type="button"
             className="btn-ghost"
-            style={{ padding: "7px 14px", fontSize: 12 }}
+            style={{ padding: "7px 14px", fontSize: 13 }}
             onClick={() => setModal(sub)}
             disabled={isPending}
           >
@@ -248,11 +242,11 @@ export function SubjectsClient({ initialSubjects }: Props) {
           </button>
           {confirmDel === sub.id ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#F08080" }}>Delete?</span>
+              <span style={{ fontSize: 13, color: "#F08080" }}>Delete?</span>
               <button
                 type="button"
                 className="btn-ghost"
-                style={{ padding: "5px 10px", fontSize: 11, color: "#F08080", borderColor: "rgba(200,60,60,0.5)" }}
+                style={{ padding: "5px 10px", fontSize: 13, color: "#F08080", borderColor: "rgba(200,60,60,0.5)" }}
                 onClick={() => handleDelete(sub.id)}
               >
                 Yes
@@ -260,7 +254,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
               <button
                 type="button"
                 className="btn-ghost"
-                style={{ padding: "5px 10px", fontSize: 11 }}
+                style={{ padding: "5px 10px", fontSize: 13 }}
                 onClick={() => setConfirmDel(null)}
               >
                 No
@@ -270,7 +264,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             <button
               type="button"
               className="btn-ghost"
-              style={{ padding: "7px 14px", fontSize: 12, color: "#F08080", borderColor: "rgba(200,60,60,0.35)" }}
+              style={{ padding: "7px 14px", fontSize: 13, color: "#F08080", borderColor: "rgba(200,60,60,0.35)" }}
               onClick={() => setConfirmDel(sub.id)}
               disabled={isPending}
             >
@@ -287,11 +281,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
       >
-        <PageHeader
-          icon="subjects"
-          title="Subjects"
-          sub={`${active.length} active · ${inactive.length} inactive`}
-        />
+        <PageHeader icon="subjects" title="Subjects" sub={`${active.length} active · ${inactive.length} inactive`} />
         <button
           type="button"
           className="btn-brass"
@@ -312,7 +302,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
             background: "rgba(200,60,60,0.12)",
             border: "1px solid rgba(200,60,60,0.35)",
             color: "#F08080",
-            fontSize: 13,
+            fontSize: 14,
           }}
         >
           {error}
@@ -340,7 +330,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
         <>
           <div
             className="cinzel"
-            style={{ fontSize: 11, color: "#506070", letterSpacing: "0.12em", marginTop: 8, paddingLeft: 4 }}
+            style={{ fontSize: 13, color: "#506070", letterSpacing: "0.12em", marginTop: 8, paddingLeft: 4 }}
           >
             INACTIVE SUBJECTS
           </div>
@@ -351,11 +341,7 @@ export function SubjectsClient({ initialSubjects }: Props) {
       )}
 
       {modal && (
-        <SubjectModal
-          subject={modal === "add" ? null : modal}
-          onSave={handleSave}
-          onClose={() => setModal(null)}
-        />
+        <SubjectModal subject={modal === "add" ? null : modal} onSave={handleSave} onClose={() => setModal(null)} />
       )}
     </div>
   );

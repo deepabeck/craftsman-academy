@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { Icon, PageHeader, ProgBar } from "@/components/ui";
+import { createClient } from "@/lib/supabase/server";
 import { rgba } from "@/lib/utils";
 
 /** YYYY-MM-DD from a Date using local components. */
@@ -81,14 +81,32 @@ export default async function ProgressPage() {
   // ── Per-subject breakdown ─────────────────────────────────────────────────
   const subjectMap: Record<
     string,
-    { id: string; name: string; icon: string; color: string; total: number; completed: number; scoreSum: number; scoreCount: number }
+    {
+      id: string;
+      name: string;
+      icon: string;
+      color: string;
+      total: number;
+      completed: number;
+      scoreSum: number;
+      scoreCount: number;
+    }
   > = {};
 
   for (const t of allTasks) {
     // biome-ignore lint/suspicious/noExplicitAny: supabase join type
     const sub = t.subjects as any;
     if (!subjectMap[sub.id]) {
-      subjectMap[sub.id] = { id: sub.id, name: sub.name, icon: sub.icon, color: sub.color, total: 0, completed: 0, scoreSum: 0, scoreCount: 0 };
+      subjectMap[sub.id] = {
+        id: sub.id,
+        name: sub.name,
+        icon: sub.icon,
+        color: sub.color,
+        total: 0,
+        completed: 0,
+        scoreSum: 0,
+        scoreCount: 0,
+      };
     }
     subjectMap[sub.id].total++;
     if (completedStatuses.has(t.status)) subjectMap[sub.id].completed++;
@@ -139,7 +157,7 @@ export default async function ProgressPage() {
               }}
             >
               <div style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
-              <div style={{ fontSize: 10, color: "#506070", marginTop: 3 }}>{label}</div>
+              <div style={{ fontSize: 13, color: "#506070", marginTop: 3 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -147,7 +165,7 @@ export default async function ProgressPage() {
 
       {/* Per-subject breakdown */}
       {subjects.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#506070", fontSize: 13 }}>
+        <div style={{ textAlign: "center", padding: 40, color: "#506070", fontSize: 14 }}>
           No task data yet for the last 30 days.
         </div>
       ) : (
@@ -157,19 +175,17 @@ export default async function ProgressPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <Icon name={sub.icon} size={42} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#EEE4CC", marginBottom: 5 }}>
-                    {sub.name}
-                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#EEE4CC", marginBottom: 5 }}>{sub.name}</div>
                   <ProgBar value={sub.pct} color={sub.color} />
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div style={{ fontSize: 20, fontWeight: 700, color: sub.color }}>{sub.pct}%</div>
                   {sub.avgScore != null && (
-                    <div style={{ fontSize: 10, color: "#506070", marginTop: 2 }}>avg {sub.avgScore}</div>
+                    <div style={{ fontSize: 13, color: "#506070", marginTop: 2 }}>avg {sub.avgScore}</div>
                   )}
                 </div>
               </div>
-              <div style={{ fontSize: 10, color: "#506070" }}>
+              <div style={{ fontSize: 13, color: "#506070" }}>
                 {sub.completed} of {sub.total} tasks completed
               </div>
             </div>

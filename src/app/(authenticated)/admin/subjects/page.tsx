@@ -5,10 +5,7 @@ import { SubjectsClient } from "./subjects-client";
 export default async function SubjectsPage() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("subjects")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const { data, error } = await supabase.from("subjects").select("*").order("sort_order", { ascending: true });
 
   if (error) console.error("Subjects fetch error:", error.message);
 

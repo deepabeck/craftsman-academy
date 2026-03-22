@@ -172,7 +172,7 @@ function MediaViewer({ state, onClose }: { state: ViewerState; onClose: () => vo
             top: 22,
             left: "50%",
             transform: "translateX(-50%)",
-            fontSize: 12,
+            fontSize: 13,
             color: "#506070",
           }}
         >
@@ -220,7 +220,7 @@ function MediaViewer({ state, onClose }: { state: ViewerState; onClose: () => vo
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎵</div>
-            <div style={{ fontSize: 13, color: "#EEE4CC", marginBottom: 20 }}>{sub.fileName}</div>
+            <div style={{ fontSize: 14, color: "#EEE4CC", marginBottom: 20 }}>{sub.fileName}</div>
             {/* biome-ignore lint/a11y/useMediaCaption: admin review player */}
             <audio key={sub.id} controls autoPlay src={sub.fileUrl ?? ""} style={{ width: "100%" }} />
           </div>
@@ -266,8 +266,8 @@ function MediaViewer({ state, onClose }: { state: ViewerState; onClose: () => vo
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 14 }}>📄</div>
-            <div style={{ fontSize: 13, color: "#EEE4CC", marginBottom: 18 }}>{sub.fileName}</div>
-            <div style={{ fontSize: 11, color: "#506070", marginBottom: 20 }}>
+            <div style={{ fontSize: 14, color: "#EEE4CC", marginBottom: 18 }}>{sub.fileName}</div>
+            <div style={{ fontSize: 13, color: "#506070", marginBottom: 20 }}>
               This file type cannot be previewed in the browser.
             </div>
             <a
@@ -280,7 +280,7 @@ function MediaViewer({ state, onClose }: { state: ViewerState; onClose: () => vo
                 border: "1px solid rgba(232,168,32,0.4)",
                 borderRadius: 6,
                 color: "#E8A820",
-                fontSize: 13,
+                fontSize: 14,
                 textDecoration: "none",
               }}
             >
@@ -289,7 +289,7 @@ function MediaViewer({ state, onClose }: { state: ViewerState; onClose: () => vo
           </div>
         )}
         {(kind === "image" || kind === "pdf" || kind === "video") && sub.fileName && (
-          <div style={{ fontSize: 11, color: "#506070" }}>{sub.fileName}</div>
+          <div style={{ fontSize: 13, color: "#506070" }}>{sub.fileName}</div>
         )}
         {total > 1 && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
@@ -598,7 +598,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
           </button>
           <div
             className="cinzel"
-            style={{ fontSize: 13, color: "#C8A860", letterSpacing: "0.1em", minWidth: 200, textAlign: "center" }}
+            style={{ fontSize: 14, color: "#C8A860", letterSpacing: "0.1em", minWidth: 200, textAlign: "center" }}
           >
             {formatWeekLabel(weekDates)}
           </div>
@@ -659,7 +659,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                 <div
                   className="cinzel"
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     letterSpacing: "0.12em",
                     color: isSel ? "#E8A820" : isToday ? "#C8D8E8" : "#7A8B9C",
                     marginBottom: 4,
@@ -671,7 +671,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                 {/* Date */}
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
                     color: isSel ? "#EEE4CC" : hasAny ? "#B0C0D0" : "#506070",
                     marginBottom: 8,
@@ -684,7 +684,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                   {pendingCount > 0 && (
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: 600,
                         padding: "2px 8px",
                         borderRadius: 10,
@@ -699,7 +699,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                   {doneCount > 0 && (
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: 13,
                         padding: "2px 8px",
                         borderRadius: 10,
                         background: "rgba(112,224,144,0.14)",
@@ -710,7 +710,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                       {doneCount} done ✓
                     </span>
                   )}
-                  {!hasAny && <span style={{ fontSize: 11, color: "#3A4A5A" }}>—</span>}
+                  {!hasAny && <span style={{ fontSize: 13, color: "#3A4A5A" }}>—</span>}
                 </div>
               </button>
             );
@@ -719,7 +719,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
 
         {/* ── Selected day content ── */}
         {dayPending.length === 0 && dayDone.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "30px 0", color: "#2A3A4A", fontSize: 12 }}>
+          <div style={{ textAlign: "center", padding: "30px 0", color: "#2A3A4A", fontSize: 13 }}>
             No submissions this day
           </div>
         ) : (
@@ -739,7 +739,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                       style={{
                         padding: "3px 10px",
                         borderRadius: 20,
-                        fontSize: 11,
+                        fontSize: 13,
                         cursor: "pointer",
                         border: `1px solid ${filterStudent === "all" ? "#E8A820" : "rgba(255,255,255,0.12)"}`,
                         background: filterStudent === "all" ? "rgba(232,168,32,0.12)" : "rgba(255,255,255,0.03)",
@@ -762,10 +762,10 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           style={{
                             padding: "3px 10px",
                             borderRadius: 20,
-                            fontSize: 11,
+                            fontSize: 13,
                             cursor: "pointer",
                             border: `1px solid ${active ? rgba(st.color, 0.7) : rgba(st.color, 0.25)}`,
-                            background: active ? rgba(st.color, 0.15) : rgba(st.color, 0.05),
+                            background: active ? rgba(st.color, 0.15) : "rgba(8,17,30,0.65)",
                             color: active ? st.color : "#7A8B9C",
                             display: "flex",
                             alignItems: "center",
@@ -774,14 +774,14 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                         >
                           <span
                             style={{
-                              width: 14,
-                              height: 14,
+                              width: 18,
+                              height: 18,
                               borderRadius: 3,
                               background: rgba(st.color, 0.35),
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              fontSize: 8,
+                              fontSize: 11,
                               fontWeight: 700,
                               color: st.color,
                             }}
@@ -823,7 +823,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           cursor: "pointer",
                           textAlign: "left",
                           transition: "all 0.15s",
-                          background: isSel ? rgba(item.student.color, 0.2) : rgba(item.student.color, 0.08),
+                          background: isSel ? "rgba(20,30,50,0.88)" : "rgba(8,17,30,0.72)",
                           border: `1px solid ${isSel ? rgba(item.student.color, 0.65) : rgba(item.student.color, 0.28)}`,
                           boxShadow: isSel ? `0 0 0 2px ${rgba(item.student.color, 0.18)}` : "none",
                           outline: "none",
@@ -834,7 +834,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div
                               style={{
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: 600,
                                 color: "#EEE4CC",
                                 whiteSpace: "nowrap",
@@ -844,7 +844,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                             >
                               {item.subject.name}
                             </div>
-                            <div style={{ fontSize: 11, color: rgba(item.student.color, 1), marginTop: 1 }}>
+                            <div style={{ fontSize: 13, color: rgba(item.student.color, 1), marginTop: 1 }}>
                               {item.student.name}
                             </div>
                           </div>
@@ -855,7 +855,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                               <span
                                 key={chip}
                                 style={{
-                                  fontSize: 11,
+                                  fontSize: 13,
                                   padding: "2px 7px",
                                   borderRadius: 4,
                                   background: "rgba(255,255,255,0.09)",
@@ -866,7 +866,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                               </span>
                             ))
                           ) : (
-                            <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>No attachment</span>
+                            <span style={{ fontSize: 13, color: "#506070", fontStyle: "italic" }}>No attachment</span>
                           )}
                         </div>
                       </button>
@@ -890,10 +890,10 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
 
                     return (
                       <div
+                        className="glass"
                         style={{
                           borderRadius: 9,
                           border: `1px solid ${rgba(selItem.student.color, 0.35)}`,
-                          background: rgba(selItem.student.color, 0.07),
                           padding: "12px 14px",
                         }}
                       >
@@ -901,16 +901,16 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                           <Icon name={selItem.subject.icon} size={22} />
                           <div>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "#EEE4CC" }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: "#EEE4CC" }}>
                               {selItem.subject.name}
                             </span>
-                            <span style={{ fontSize: 11, color: "#7A8B9C", marginLeft: 8 }}>
+                            <span style={{ fontSize: 13, color: "#7A8B9C", marginLeft: 8 }}>
                               {selItem.student.name}
                             </span>
                             {selItem.lessonDetail && (
                               <div
                                 style={{
-                                  fontSize: 11,
+                                  fontSize: 13,
                                   color: "#7A8B9C",
                                   marginTop: 2,
                                   borderLeft: `2px solid ${rgba(selItem.subject.color, 0.5)}`,
@@ -931,7 +931,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           {timerSub && (
                             <span
                               style={{
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: "#4ABCCC",
                                 background: "rgba(74,188,204,0.1)",
                                 border: "1px solid rgba(74,188,204,0.25)",
@@ -945,7 +945,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           {textNote && (
                             <span
                               style={{
-                                fontSize: 11,
+                                fontSize: 13,
                                 color: "#B0C0D0",
                                 fontStyle: "italic",
                                 flex: 1,
@@ -960,7 +960,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                             </span>
                           )}
                           {fileSubs.length === 0 && !timerSub && !textNote && (
-                            <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>
+                            <span style={{ fontSize: 13, color: "#506070", fontStyle: "italic" }}>
                               No file or note — send back for revision.
                             </span>
                           )}
@@ -976,13 +976,13 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                               marginBottom: 10,
                               padding: "8px 10px",
                               borderRadius: 6,
-                              background: "rgba(232,168,32,0.06)",
+                              background: "rgba(0,0,0,0.4)",
                               border: "1px solid rgba(232,168,32,0.2)",
                             }}
                           >
                             <span
                               style={{
-                                fontSize: 9,
+                                fontSize: 13,
                                 fontWeight: 700,
                                 letterSpacing: "0.1em",
                                 color: "#E8A820",
@@ -997,14 +997,14 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                               AI
                             </span>
                             {rescoring === selItem.taskId ? (
-                              <span style={{ fontSize: 12, color: "#7A8B9C", fontStyle: "italic" }}>Scoring…</span>
+                              <span style={{ fontSize: 13, color: "#7A8B9C", fontStyle: "italic" }}>Scoring…</span>
                             ) : (
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <span style={{ fontSize: 15, fontWeight: 700, color: "#E8A820", marginRight: 10 }}>
                                   {selItem.aiScore}%
                                 </span>
                                 {selItem.aiFeedback && (
-                                  <span style={{ fontSize: 11, color: "#B0C0D0", lineHeight: 1.4 }}>
+                                  <span style={{ fontSize: 13, color: "#B0C0D0", lineHeight: 1.4 }}>
                                     {selItem.aiFeedback}
                                   </span>
                                 )}
@@ -1021,7 +1021,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                             placeholder="Score"
                             value={score}
                             onChange={(e) => setScore(e.target.value)}
-                            style={{ width: 70, padding: "5px 8px", fontSize: 12 }}
+                            style={{ width: 70, padding: "5px 8px", fontSize: 13 }}
                             min={0}
                             max={100}
                           />
@@ -1031,14 +1031,14 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                             placeholder="Note for student (optional)"
                             value={reviewNote}
                             onChange={(e) => setReviewNote(e.target.value)}
-                            style={{ flex: 1, padding: "5px 8px", fontSize: 12 }}
+                            style={{ flex: 1, padding: "5px 8px", fontSize: 13 }}
                           />
                           <button
                             type="button"
                             className="btn-ghost"
                             style={{
                               padding: "5px 10px",
-                              fontSize: 12,
+                              fontSize: 13,
                               whiteSpace: "nowrap",
                               opacity: rescoring === selItem.taskId ? 0.5 : 1,
                             }}
@@ -1050,7 +1050,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           <button
                             type="button"
                             className="btn-brass"
-                            style={{ padding: "5px 14px", fontSize: 12, whiteSpace: "nowrap" }}
+                            style={{ padding: "5px 14px", fontSize: 13, whiteSpace: "nowrap" }}
                             onClick={() => approve(selItem)}
                           >
                             ✓ Approve
@@ -1058,7 +1058,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           <button
                             type="button"
                             className="btn-ghost"
-                            style={{ padding: "5px 10px", fontSize: 12, whiteSpace: "nowrap" }}
+                            style={{ padding: "5px 10px", fontSize: 13, whiteSpace: "nowrap" }}
                             onClick={() => revise(selItem)}
                           >
                             ↩ Revise
@@ -1073,7 +1073,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
             {/* Completed items for this day */}
             {dayDone.length > 0 && (
               <div>
-                <div className="cinzel text-dim" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 6 }}>
+                <div className="cinzel text-dim" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 6 }}>
                   REVIEWED THIS DAY
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
@@ -1087,7 +1087,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                         padding: "9px 12px",
                         borderRadius: 7,
                         opacity: 0.55,
-                        background: rgba(item.student.color, 0.05),
+                        background: "rgba(8,17,30,0.65)",
                         border: `1px solid ${rgba(item.student.color, 0.15)}`,
                       }}
                     >
@@ -1095,7 +1095,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: 600,
                             color: "#C0D0E0",
                             whiteSpace: "nowrap",
@@ -1105,7 +1105,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                         >
                           {item.subject.name}
                         </div>
-                        <div style={{ fontSize: 11, color: rgba(item.student.color, 0.9), marginTop: 1 }}>
+                        <div style={{ fontSize: 13, color: rgba(item.student.color, 0.9), marginTop: 1 }}>
                           {item.student.name}
                         </div>
                       </div>
@@ -1122,7 +1122,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
         {pending.length === 0 && (
           <div style={{ textAlign: "center", padding: 40, color: "#506070" }}>
             <Icon name="completed" size={48} style={{ margin: "0 auto 10px" }} />
-            <div className="cinzel" style={{ fontSize: 13 }}>
+            <div className="cinzel" style={{ fontSize: 14 }}>
               All Clear, Commander
             </div>
           </div>

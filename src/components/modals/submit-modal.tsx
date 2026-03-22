@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Divider, Icon } from "@/components/ui";
+import { createClient } from "@/lib/supabase/client";
 import type { Student, Task } from "@/lib/types";
 import { formatTime, rgba } from "@/lib/utils";
 
@@ -96,7 +96,11 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           setUploading(false);
           return;
         }
-        storagePaths.push({ path: data.path, name: entry.file.name, mimeType: entry.file.type || "application/octet-stream" });
+        storagePaths.push({
+          path: data.path,
+          name: entry.file.name,
+          mimeType: entry.file.type || "application/octet-stream",
+        });
       }
     }
 
@@ -122,7 +126,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
             <div className="cinzel brass" style={{ fontSize: 16, fontWeight: 700 }}>
               Submit Work
             </div>
-            <div className="text-mid" style={{ fontSize: 12, marginTop: 2 }}>
+            <div className="text-mid" style={{ fontSize: 13, marginTop: 2 }}>
               {task.subjectName}
             </div>
           </div>
@@ -140,7 +144,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
         {/* Assignment detail */}
         <div
           style={{
-            fontSize: 12,
+            fontSize: 13,
             color: "#9AABBC",
             lineHeight: 1.6,
             borderRadius: 7,
@@ -158,8 +162,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           <div style={{ marginTop: 12 }}>
             <label className="upload-zone" style={{ display: "block", cursor: "pointer" }}>
               <Icon name="submit" size={32} style={{ margin: "0 auto 6px" }} />
-              <div style={{ fontSize: 12 }}>
-                {proofTypes.includes("photo") ? "Tap to add photos — multiple pages OK" : "Tap to attach a file (photo, PDF, doc, audio…)"}
+              <div style={{ fontSize: 13 }}>
+                {proofTypes.includes("photo")
+                  ? "Tap to add photos — multiple pages OK"
+                  : "Tap to attach a file (photo, PDF, doc, audio…)"}
               </div>
               <input type="file" accept={acceptAttr} multiple onChange={addFiles} style={{ display: "none" }} />
             </label>
@@ -193,7 +199,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 10,
+                          fontSize: 13,
                           color: "#7A8B9C",
                           textAlign: "center",
                           padding: 4,
@@ -216,7 +222,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                         borderRadius: "50%",
                         cursor: "pointer",
                         color: "white",
-                        fontSize: 9,
+                        fontSize: 13,
                         lineHeight: "15px",
                         textAlign: "center",
                       }}
@@ -276,7 +282,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                 ↺ Reset
               </button>
             </div>
-            <div style={{ fontSize: 11, color: "#506070" }}>
+            <div style={{ fontSize: 13, color: "#506070" }}>
               Goal: {task.duration} min &middot;{" "}
               {sec >= task.duration * 60
                 ? "✓ Complete!"
@@ -291,12 +297,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Notes or questions for your parent..."
-          style={{ marginTop: 10, minHeight: 55, fontSize: 12 }}
+          style={{ marginTop: 10, minHeight: 55, fontSize: 13 }}
         />
 
-        {uploadErr && (
-          <div style={{ color: "#F08080", fontSize: 12, marginTop: 6 }}>{uploadErr}</div>
-        )}
+        {uploadErr && <div style={{ color: "#F08080", fontSize: 13, marginTop: 6 }}>{uploadErr}</div>}
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 9, marginTop: 12 }}>
@@ -318,7 +322,8 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
               className="btn-brass"
               style={{ flex: 1, padding: "11px" }}
               onClick={handleSubmit}
-              disabled={uploading}
+              disabled={uploading || (needsFile && entries.length === 0)}
+              title={needsFile && entries.length === 0 ? "Please attach a file before submitting" : undefined}
             >
               {uploading ? "Uploading…" : "Submit for Review"}
             </button>

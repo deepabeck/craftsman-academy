@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
+import { createClient } from "@/lib/supabase/server";
 import { rgba } from "@/lib/utils";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -32,9 +32,7 @@ export default async function HistoryPage() {
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
   // Fetch last 90 days of completed tasks (exclude pending and cancelled)
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   const { data: tasks } = await supabase
     .from("tasks")
@@ -73,7 +71,7 @@ export default async function HistoryPage() {
       {entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>
           <Icon name="history" size={48} style={{ margin: "0 auto 12px" }} />
-          <div className="cinzel" style={{ fontSize: 13 }}>
+          <div className="cinzel" style={{ fontSize: 14 }}>
             No completed missions yet. Get to work, cadet!
           </div>
         </div>
@@ -85,7 +83,7 @@ export default async function HistoryPage() {
               <div
                 className="cinzel"
                 style={{
-                  fontSize: 11,
+                  fontSize: 13,
                   color: "#7A8B9C",
                   letterSpacing: "0.12em",
                   marginBottom: 8,
@@ -98,7 +96,7 @@ export default async function HistoryPage() {
               </div>
 
               {/* Tasks for this date */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 300px)", gap: 8 }}>
                 {byDate[date].map((t) => {
                   // biome-ignore lint/suspicious/noExplicitAny: supabase join type
                   const sub = t.subjects as any;
@@ -122,7 +120,7 @@ export default async function HistoryPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: 600,
                             color: "#EEE4CC",
                             whiteSpace: "nowrap",
@@ -135,7 +133,7 @@ export default async function HistoryPage() {
                         {t.lesson_detail && (
                           <div
                             style={{
-                              fontSize: 10,
+                              fontSize: 13,
                               color: "#506070",
                               marginTop: 2,
                               whiteSpace: "nowrap",
@@ -147,16 +145,22 @@ export default async function HistoryPage() {
                           </div>
                         )}
                         {t.admin_note && (
-                          <div style={{ fontSize: 10, color: "#B0A0F0", marginTop: 2 }}>
-                            💬 {t.admin_note}
-                          </div>
+                          <div style={{ fontSize: 13, color: "#B0A0F0", marginTop: 2 }}>💬 {t.admin_note}</div>
                         )}
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: 4,
+                          flexShrink: 0,
+                        }}
+                      >
                         {score != null && (
                           <span
                             style={{
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: 700,
                               color: STATUS_COLOR[t.status] ?? studentColor,
                             }}

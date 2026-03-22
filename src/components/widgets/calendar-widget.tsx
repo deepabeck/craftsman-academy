@@ -15,18 +15,15 @@ interface CalendarWidgetProps {
 
 export function CalendarWidget({ color, events }: CalendarWidgetProps) {
   return (
-    <div
-      className="glass"
-      style={{ padding: "14px 16px", borderColor: rgba(color, 0.28), background: rgba(color, 0.07) }}
-    >
+    <div className="glass" style={{ padding: "14px 16px", borderColor: rgba(color, 0.28) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 16 }}>📅</span>
-        <div className="cinzel" style={{ fontSize: 11, color: "#D4A830", letterSpacing: "0.08em" }}>
+        <div className="cinzel" style={{ fontSize: 13, color: "#D4A830", letterSpacing: "0.08em" }}>
           UPCOMING EVENTS
         </div>
       </div>
       {events.length === 0 ? (
-        <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic", padding: "6px 0" }}>No upcoming events.</div>
+        <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic", padding: "6px 0" }}>No upcoming events.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {events.map((e) => (
@@ -46,7 +43,7 @@ export function CalendarWidget({ color, events }: CalendarWidgetProps) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     color: "#EEE4CC",
                     fontWeight: 500,
                     whiteSpace: "nowrap",
@@ -56,7 +53,7 @@ export function CalendarWidget({ color, events }: CalendarWidgetProps) {
                 >
                   {e.label}
                 </div>
-                <div style={{ fontSize: 10, color: "#506070" }}>{e.date}</div>
+                <div style={{ fontSize: 13, color: "#506070" }}>{e.date}</div>
               </div>
             </div>
           ))}

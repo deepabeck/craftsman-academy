@@ -11,7 +11,7 @@ interface Props {
 }
 
 const labelStyle = {
-  fontSize: 11,
+  fontSize: 13,
   color: "#506070",
   marginBottom: 4,
   letterSpacing: "0.06em",
@@ -119,12 +119,12 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
       >
         <PageHeader icon="profile" title="Student Profiles" sub="Manage student settings and photo" />
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {saved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
-          {error && <span style={{ fontSize: 12, color: "#F08080" }}>{error}</span>}
+          {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+          {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
           <button
             type="button"
             className="btn-brass"
-            style={{ padding: "9px 20px", fontSize: 13 }}
+            style={{ padding: "9px 20px", fontSize: 14 }}
             onClick={handleSave}
             disabled={isPending}
           >
@@ -164,13 +164,23 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
           className="glass-warm"
           style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}
         >
-          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.1em", marginBottom: 12 }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 12 }}>
             PROFILE PHOTO
           </div>
           {/* Avatar with hover-to-change overlay */}
           <button
             type="button"
-            style={{ position: "relative", width: "78%", margin: "0 auto", lineHeight: 0, cursor: "pointer", padding: 0, border: "none", background: "none", display: "block" }}
+            style={{
+              position: "relative",
+              width: "78%",
+              margin: "0 auto",
+              lineHeight: 0,
+              cursor: "pointer",
+              padding: 0,
+              border: "none",
+              background: "none",
+              display: "block",
+            }}
             onClick={() => fileRef.current?.click()}
           >
             {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL, next/image requires domain config */}
@@ -188,7 +198,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 justifyContent: "center",
                 background: uploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
                 transition: "background 0.2s",
-                fontSize: 11,
+                fontSize: 13,
                 color: uploading ? "#E8C870" : "transparent",
                 fontWeight: 600,
                 borderRadius: 4,
@@ -210,14 +220,14 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
             </div>
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-          <div style={{ fontSize: 10, color: "#506070", marginTop: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "#506070", marginTop: 8, lineHeight: 1.5 }}>
             Click photo to upload. Saves automatically.
           </div>
         </div>
 
         {/* Identity */}
         <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.1em", marginBottom: 14 }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 14 }}>
             IDENTITY
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -248,7 +258,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
 
         {/* Accent Color */}
         <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.1em", marginBottom: 14 }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 14 }}>
             ACCENT COLOR
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -262,7 +272,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 border: "2px solid rgba(255,255,255,0.15)",
               }}
             />
-            <div style={{ fontSize: 12, color: "#9AABBC" }}>Used on nav, cards, and progress bars</div>
+            <div style={{ fontSize: 13, color: "#9AABBC" }}>Used on nav, cards, and progress bars</div>
           </div>
           <HexPicker value={profile.color} onChange={(c) => upd("color", c)} />
           <div style={{ marginTop: 14 }}>
@@ -273,7 +283,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 borderRadius: 7,
                 background: rgba(profile.color, 0.12),
                 border: `1px solid ${rgba(profile.color, 0.35)}`,
-                fontSize: 12,
+                fontSize: 13,
                 color: profile.color,
                 fontWeight: 600,
               }}
@@ -285,12 +295,12 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
 
         {/* Enrolled Subjects */}
         <div className="glass" style={{ padding: 16 }}>
-          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.08em", marginBottom: 12 }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.08em", marginBottom: 12 }}>
             ENROLLED SUBJECTS ({profile.subjects.length})
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {profile.subjects.length === 0 && (
-              <div style={{ fontSize: 11, color: "#404858", fontStyle: "italic" }}>No active subjects assigned.</div>
+              <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic" }}>No active subjects assigned.</div>
             )}
             {profile.subjects.map((sub) => (
               <div
@@ -309,7 +319,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       color: "#EEE4CC",
                       fontWeight: 500,
                       whiteSpace: "nowrap",
@@ -319,7 +329,7 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                   >
                     {sub.name}
                   </div>
-                  <div style={{ fontSize: 9, color: "#506070", marginTop: 1 }}>{sub.days.join(" · ")}</div>
+                  <div style={{ fontSize: 13, color: "#506070", marginTop: 1 }}>{sub.days.join(" · ")}</div>
                 </div>
               </div>
             ))}

@@ -9,8 +9,8 @@ interface PageHeaderProps {
 
 export function PageHeader({ icon, title, sub }: PageHeaderProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
-      <Icon name={icon} size={62} />
+    <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 14 }}>
+      <Icon name={icon} size={84} />
       <div className="metal-wrap">
         <div
           className="cinzel metal-text"

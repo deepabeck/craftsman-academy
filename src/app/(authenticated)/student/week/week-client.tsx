@@ -143,11 +143,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                   : d.isToday
                     ? `1.5px solid ${rgba(student.color, 0.45)}`
                     : "1px solid rgba(184,134,11,0.18)",
-                background: isSelected
-                  ? rgba(student.color, 0.13)
-                  : d.isToday
-                    ? rgba(student.color, 0.07)
-                    : "rgba(8,17,30,0.70)",
+                background: isSelected ? "rgba(20,30,50,0.85)" : "rgba(8,17,30,0.70)",
                 transition: "all 0.15s",
               }}
             >
@@ -155,7 +151,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
               <div
                 className="cinzel"
                 style={{
-                  fontSize: 11,
+                  fontSize: 13,
                   textAlign: "center",
                   marginBottom: 7,
                   color: isSelected || d.isToday ? student.color : "#9AABBC",
@@ -163,7 +159,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                 }}
               >
                 {DAYS_SHORT[i]}
-                {d.isToday && <div style={{ fontSize: 9, color: "#C8860A" }}>TODAY</div>}
+                {d.isToday && <div style={{ fontSize: 13, color: "#C8860A" }}>TODAY</div>}
               </div>
 
               {/* Progress bar */}
@@ -179,7 +175,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                         <Icon name={t.subjectIcon} size={20} style={{ opacity: isDone ? 0.5 : 1 }} />
                         <span
                           style={{
-                            fontSize: 10,
+                            fontSize: 13,
                             color: isDone ? "#506070" : "#9AABBC",
                             flex: 1,
                             lineHeight: 1.2,
@@ -188,13 +184,13 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                         >
                           {t.subjectName}
                         </span>
-                        {isDone && <span style={{ fontSize: 10, color: "#70C090" }}>✓</span>}
+                        {isDone && <span style={{ fontSize: 13, color: "#70C090" }}>✓</span>}
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: "#404858", textAlign: "center", padding: "6px 0" }}>
+                <div style={{ fontSize: 13, color: "#404858", textAlign: "center", padding: "6px 0" }}>
                   {d.isFuture ? "Planned" : "Free day"}
                 </div>
               )}
@@ -202,7 +198,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
               {/* Click hint */}
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 13,
                   color: isSelected ? rgba(student.color, 0.7) : "rgba(255,255,255,0.18)",
                   textAlign: "center",
                   marginTop: 8,
@@ -230,13 +226,13 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
             <div className="cinzel" style={{ fontSize: 15, color: student.color, flex: 1 }}>
               {DAYS_FULL[selectedDay]}
             </div>
-            <div style={{ fontSize: 12, color: "#506070" }}>
+            <div style={{ fontSize: 13, color: "#506070" }}>
               {selectedDayData.done}/{selectedDayData.dayTasks.length} complete
             </div>
           </div>
 
           {selectedDayData.dayTasks.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "24px 0", color: "#506070", fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: "24px 0", color: "#506070", fontSize: 14 }}>
               <Icon name="completed" size={40} style={{ margin: "0 auto 10px" }} />
               No assignments scheduled for this day.
             </div>
@@ -263,13 +259,13 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                     <Icon name={task.subjectIcon} size={36} style={{ flexShrink: 0, marginTop: 2 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 13, color: "#F0E8D8" }}>{task.subjectName}</span>
+                        <span style={{ fontWeight: 600, fontSize: 14, color: "#F0E8D8" }}>{task.subjectName}</span>
                         <StatusBadge status={task.status} />
                       </div>
                       {task.detail && (
                         <div
                           style={{
-                            fontSize: 11,
+                            fontSize: 13,
                             color: "#7A8B9C",
                             lineHeight: 1.5,
                             borderLeft: `2px solid ${rgba(task.subjectColor, 0.4)}`,
@@ -281,7 +277,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                         </div>
                       )}
                       {task.adminNote && (
-                        <div style={{ fontSize: 11, color: "#C8860A", marginBottom: 6 }}>📌 {task.adminNote}</div>
+                        <div style={{ fontSize: 13, color: "#C8860A", marginBottom: 6 }}>📌 {task.adminNote}</div>
                       )}
                     </div>
 
@@ -290,7 +286,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
                       <button
                         type="button"
                         className="btn-brass"
-                        style={{ padding: "7px 14px", fontSize: 12, flexShrink: 0 }}
+                        style={{ padding: "7px 14px", fontSize: 13, flexShrink: 0 }}
                         onClick={() => setModal(task)}
                       >
                         {isFuture ? "Work Ahead →" : "Start →"}

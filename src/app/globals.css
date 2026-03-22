@@ -59,7 +59,10 @@ body {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: url("/assets/background-haze.png") center / cover no-repeat;
+  background: url("/assets/background-haze.png") 0% 0% / 200% 200%;
+  animation:
+    hazeDrift 45s linear infinite,
+    hazeBreathe 9s ease-in-out infinite;
 }
 #bg-gears {
   position: fixed;
@@ -68,10 +71,31 @@ body {
   pointer-events: none;
   background: url("/assets/bg_gears.png") center / cover no-repeat;
 }
-#bg-vign {
+#bg-steam {
   position: fixed;
   inset: 0;
   z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+.steam-wisp {
+  position: absolute;
+  bottom: -10%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 60% 40% at 50% 50%,
+    rgba(160, 185, 215, 0.28) 0%,
+    rgba(140, 165, 195, 0.12) 55%,
+    transparent 80%
+  );
+  height: 28vh;
+  filter: blur(28px);
+  animation: steamRise linear infinite;
+}
+#bg-vign {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
   pointer-events: none;
   background: radial-gradient(ellipse 70% 65% at 60% 45%, transparent 35%, rgba(0, 0, 0, 0.35) 100%);
 }
@@ -195,7 +219,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 22px 26px;
+  padding: 22px 100px 22px 26px;
 }
 .content-wrap {
   max-width: 1600px;
@@ -282,7 +306,7 @@ body {
 .badge {
   padding: 3px 9px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   width: 100px;
   display: inline-block;
@@ -470,6 +494,39 @@ textarea.inp {
 }
 
 /* ── ANIMATIONS ── */
+@keyframes hazeDrift {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 50% 50%;
+  }
+}
+@keyframes hazeBreathe {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes steamRise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-110vh);
+    opacity: 0;
+  }
+}
 @keyframes techPulse {
   0%,
   100% {

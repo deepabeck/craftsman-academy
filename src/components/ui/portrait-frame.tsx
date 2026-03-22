@@ -42,7 +42,7 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
               background: "rgba(0,0,0,0)",
               cursor: "pointer",
               transition: "background 0.2s",
-              fontSize: 11,
+              fontSize: 13,
               color: "transparent",
               fontWeight: 600,
             }}

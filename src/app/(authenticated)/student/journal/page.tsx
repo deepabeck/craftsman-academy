@@ -1,0 +1,74 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import type { Student } from "@/lib/types";
+import { JournalClient } from "./journal-client";
+
+export interface JournalEntry {
+  taskId: string;
+  date: string;
+  prompt: string;
+  submittedText: string | null;
+  status: "pending" | "done" | "review" | "approved" | "missed";
+  requiresReview: boolean;
+}
+
+export default async function JournalPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, display_name, color, grade, avatar_url, student_key")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
+
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+
+  // Fetch all writing-journal tasks for this student, newest first
+  const { data: rawTasks } = await supabase
+    .from("tasks")
+    .select(
+      `id, task_date, lesson_detail, status, requires_review,
+       submissions (submission_type, content)`,
+    )
+    .eq("student_id", user.id)
+    .eq("subject_id", "writing-journal")
+    .neq("status", "cancelled")
+    .order("task_date", { ascending: false })
+    .limit(30);
+
+  const entries: JournalEntry[] = (rawTasks ?? []).map((t) => {
+    // biome-ignore lint/suspicious/noExplicitAny: supabase join
+    const subs = (t.submissions ?? []) as any[];
+    const textSub = subs.find((s) => s.submission_type === "text");
+    return {
+      taskId: t.id,
+      date: t.task_date,
+      prompt: t.lesson_detail ?? "",
+      submittedText: textSub?.content ?? null,
+      status: t.status as JournalEntry["status"],
+      requiresReview: t.requires_review ?? true,
+    };
+  });
+
+  const todayEntry = entries.find((e) => e.date === today) ?? null;
+  const pastEntries = entries.filter((e) => e.date !== today);
+
+  const student: Student = {
+    id: profile.student_key ?? "",
+    name: profile.display_name,
+    color: profile.color ?? "#9BA4F0",
+    grade: profile.grade ?? "",
+    avatar: profile.avatar_url ?? "",
+    tagline: "",
+    subjects: [],
+  };
+
+  return <JournalClient student={student} todayEntry={todayEntry} pastEntries={pastEntries} today={today} />;
+}

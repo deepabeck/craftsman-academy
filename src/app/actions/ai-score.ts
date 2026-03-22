@@ -146,7 +146,7 @@ export async function scoreTaskWithAI(
   try {
     const anthropic = new Anthropic({ apiKey });
     const message = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-sonnet-4-6",
       max_tokens: 150,
       system:
         "You are a supportive homeschool tutor reviewing a student's submitted work. " +

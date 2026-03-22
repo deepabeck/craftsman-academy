@@ -1,18 +1,28 @@
 import { getLessonPlansForWeek } from "@/app/actions/lesson-plans";
+import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import type { CalendarEvent } from "@/lib/types";
 import { LessonPlannerClient } from "./lesson-planner-client";
 
-/** Returns the ISO date string for the Monday of the current week. */
+/** Returns the ISO date string for the Sunday that starts the current week. */
 function getCurrentWeekStart(): string {
   const d = new Date();
   const day = d.getDay(); // 0=Sun … 6=Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
+  d.setDate(d.getDate() - day); // back to Sunday
+  return d.toISOString().split("T")[0];
+}
+
+/** Returns YYYY-MM-DD for a given day offset from weekStart. */
+function weekDate(weekStart: string, dayOffset: number): string {
+  const d = new Date(`${weekStart}T12:00:00`);
+  d.setDate(d.getDate() + dayOffset);
   return d.toISOString().split("T")[0];
 }
 
 export default async function LessonsPage() {
   const supabase = await createClient();
+  const service = createServiceClient();
 
   // Load all active subjects ordered by sort_order
   const { data: subjectsRaw } = await supabase
@@ -39,5 +49,60 @@ export default async function LessonsPage() {
   const weekStart = getCurrentWeekStart();
   const initialPlans = await getLessonPlansForWeek(weekStart);
 
-  return <LessonPlannerClient subjects={subjects} initialWeekStart={weekStart} initialPlans={initialPlans} />;
+  // ── Calendar events for this week ──────────────────────────────────────────
+  const icalUrl = process.env.CALENDAR_ICAL_URL ?? "";
+  const calendarEvents: CalendarEvent[] = icalUrl ? await fetchCalendarEvents(icalUrl, 14).catch(() => []) : [];
+
+  // Filter to only events within this Mon–Fri (offsets 1–5 from Sunday weekStart)
+  const weekDates = [1, 2, 3, 4, 5].map((i) => weekDate(weekStart, i));
+  const weekEvents = calendarEvents.filter((e) => weekDates.includes(e.isoDate));
+
+  // ── Today's tasks for both students (for adjustment proposals) ─────────────
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+
+  // Fetch all student profiles
+  const { data: profiles } = await service
+    .from("profiles")
+    .select("id, student_key")
+    .neq("student_key", "admin")
+    .not("student_key", "is", null);
+
+  // Fetch today's tasks for each student
+  const studentTasksRaw = await Promise.all(
+    (profiles ?? []).map(async (profile) => {
+      const { data: tasks } = await service
+        .from("tasks")
+        .select(`id, status, cancelled_reason, subjects!inner(id, name, category)`)
+        .eq("student_id", profile.id)
+        .eq("task_date", today);
+      return {
+        studentKey: profile.student_key as string,
+        studentId: profile.id as string,
+        tasks: (tasks ?? []).map((t) => ({
+          id: t.id as string,
+          status: t.status as string,
+          // biome-ignore lint/suspicious/noExplicitAny: supabase join
+          subjectId: (t.subjects as any)?.id as string,
+          // biome-ignore lint/suspicious/noExplicitAny: supabase join
+          subjectName: (t.subjects as any)?.name as string,
+          // biome-ignore lint/suspicious/noExplicitAny: supabase join
+          subjectCategory: (t.subjects as any)?.category as string | undefined,
+          // biome-ignore lint/suspicious/noExplicitAny: cancelled_reason not yet in schema types
+          cancelledReason: (t as any).cancelled_reason as string | null,
+        })),
+      };
+    }),
+  );
+
+  return (
+    <LessonPlannerClient
+      subjects={subjects}
+      initialWeekStart={weekStart}
+      initialPlans={initialPlans}
+      weekCalendarEvents={weekEvents}
+      todayDate={today}
+      initialStudentTasks={studentTasksRaw}
+    />
+  );
 }

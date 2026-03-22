@@ -60,7 +60,7 @@ export default async function TodayPage() {
     icalUrl ? fetchCalendarEvents(icalUrl) : Promise.resolve([] as CalendarEvent[]),
   ]);
 
-  // Fetch today's tasks joined with subjects
+  // Fetch today's tasks joined with subjects (include cancelled — shown greyed out)
   const { data: rawTasks, error } = await supabase
     .from("tasks")
     .select(
@@ -70,8 +70,7 @@ export default async function TodayPage() {
        subjects!inner (id, name, icon, color, sort_order)`,
     )
     .eq("student_id", user.id)
-    .eq("task_date", today)
-    .neq("status", "cancelled");
+    .eq("task_date", today);
 
   if (error) console.error("Today tasks fetch error:", error.message, "student:", user.id, "date:", today);
   console.log(`Today tasks for ${profile.student_key} on ${today}: ${rawTasks?.length ?? 0} rows`);
@@ -101,6 +100,8 @@ export default async function TodayPage() {
         requiresReview: t.requires_review ?? false,
         adminNote: t.admin_note ?? "",
         status: t.status as Task["status"],
+        // biome-ignore lint/suspicious/noExplicitAny: cancelled_reason column added via migration
+        cancelledReason: (t as any).cancelled_reason ?? null,
         notes: t.notes ?? "",
         files: [],
         timerSeconds: t.timer_seconds ?? 0,

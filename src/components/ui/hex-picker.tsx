@@ -14,7 +14,7 @@ export function HexPicker({ value, onChange, label }: HexPickerProps) {
       {label && (
         <div
           style={{
-            fontSize: 11,
+            fontSize: 13,
             color: "#506070",
             marginBottom: 6,
             letterSpacing: "0.08em",
@@ -50,7 +50,7 @@ export function HexPicker({ value, onChange, label }: HexPickerProps) {
             cursor: "pointer",
           }}
         />
-        <span style={{ fontSize: 10, color: "#506070", fontFamily: "monospace" }}>{value}</span>
+        <span style={{ fontSize: 13, color: "#506070", fontFamily: "monospace" }}>{value}</span>
       </div>
     </div>
   );

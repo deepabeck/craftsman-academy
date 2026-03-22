@@ -22,7 +22,8 @@ export async function ensureWeekTasks(weekStart: string) {
   const service = createServiceClient();
   const { error: missedErr } = await service.rpc("mark_missed_tasks");
   if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 1; i <= 5; i++) {
+    // weekStart is Sunday; Mon–Fri are offsets 1–5
     // Use T00:00:00 (no Z) so JS parses as LOCAL date, avoiding UTC day-shift
     const d = new Date(`${weekStart}T00:00:00`);
     d.setDate(d.getDate() + i);

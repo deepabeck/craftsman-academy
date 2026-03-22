@@ -49,7 +49,7 @@ export function AdminSidebar() {
         {/* Compact academy logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 14px 5px", flexShrink: 0 }}>
           <Icon name="logo" size={22} />
-          <div className="cinzel" style={{ fontSize: 9, color: "#506070", letterSpacing: "0.2em" }}>
+          <div className="cinzel" style={{ fontSize: 13, color: "#506070", letterSpacing: "0.2em" }}>
             CRAFTSMAN ACADEMY
           </div>
         </div>

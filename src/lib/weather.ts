@@ -83,13 +83,13 @@ export async function fetchWeather(): Promise<WeatherData | null> {
       }).format(new Date()),
     );
 
-    // Pick up to 6 upcoming hourly slots
+    // Pick up to 8 upcoming hourly slots
     const times: string[] = data.hourly.time;
     const temps: number[] = data.hourly.temperature_2m;
     const codes: number[] = data.hourly.weathercode;
 
     const hourly: WeatherData["hourly"] = [];
-    for (let i = 0; i < times.length && hourly.length < 6; i++) {
+    for (let i = 0; i < times.length && hourly.length < 8; i++) {
       const h = Number(times[i].slice(11, 13)); // "T09:00" → 9
       if (h < nowHour) continue;
       const [, hIcon] = wmoInfo(codes[i]);

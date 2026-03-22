@@ -81,7 +81,7 @@ export default function LoginPage() {
         paddingTop: 0,
       }}
     >
-      <div style={{ width: "100%", maxWidth: 480 }}>
+      <div style={{ width: "100%", maxWidth: 480, marginTop: -30 }}>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -161,10 +161,10 @@ export default function LoginPage() {
                       marginBottom: 6,
                     }}
                   />
-                  <div className="cinzel" style={{ fontSize: 11, color: o.color, letterSpacing: "0.1em" }}>
+                  <div className="cinzel" style={{ fontSize: 13, color: o.color, letterSpacing: "0.1em" }}>
                     {o.label}
                   </div>
-                  <div style={{ fontSize: 10, color: "#506070", marginTop: 3, lineHeight: 1.3 }}>{o.sub}</div>
+                  <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3 }}>{o.sub}</div>
                 </div>
               ))}
             </div>
@@ -178,7 +178,7 @@ export default function LoginPage() {
                   setPassword("");
                   setErr("");
                 }}
-                style={{ marginBottom: 16, fontSize: 12, padding: "5px 12px" }}
+                style={{ marginBottom: 16, fontSize: 13, padding: "5px 12px" }}
               >
                 &larr; Back
               </button>
@@ -208,7 +208,7 @@ export default function LoginPage() {
                 onKeyDown={(e) => e.key === "Enter" && attempt()}
                 style={{ textAlign: "center", fontSize: 22, letterSpacing: "0.3em", marginBottom: 10 }}
               />
-              {err && <div style={{ color: "#F08080", fontSize: 12, textAlign: "center", marginBottom: 8 }}>{err}</div>}
+              {err && <div style={{ color: "#F08080", fontSize: 13, textAlign: "center", marginBottom: 8 }}>{err}</div>}
               <button
                 type="button"
                 className="btn-brass"
@@ -221,7 +221,7 @@ export default function LoginPage() {
             </>
           )}
         </div>
-        <div style={{ textAlign: "center", marginTop: 14, fontSize: 10, color: "#3A4858", letterSpacing: "0.12em" }}>
+        <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#3A4858", letterSpacing: "0.12em" }}>
           CRAFTSMAN ACADEMY &middot; HOMESCHOOL PORTAL
         </div>
       </div>

@@ -63,16 +63,15 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
         flexDirection: "column",
         gap: 12,
         borderColor: rgba(student.color, 0.32),
-        background: rgba(student.color, 0.07),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon name="ai-obs" size={36} />
         <div style={{ flex: 1 }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.08em" }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.08em" }}>
             AI DISPATCH
           </div>
-          <div style={{ fontSize: 11, color: "#506070" }}>{student.name} &middot; Weekly Summary</div>
+          <div style={{ fontSize: 13, color: "#506070" }}>{student.name} &middot; Weekly Summary</div>
         </div>
         {/* biome-ignore lint/performance/noImgElement: dynamic Supabase signed URL */}
         <img
@@ -84,7 +83,7 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
       <Divider />
       <div
         style={{
-          fontSize: 13,
+          fontSize: 14,
           lineHeight: 1.75,
           color: "#9AABBC",
           padding: "10px 12px",
@@ -103,7 +102,7 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
               style={{
                 padding: "3px 10px",
                 borderRadius: 20,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 600,
                 background:
                   tag.t === "auto"
@@ -123,7 +122,7 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
       <div style={{ marginTop: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
           <Icon name="parent-note" size={18} />
-          <span style={{ fontSize: 10, color: "#506070", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 13, color: "#506070", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Parent Note
           </span>
         </div>
@@ -134,7 +133,7 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Your observation..."
-              style={{ minHeight: 60, fontSize: 12 }}
+              style={{ minHeight: 60, fontSize: 13 }}
             />
             <div style={{ display: "flex", gap: 7 }}>
               <button
@@ -170,7 +169,7 @@ function AISummaryPanel({ student }: { student: StudentDashData }) {
               border: "1px dashed rgba(184,134,11,0.32)",
               background: "rgba(0,0,0,0.2)",
               minHeight: 36,
-              fontSize: 12,
+              fontSize: 13,
               color: saved ? "#9AABBC" : "#404858",
             }}
           >
@@ -195,6 +194,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
         {students.map((s) => (
           <div
             key={s.id}
+            className="glass"
             onClick={() => setActiveId(s.id)}
             onKeyDown={(e) => e.key === "Enter" && setActiveId(s.id)}
             role="button"
@@ -203,9 +203,9 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
               padding: 16,
               cursor: "pointer",
               borderRadius: 10,
-              background: rgba(s.color, activeId === s.id ? 0.13 : 0.06),
+              background: activeId === s.id ? rgba(s.color, 0.16) : undefined,
               transition: "all 0.2s",
-              border: `1px solid ${rgba(s.color, activeId === s.id ? 0.42 : 0.2)}`,
+              borderColor: rgba(s.color, activeId === s.id ? 0.42 : 0.2),
               boxShadow: activeId === s.id ? `0 0 22px ${rgba(s.color, 0.18)}` : "none",
             }}
           >
@@ -220,11 +220,11 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: s.color }}>
                   {s.name}
                 </div>
-                <div style={{ fontSize: 11, color: "#506070" }}>{s.grade}</div>
+                <div style={{ fontSize: 13, color: "#506070" }}>{s.grade}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.todayPct}%</div>
-                <div style={{ fontSize: 10, color: "#506070" }}>today</div>
+                <div style={{ fontSize: 13, color: "#506070" }}>today</div>
               </div>
             </div>
             <ProgBar value={s.todayPct} color={s.color} />
@@ -238,12 +238,12 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
           <div className="glass" style={{ padding: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Icon name="active-subjects" size={30} />
-              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.07em" }}>
+              <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.07em" }}>
                 TODAY &mdash; {active.name.toUpperCase()}
               </div>
             </div>
             {active.todaySubjects.length === 0 ? (
-              <div style={{ fontSize: 12, color: "#506070", padding: "20px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "#506070", padding: "20px 0", textAlign: "center" }}>
                 No tasks scheduled for today.
               </div>
             ) : (
@@ -263,7 +263,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 >
                   <Icon name={sub.icon} size={34} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: "#EEE4CC", fontWeight: 500 }}>{sub.name}</div>
+                    <div style={{ fontSize: 14, color: "#EEE4CC", fontWeight: 500 }}>{sub.name}</div>
                     <ProgBar value={sub.pct} color={sub.color} style={{ marginTop: 4 }} />
                   </div>
                   <StatusBadge status={sub.status as "done" | "pending" | "review" | "missed" | "approved"} />

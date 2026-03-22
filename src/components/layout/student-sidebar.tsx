@@ -9,6 +9,7 @@ import { useAuth } from "@/providers/auth-provider";
 const NAV_ITEMS = [
   { id: "today", path: "/student/today", label: "Today's Missions", icon: "today" },
   { id: "week", path: "/student/week", label: "This Week", icon: "week" },
+  { id: "journal", path: "/student/journal", label: "Writing Journal", icon: "reading-writing" },
   { id: "progress", path: "/student/progress", label: "Progress", icon: "progress" },
   { id: "history", path: "/student/history", label: "Mission Log", icon: "history" },
   { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },

@@ -31,15 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    if (!supabase) return;
-    const { data } = await supabase.from("profiles").select("role, student_key").eq("id", userId).single();
-    if (data) {
-      setUser({ id: userId, role: data.role as "admin" | "student", studentId: data.student_key ?? null });
-    } else {
-      setUser(null);
-    }
-  }, [supabase]);
+  const loadProfile = useCallback(
+    async (userId: string) => {
+      if (!supabase) return;
+      const { data } = await supabase.from("profiles").select("role, student_key").eq("id", userId).single();
+      if (data) {
+        setUser({ id: userId, role: data.role as "admin" | "student", studentId: data.student_key ?? null });
+      } else {
+        setUser(null);
+      }
+    },
+    [supabase],
+  );
 
   useEffect(() => {
     if (!supabase) {
@@ -68,12 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase, loadProfile]);
 
-  const signIn = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    if (!supabase) return { success: false, error: "Supabase not configured. Add credentials to .env.local." };
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, error: error.message };
-    return { success: true };
-  }, [supabase]);
+  const signIn = useCallback(
+    async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+      if (!supabase) return { success: false, error: "Supabase not configured. Add credentials to .env.local." };
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    },
+    [supabase],
+  );
 
   const signOut = useCallback(async () => {
     if (supabase) await supabase.auth.signOut();

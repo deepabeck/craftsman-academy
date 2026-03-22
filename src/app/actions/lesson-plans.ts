@@ -87,19 +87,50 @@ export async function upsertLessonPlan(plan: UpsertLessonPlanInput) {
     created_by: user.id,
   };
 
+  let planId: string;
   if (existing) {
     const { error } = await supabase.from("lesson_plans").update(payload).eq("id", existing.id);
     if (error) return { success: false, error: error.message };
+    planId = existing.id;
   } else {
-    const { error } = await supabase.from("lesson_plans").insert({
-      subject_id: plan.subjectId,
-      week_start: plan.weekStart,
-      day_of_week: plan.dayOfWeek,
-      student_id: plan.studentId,
-      ...payload,
-    });
+    const { data: inserted, error } = await supabase
+      .from("lesson_plans")
+      .insert({
+        subject_id: plan.subjectId,
+        week_start: plan.weekStart,
+        day_of_week: plan.dayOfWeek,
+        student_id: plan.studentId,
+        ...payload,
+      })
+      .select("id")
+      .single();
     if (error) return { success: false, error: error.message };
+    planId = inserted.id;
   }
+
+  // Back-fill any already-generated pending tasks for this subject+day with
+  // the new lesson detail and plan settings (task generation snapshots the plan
+  // at creation time, so tasks made before the plan is saved need patching).
+  const service = (await import("@/lib/supabase/service")).createServiceClient();
+  const taskDate = (() => {
+    const d = new Date(`${plan.weekStart}T12:00:00`);
+    d.setDate(d.getDate() + plan.dayOfWeek); // weekStart=Monday; dow 0=Mon … 4=Fri
+    return d.toISOString().split("T")[0];
+  })();
+
+  await service
+    .from("tasks")
+    .update({
+      lesson_plan_id: planId,
+      lesson_detail: plan.assignmentDetail || undefined,
+      requires_review: plan.requiresReview,
+      proof_types: plan.proofTypes,
+      scoring_approach: plan.scoringApproach,
+      duration: plan.durationMinutes ?? undefined,
+    })
+    .eq("subject_id", plan.subjectId)
+    .eq("task_date", taskDate)
+    .eq("status", "pending");
 
   return { success: true };
 }

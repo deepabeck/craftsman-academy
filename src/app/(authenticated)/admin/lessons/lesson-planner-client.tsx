@@ -97,20 +97,21 @@ function addWeeks(weekStart: string, delta: number): string {
 }
 
 function formatWeekLabel(weekStart: string): string {
-  // weekStart is Sunday; school days are Mon (Sun+1) – Fri (Sun+5)
+  // weekStart is Monday; school days Mon (+0) – Fri (+4)
   const mon = new Date(`${weekStart}T12:00:00`);
-  mon.setDate(mon.getDate() + 1);
   const fri = new Date(`${weekStart}T12:00:00`);
-  fri.setDate(fri.getDate() + 5);
+  fri.setDate(fri.getDate() + 4);
   const fmt = (date: Date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return `${fmt(mon)} – ${fmt(fri)}`;
 }
 
 function isThisWeek(weekStart: string): boolean {
   const today = new Date();
-  const currentSunday = new Date(today);
-  currentSunday.setDate(today.getDate() - today.getDay()); // back to Sunday
-  return weekStart === currentSunday.toISOString().split("T")[0];
+  const day = today.getDay();
+  const diff = day === 0 ? 1 : 1 - day; // same logic as server getCurrentWeekStart
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff);
+  return weekStart === monday.toISOString().split("T")[0];
 }
 
 function inferScoringApproach(proofTypes: string[]): string {
@@ -436,7 +437,7 @@ export function LessonPlannerClient({
           {DAYS.map((dayCode, idx) => {
             const isoDate = (() => {
               const d = new Date(`${weekStart}T12:00:00`);
-              d.setDate(d.getDate() + idx + 1); // weekStart=Sunday; Mon=+1 … Fri=+5
+              d.setDate(d.getDate() + idx); // weekStart=Monday; Mon=+0 … Fri=+4
               return d.toISOString().split("T")[0];
             })();
             const dayEvents = weekCalendarEvents.filter((e) => e.isoDate === isoDate);

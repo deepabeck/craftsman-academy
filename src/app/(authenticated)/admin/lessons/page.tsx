@@ -5,15 +5,17 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { CalendarEvent } from "@/lib/types";
 import { LessonPlannerClient } from "./lesson-planner-client";
 
-/** Returns the ISO date string for the Sunday that starts the current week. */
+/** Returns the ISO date string for the Monday that starts the current school week.
+ *  On Sunday we advance to the *next* Monday (upcoming week). */
 function getCurrentWeekStart(): string {
   const d = new Date();
-  const day = d.getDay(); // 0=Sun … 6=Sat
-  d.setDate(d.getDate() - day); // back to Sunday
+  const day = d.getDay(); // 0=Sun, 1=Mon … 6=Sat
+  const diff = day === 0 ? 1 : 1 - day; // Sun→+1  Mon→0  Tue→-1 …
+  d.setDate(d.getDate() + diff);
   return d.toISOString().split("T")[0];
 }
 
-/** Returns YYYY-MM-DD for a given day offset from weekStart. */
+/** Returns YYYY-MM-DD for a given day offset from weekStart (Monday-based). */
 function weekDate(weekStart: string, dayOffset: number): string {
   const d = new Date(`${weekStart}T12:00:00`);
   d.setDate(d.getDate() + dayOffset);
@@ -53,8 +55,8 @@ export default async function LessonsPage() {
   const icalUrl = process.env.CALENDAR_ICAL_URL ?? "";
   const calendarEvents: CalendarEvent[] = icalUrl ? await fetchCalendarEvents(icalUrl, 14).catch(() => []) : [];
 
-  // Filter to only events within this Mon–Fri (offsets 1–5 from Sunday weekStart)
-  const weekDates = [1, 2, 3, 4, 5].map((i) => weekDate(weekStart, i));
+  // Filter to only events within this Mon–Fri (offsets 0–4 from Monday weekStart)
+  const weekDates = [0, 1, 2, 3, 4].map((i) => weekDate(weekStart, i));
   const weekEvents = calendarEvents.filter((e) => weekDates.includes(e.isoDate));
 
   // ── Today's tasks for both students (for adjustment proposals) ─────────────

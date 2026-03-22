@@ -13,7 +13,8 @@ function localDateStr(d: Date): string {
 function getMondayOf(date: Date): Date {
   const d = new Date(date);
   const dow = d.getDay(); // 0=Sun, 1=Mon …
-  const diff = dow === 0 ? -6 : 1 - dow;
+  // On Sunday, show the upcoming week (next Monday); otherwise show current week's Monday
+  const diff = dow === 0 ? 1 : 1 - dow;
   d.setDate(d.getDate() + diff);
   return d;
 }

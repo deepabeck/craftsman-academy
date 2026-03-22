@@ -86,14 +86,10 @@ export async function toggleSubjectActive(id: string, active: boolean): Promise<
   const today = todayLocal();
 
   if (!active) {
-    // 2. Deactivating — delete all pending/future tasks for this subject
-    //    (today and later, so already-completed past tasks are untouched)
-    const { error: delErr } = await service
-      .from("tasks")
-      .delete()
-      .eq("subject_id", id)
-      .eq("status", "pending")
-      .gte("task_date", today);
+    // 2. Deactivating — delete ALL pending tasks for this subject
+    //    (any date: last week's unfinished tasks + current/future week)
+    //    Already-completed tasks (done/review/approved/missed) are untouched.
+    const { error: delErr } = await service.from("tasks").delete().eq("subject_id", id).eq("status", "pending");
     if (delErr) console.error("Failed to clean up tasks for deactivated subject:", delErr.message);
   } else {
     // 3. Reactivating — regenerate any missing tasks for the rest of this week

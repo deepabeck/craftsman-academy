@@ -82,7 +82,7 @@ export default function LoginPage() {
       }}
     >
       <div style={{ width: "100%", maxWidth: 480, marginTop: -30 }}>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <div style={{ textAlign: "center", marginBottom: 6 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/logo-craftsmanacademy.png"
@@ -161,10 +161,15 @@ export default function LoginPage() {
                       marginBottom: 6,
                     }}
                   />
-                  <div className="cinzel" style={{ fontSize: 13, color: o.color, letterSpacing: "0.1em" }}>
+                  <div
+                    className="cinzel"
+                    style={{ fontSize: 13, color: o.color, letterSpacing: "0.1em", padding: "0 10px" }}
+                  >
                     {o.label}
                   </div>
-                  <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3 }}>{o.sub}</div>
+                  <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3, padding: "0 10px" }}>
+                    {o.sub}
+                  </div>
                 </div>
               ))}
             </div>

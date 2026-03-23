@@ -179,6 +179,19 @@ export async function approveTask(taskId: string, score: number, reviewerNotes?:
 }
 
 /**
+ * Admin override: update timer_seconds on any task (for manual corrections).
+ */
+export async function updateTaskTimer(taskId: string, minutes: number) {
+  const service = createServiceClient();
+  const { error } = await service
+    .from("tasks")
+    .update({ timer_seconds: Math.round(minutes * 60) })
+    .eq("id", taskId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/**
  * Admin sends a task back for revision.
  * Sets status → 'pending' so the student sees it again in Today's Missions.
  */

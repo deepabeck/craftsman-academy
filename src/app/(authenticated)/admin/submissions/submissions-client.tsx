@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { awardApprovalPoints } from "@/app/actions/points";
+import { updateTaskTimer } from "@/app/actions/tasks";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 
@@ -68,7 +69,13 @@ function FilePreview({ sub }: { sub: SubmissionFile }) {
         <img
           src={sub.fileUrl}
           alt={sub.fileName ?? "submission"}
-          style={{ maxWidth: 200, maxHeight: 160, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}
+          style={{
+            maxWidth: 200,
+            maxHeight: 160,
+            borderRadius: 6,
+            border: "1px solid rgba(255,255,255,0.1)",
+            cursor: "pointer",
+          }}
         />
       </a>
     );
@@ -95,13 +102,48 @@ function FilePreview({ sub }: { sub: SubmissionFile }) {
   );
 }
 
-function AwardPointsPanel({
-  item,
-  onAwarded,
-}: {
-  item: SubmissionItem;
-  onAwarded: (taskId: string) => void;
-}) {
+function EditTimerPanel({ taskId, currentSeconds, onSaved }: { taskId: string; currentSeconds: number | null; onSaved: (taskId: string, seconds: number) => void }) {
+  const [minutes, setMinutes] = useState(currentSeconds != null ? Math.round(currentSeconds / 60) : 0);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState("");
+  const [, startTransition] = useTransition();
+
+  const handle = () => {
+    setErr("");
+    startTransition(async () => {
+      const result = await updateTaskTimer(taskId, minutes);
+      if (result.success) {
+        setSaved(true);
+        onSaved(taskId, minutes * 60);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setErr(result.error ?? "Failed");
+      }
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      <input
+        type="number"
+        min={0}
+        max={999}
+        value={minutes}
+        onChange={(e) => setMinutes(Number(e.target.value))}
+        className="inp"
+        style={{ width: 70, fontSize: 13, padding: "4px 8px" }}
+      />
+      <span style={{ fontSize: 13, color: "#506070" }}>minutes</span>
+      <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 12px" }} onClick={handle}>
+        Save Timer
+      </button>
+      {saved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+      {err && <span style={{ fontSize: 11, color: "#F08080" }}>{err}</span>}
+    </div>
+  );
+}
+
+function AwardPointsPanel({ item, onAwarded }: { item: SubmissionItem; onAwarded: (taskId: string) => void }) {
   const [score, setScore] = useState(100);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
@@ -131,15 +173,12 @@ function AwardPointsPanel({
         style={{ fontSize: 12, padding: "4px 8px", width: "auto" }}
       >
         {SCORES.map((s) => (
-          <option key={s.value} value={s.value}>{s.label}</option>
+          <option key={s.value} value={s.value}>
+            {s.label}
+          </option>
         ))}
       </select>
-      <button
-        type="button"
-        className="btn-brass"
-        style={{ fontSize: 12, padding: "5px 12px" }}
-        onClick={handle}
-      >
+      <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 12px" }} onClick={handle}>
         Award Approval Points
       </button>
       {err && <span style={{ fontSize: 11, color: "#F08080" }}>{err}</span>}
@@ -151,10 +190,9 @@ export function SubmissionsClient({ items, students }: Props) {
   const [activeStudentId, setActiveStudentId] = useState<string>("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [awardedIds, setAwardedIds] = useState<Set<string>>(new Set());
+  const [timerOverrides, setTimerOverrides] = useState<Record<string, number>>({});
 
-  const filtered = activeStudentId === "all"
-    ? items
-    : items.filter((i) => i.student.id === activeStudentId);
+  const filtered = activeStudentId === "all" ? items : items.filter((i) => i.student.id === activeStudentId);
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -163,8 +201,9 @@ export function SubmissionsClient({ items, students }: Props) {
       return next;
     });
 
-  const markAwarded = (taskId: string) =>
-    setAwardedIds((prev) => new Set([...prev, taskId]));
+  const markAwarded = (taskId: string) => setAwardedIds((prev) => new Set([...prev, taskId]));
+  const markTimerSaved = (taskId: string, seconds: number) =>
+    setTimerOverrides((prev) => ({ ...prev, [taskId]: seconds }));
 
   // Group by date
   const byDate: Record<string, SubmissionItem[]> = {};
@@ -176,7 +215,9 @@ export function SubmissionsClient({ items, students }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
+      >
         <PageHeader icon="history" title="Submissions" sub={`${filtered.length} total submissions`} />
       </div>
 
@@ -219,7 +260,15 @@ export function SubmissionsClient({ items, students }: Props) {
             <div key={date}>
               <div
                 className="cinzel"
-                style={{ fontSize: 12, color: "#7A8B9C", letterSpacing: "0.12em", marginBottom: 8, paddingLeft: 2, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 4 }}
+                style={{
+                  fontSize: 12,
+                  color: "#7A8B9C",
+                  letterSpacing: "0.12em",
+                  marginBottom: 8,
+                  paddingLeft: 2,
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  paddingBottom: 4,
+                }}
               >
                 {formatDate(date)}
               </div>
@@ -228,8 +277,11 @@ export function SubmissionsClient({ items, students }: Props) {
                   const isOpen = expanded.has(item.taskId);
                   const hasFiles = item.submissions.some((s) => s.fileUrl);
                   const hasText = item.submissions.some((s) => s.content);
-                  const hasTimer = item.timerSeconds != null && item.timerSeconds > 0;
-                  const needsPoints = !item.hasApprovalPoints && !awardedIds.has(item.taskId) &&
+                  const effectiveTimer = timerOverrides[item.taskId] ?? item.timerSeconds;
+                  const hasTimer = effectiveTimer != null && effectiveTimer > 0;
+                  const needsPoints =
+                    !item.hasApprovalPoints &&
+                    !awardedIds.has(item.taskId) &&
                     (item.status === "done" || item.status === "approved");
 
                   return (
@@ -261,9 +313,7 @@ export function SubmissionsClient({ items, students }: Props) {
                         <Icon name={item.subject.icon} size={30} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: "#EEE4CC" }}>
-                              {item.subject.name}
-                            </span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: "#EEE4CC" }}>{item.subject.name}</span>
                             {activeStudentId === "all" && (
                               <span style={{ fontSize: 12, color: item.student.color, fontWeight: 600 }}>
                                 {item.student.name}
@@ -271,14 +321,28 @@ export function SubmissionsClient({ items, students }: Props) {
                             )}
                           </div>
                           {item.lessonDetail && (
-                            <div style={{ fontSize: 12, color: "#506070", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 400 }}>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "#506070",
+                                marginTop: 1,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: 400,
+                              }}
+                            >
                               {item.lessonDetail}
                             </div>
                           )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           {hasFiles && <span style={{ fontSize: 12, color: "#9AABBC" }}>📎</span>}
-                          {hasTimer && <span style={{ fontSize: 12, color: "#9AABBC" }}>⏱ {formatSeconds(item.timerSeconds!)}</span>}
+                          {hasTimer && (
+                            <span style={{ fontSize: 12, color: "#9AABBC" }}>
+                              ⏱ {formatSeconds(effectiveTimer!)}
+                            </span>
+                          )}
                           {hasText && <span style={{ fontSize: 12, color: "#9AABBC" }}>📝</span>}
                           {item.finalScore != null && (
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#70E090" }}>
@@ -286,7 +350,15 @@ export function SubmissionsClient({ items, students }: Props) {
                             </span>
                           )}
                           {needsPoints && (
-                            <span style={{ fontSize: 11, background: "rgba(240,128,128,0.2)", color: "#F08080", padding: "2px 7px", borderRadius: 4 }}>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                background: "rgba(240,128,128,0.2)",
+                                color: "#F08080",
+                                padding: "2px 7px",
+                                borderRadius: 4,
+                              }}
+                            >
                               no grade pts
                             </span>
                           )}
@@ -302,24 +374,47 @@ export function SubmissionsClient({ items, students }: Props) {
                             {/* Files */}
                             {item.submissions.filter((s) => s.fileUrl).length > 0 && (
                               <div>
-                                <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 6 }} className="cinzel">SUBMITTED FILES</div>
+                                <div
+                                  style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 6 }}
+                                  className="cinzel"
+                                >
+                                  SUBMITTED FILES
+                                </div>
                                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                                  {item.submissions.filter((s) => s.fileUrl).map((s) => (
-                                    <FilePreview key={s.id} sub={s} />
-                                  ))}
+                                  {item.submissions
+                                    .filter((s) => s.fileUrl)
+                                    .map((s) => (
+                                      <FilePreview key={s.id} sub={s} />
+                                    ))}
                                 </div>
                               </div>
                             )}
 
                             {/* Text response */}
-                            {item.submissions.filter((s) => s.content).map((s) => (
-                              <div key={s.id}>
-                                <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 4 }} className="cinzel">WRITTEN RESPONSE</div>
-                                <div style={{ fontSize: 13, color: "#9AABBC", background: "rgba(0,0,0,0.2)", padding: "8px 12px", borderRadius: 6, lineHeight: 1.6 }}>
-                                  {s.content}
+                            {item.submissions
+                              .filter((s) => s.content)
+                              .map((s) => (
+                                <div key={s.id}>
+                                  <div
+                                    style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 4 }}
+                                    className="cinzel"
+                                  >
+                                    WRITTEN RESPONSE
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 13,
+                                      color: "#9AABBC",
+                                      background: "rgba(0,0,0,0.2)",
+                                      padding: "8px 12px",
+                                      borderRadius: 6,
+                                      lineHeight: 1.6,
+                                    }}
+                                  >
+                                    {s.content}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
 
                             {/* Student notes */}
                             {item.notes && (
@@ -330,15 +425,28 @@ export function SubmissionsClient({ items, students }: Props) {
 
                             {/* Admin note */}
                             {item.adminNote && (
-                              <div style={{ fontSize: 12, color: "#B0A0F0" }}>
-                                💬 {item.adminNote}
-                              </div>
+                              <div style={{ fontSize: 12, color: "#B0A0F0" }}>💬 {item.adminNote}</div>
                             )}
+
+                            {/* Edit timer */}
+                            <div>
+                              <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 6 }} className="cinzel">
+                                TIMER DURATION
+                              </div>
+                              <EditTimerPanel
+                                taskId={item.taskId}
+                                currentSeconds={effectiveTimer}
+                                onSaved={markTimerSaved}
+                              />
+                            </div>
 
                             {/* Award points if missing */}
                             {needsPoints && (
                               <div>
-                                <div style={{ fontSize: 11, color: "#F08080", letterSpacing: "0.08em", marginBottom: 6 }} className="cinzel">
+                                <div
+                                  style={{ fontSize: 11, color: "#F08080", letterSpacing: "0.08em", marginBottom: 6 }}
+                                  className="cinzel"
+                                >
                                   APPROVAL POINTS NOT YET AWARDED
                                 </div>
                                 <AwardPointsPanel item={item} onAwarded={markAwarded} />

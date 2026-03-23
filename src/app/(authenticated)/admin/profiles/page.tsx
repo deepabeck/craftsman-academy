@@ -13,8 +13,29 @@ export interface ProfileData {
   subjects: { id: string; name: string; icon: string; color: string; days: string[] }[];
 }
 
+export interface AdminProfileData {
+  id: string;
+  displayName: string;
+  tagline: string;
+  avatarUrl: string | null;
+}
+
 export default async function ProfilesPage() {
   const supabase = await createClient();
+
+  // ── Fetch admin profile ───────────────────────────────────────────────────
+  const { data: adminRow } = await supabase
+    .from("profiles")
+    .select("id, display_name, tagline, avatar_url")
+    .eq("role", "admin")
+    .maybeSingle();
+
+  const adminProfile: AdminProfileData = {
+    id: adminRow?.id ?? "",
+    displayName: adminRow?.display_name ?? "Admin",
+    tagline: adminRow?.tagline ?? "",
+    avatarUrl: adminRow?.avatar_url ?? null,
+  };
 
   // ── Fetch student profiles (exclude admin) ────────────────────────────────
   const { data: profileRows, error } = await supabase
@@ -73,5 +94,5 @@ export default async function ProfilesPage() {
       })),
   }));
 
-  return <ProfilesClient profiles={profiles} />;
+  return <ProfilesClient profiles={profiles} adminProfile={adminProfile} />;
 }

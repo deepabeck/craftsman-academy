@@ -4,10 +4,11 @@ import { useRef, useState, useTransition } from "react";
 import { changeOwnPassword, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { Icon, PageHeader } from "@/components/ui";
 import { gradeLabel, rgba } from "@/lib/utils";
-import type { ProfileData } from "./page";
+import type { AdminProfileData, ProfileData } from "./page";
 
 interface Props {
   profiles: ProfileData[];
+  adminProfile: AdminProfileData;
 }
 
 const labelStyle = {
@@ -18,7 +19,7 @@ const labelStyle = {
   textTransform: "uppercase" as const,
 };
 
-export function ProfilesClient({ profiles: initialProfiles }: Props) {
+export function ProfilesClient({ profiles: initialProfiles, adminProfile: initialAdmin }: Props) {
   const [profiles, setProfiles] = useState(initialProfiles);
   const [activeId, setActiveId] = useState(initialProfiles[0]?.id ?? "");
   const [saved, setSaved] = useState(false);
@@ -34,7 +35,15 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   const [pwError, setPwError] = useState<string | null>(null);
   const [isPwPending, startPwTransition] = useTransition();
 
-  // Admin own password state
+  // Admin profile state
+  const [admin, setAdmin] = useState(initialAdmin);
+  const [adminSaved, setAdminSaved] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminUploading, setAdminUploading] = useState(false);
+  const [isAdminPending, startAdminTransition] = useTransition();
+  const adminFileRef = useRef<HTMLInputElement>(null);
+
+  // Admin password state
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminPwSaved, setAdminPwSaved] = useState(false);
@@ -75,6 +84,54 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         setTimeout(() => setAdminPwSaved(false), 3000);
       }
     });
+  };
+
+  const handleAdminSave = () => {
+    setAdminError(null);
+    setAdminSaved(false);
+    startAdminTransition(async () => {
+      const result = await updateProfile({
+        id: admin.id,
+        displayName: admin.displayName,
+        tagline: admin.tagline,
+        avatarUrl: admin.avatarUrl,
+      });
+      if (result.error) {
+        setAdminError(result.error);
+      } else {
+        setAdminSaved(true);
+        setTimeout(() => setAdminSaved(false), 3000);
+      }
+    });
+  };
+
+  const handleAdminAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localUrl = URL.createObjectURL(file);
+    setAdmin((prev) => ({ ...prev, avatarUrl: localUrl }));
+    setAdminUploading(true);
+    setAdminError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("studentKey", "admin");
+      const { url, error: uploadErr } = await uploadAvatar(formData);
+      if (uploadErr || !url) {
+        setAdminError(uploadErr ?? "Upload failed");
+        setAdmin((prev) => ({ ...prev, avatarUrl: initialAdmin.avatarUrl }));
+      } else {
+        setAdmin((prev) => ({ ...prev, avatarUrl: url }));
+        startAdminTransition(async () => {
+          await updateProfile({ id: admin.id, displayName: admin.displayName, tagline: admin.tagline, avatarUrl: url });
+        });
+        setAdminSaved(true);
+        setTimeout(() => setAdminSaved(false), 3000);
+      }
+    } finally {
+      setAdminUploading(false);
+      if (adminFileRef.current) adminFileRef.current.value = "";
+    }
   };
 
   const upd = (key: keyof ProfileData, value: string) => {
@@ -153,27 +210,118 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   const fallbackAvatar = `/assets/profile-${profile.studentKey || "deven"}.png`;
   const avatarSrc = profile.avatarUrl ?? fallbackAvatar;
 
+  const adminAvatarSrc = admin.avatarUrl ?? "/assets/profile-admin.png";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
-      <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
-      >
-        <PageHeader icon="profile" title="Student Profiles" sub="Manage student settings and photo" />
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
-          {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
-          <button
-            type="button"
-            className="btn-brass"
-            style={{ padding: "9px 20px", fontSize: 14 }}
-            onClick={handleSave}
-            disabled={isPending}
-          >
-            {isPending ? "Saving…" : "Save Changes"}
-          </button>
+      <PageHeader icon="profile" title="Profiles" sub="Manage admin and student accounts" />
+
+      {/* ── Admin Profile ─────────────────────────────────────────────────── */}
+      <div>
+        <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", marginBottom: 10, paddingLeft: 2 }}>
+          MY PROFILE
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr", gap: 14, alignItems: "start" }}>
+          {/* Photo */}
+          <div className="glass-warm" style={{ padding: 16, borderColor: "rgba(232,168,32,0.32)", textAlign: "center" }}>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 12 }}>
+              PROFILE PHOTO
+            </div>
+            <button
+              type="button"
+              style={{ position: "relative", width: "85%", margin: "0 auto", lineHeight: 0, cursor: "pointer", padding: 0, border: "none", background: "none", display: "block" }}
+              onClick={() => adminFileRef.current?.click()}
+            >
+              {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
+              <img
+                src={adminAvatarSrc}
+                alt={admin.displayName}
+                onError={(e) => { e.currentTarget.src = "/assets/profile-admin.png"; }}
+                style={{ width: "100%", display: "block", borderRadius: 6 }}
+              />
+              <div
+                style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: adminUploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)", transition: "background 0.2s", fontSize: 12, color: adminUploading ? "#E8C870" : "transparent", fontWeight: 600, borderRadius: 6 }}
+                onMouseEnter={(e) => { if (!adminUploading) { e.currentTarget.style.background = "rgba(0,0,0,0.55)"; e.currentTarget.style.color = "#E8C870"; } }}
+                onMouseLeave={(e) => { if (!adminUploading) { e.currentTarget.style.background = "rgba(0,0,0,0)"; e.currentTarget.style.color = "transparent"; } }}
+              >
+                {adminUploading ? "Uploading…" : "Change Photo"}
+              </div>
+            </button>
+            <input ref={adminFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAdminAvatarChange} />
+            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
+          </div>
+
+          {/* Identity */}
+          <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>IDENTITY</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {adminSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+                {adminError && <span style={{ fontSize: 12, color: "#F08080" }}>{adminError}</span>}
+                <button type="button" className="btn-brass" style={{ padding: "7px 16px", fontSize: 13 }} onClick={handleAdminSave} disabled={isAdminPending}>
+                  {isAdminPending ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={labelStyle}>Display Name</div>
+                <input className="inp" value={admin.displayName} onChange={(e) => setAdmin((p) => ({ ...p, displayName: e.target.value }))} />
+              </div>
+              <div>
+                <div style={labelStyle}>Title / Tagline</div>
+                <input className="inp" value={admin.tagline} onChange={(e) => setAdmin((p) => ({ ...p, tagline: e.target.value }))} placeholder="e.g. Operations Engineer" />
+              </div>
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)" }}>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>PASSWORD</div>
+            <div>
+              <div style={labelStyle}>Set New Password</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <input
+                    className="inp"
+                    type={showAdminPassword ? "text" : "password"}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="New password…"
+                    style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
+                    onKeyDown={(e) => e.key === "Enter" && adminPassword.length >= 6 && handleAdminPassword()}
+                  />
+                  <button type="button" onClick={() => setShowAdminPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#506070", padding: 0, lineHeight: 1 }}>
+                    {showAdminPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <button type="button" className="btn-brass" style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }} onClick={handleAdminPassword} disabled={isAdminPwPending || adminPassword.length < 6}>
+                  {isAdminPwPending ? "…" : "Set"}
+                </button>
+              </div>
+              {adminPwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{adminPwError}</div>}
+              {adminPwSaved && <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>}
+              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>Min 6 characters · takes effect immediately</div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ── Student Profiles ──────────────────────────────────────────────── */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", paddingLeft: 2 }}>
+            STUDENT PROFILES
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+            {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
+            <button type="button" className="btn-brass" style={{ padding: "8px 18px", fontSize: 13 }} onClick={handleSave} disabled={isPending}>
+              {isPending ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </div>
 
       {/* Student tabs */}
       <div style={{ display: "flex", gap: 10 }}>
@@ -395,106 +543,49 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         </div>
       </div>
 
-      {/* My Account */}
-      <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.25)" }}>
-        <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
-          MY ACCOUNT
-        </div>
-        <div style={{ maxWidth: 340 }}>
-          <div style={labelStyle}>Change My Password</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ position: "relative", flex: 1 }}>
-              <input
-                className="inp"
-                type={showAdminPassword ? "text" : "password"}
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="New password…"
-                style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
-                onKeyDown={(e) => e.key === "Enter" && adminPassword.length >= 6 && handleAdminPassword()}
-              />
-              <button
-                type="button"
-                onClick={() => setShowAdminPassword((v) => !v)}
-                style={{
-                  position: "absolute",
-                  right: 8,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  color: "#506070",
-                  padding: 0,
-                  lineHeight: 1,
-                }}
-              >
-                {showAdminPassword ? "🙈" : "👁️"}
-              </button>
-            </div>
-            <button
-              type="button"
-              className="btn-brass"
-              style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
-              onClick={handleAdminPassword}
-              disabled={isAdminPwPending || adminPassword.length < 6}
-            >
-              {isAdminPwPending ? "…" : "Set"}
-            </button>
+        {/* Enrolled Subjects */}
+        <div className="glass" style={{ padding: 18 }}>
+          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.08em", marginBottom: 14 }}>
+            ENROLLED SUBJECTS ({profile.subjects.length})
           </div>
-          {adminPwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{adminPwError}</div>}
-          {adminPwSaved && (
-            <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>
-          )}
-          <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
-            Min 6 characters · takes effect immediately
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom row: Enrolled Subjects full width */}
-      <div className="glass" style={{ padding: 18 }}>
-        <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.08em", marginBottom: 14 }}>
-          ENROLLED SUBJECTS ({profile.subjects.length})
-        </div>
-        {profile.subjects.length === 0 ? (
-          <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic" }}>No active subjects assigned.</div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
-            {profile.subjects.map((sub) => (
-              <div
-                key={sub.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  background: "rgba(0,0,0,0.25)",
-                  border: `1px solid ${rgba(sub.color, 0.25)}`,
-                }}
-              >
-                <Icon name={sub.icon} size={26} />
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#EEE4CC",
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {sub.name}
+          {profile.subjects.length === 0 ? (
+            <div style={{ fontSize: 13, color: "#404858", fontStyle: "italic" }}>No active subjects assigned.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
+              {profile.subjects.map((sub) => (
+                <div
+                  key={sub.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: "rgba(0,0,0,0.25)",
+                    border: `1px solid ${rgba(sub.color, 0.25)}`,
+                  }}
+                >
+                  <Icon name={sub.icon} size={26} />
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#EEE4CC",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {sub.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#506070", marginTop: 2 }}>{sub.days.join(" · ")}</div>
                   </div>
-                  <div style={{ fontSize: 11, color: "#506070", marginTop: 2 }}>{sub.days.join(" · ")}</div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

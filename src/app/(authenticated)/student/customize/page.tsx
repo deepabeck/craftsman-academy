@@ -8,8 +8,16 @@ export default async function CustomizePage() {
   } = await supabase.auth.getUser();
 
   const [{ data: profile }, { data: settings }] = await Promise.all([
-    supabase.from("profiles").select("color, display_name, student_key").eq("id", user?.id ?? "").single(),
-    supabase.from("user_settings").select("bg_color").eq("user_id", user?.id ?? "").single(),
+    supabase
+      .from("profiles")
+      .select("color, display_name, student_key")
+      .eq("id", user?.id ?? "")
+      .single(),
+    supabase
+      .from("user_settings")
+      .select("bg_color")
+      .eq("user_id", user?.id ?? "")
+      .single(),
   ]);
 
   return (

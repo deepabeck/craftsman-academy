@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { saveBgColor, saveStudentColor } from "@/app/actions/customize";
 import { HexPicker, PageHeader } from "@/components/ui";
 import { rgba } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function CustomizeClient({ initialColor, initialBgColor, studentKey, displayName }: Props) {
+  const { setUserColor } = useAuth();
   const { setBgColor } = useTheme();
   const [color, setColor] = useState(initialColor);
   const [bgColor, setBgColorLocal] = useState(initialBgColor);
@@ -30,12 +32,15 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
 
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
+    setUserColor(newColor); // live update sidebar immediately
     setColorSaved(false);
     if (colorTimer.current) clearTimeout(colorTimer.current);
     colorTimer.current = setTimeout(async () => {
-      await saveStudentColor(newColor);
-      setColorSaved(true);
-      setTimeout(() => setColorSaved(false), 2500);
+      const result = await saveStudentColor(newColor);
+      if (!result.error) {
+        setColorSaved(true);
+        setTimeout(() => setColorSaved(false), 2500);
+      }
     }, 600);
   };
 
@@ -66,12 +71,26 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
           {colorSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          {/* biome-ignore lint/performance/noImgElement: local asset */}
-          <img
-            src={avatarSrc}
-            alt={displayName}
-            style={{ width: 70, height: "auto", borderRadius: 6, border: `2px solid ${rgba(color, 0.6)}`, flexShrink: 0 }}
-          />
+          <div style={{ flexShrink: 0, textAlign: "center" }}>
+            {/* biome-ignore lint/performance/noImgElement: local asset */}
+            <img
+              src={avatarSrc}
+              alt={displayName}
+              style={{
+                width: 70,
+                height: "auto",
+                borderRadius: 6,
+                border: `2px solid ${rgba(color, 0.6)}`,
+                display: "block",
+              }}
+            />
+            <div
+              className="cinzel"
+              style={{ fontSize: 11, color, letterSpacing: "0.1em", marginTop: 6, fontWeight: 700 }}
+            >
+              {displayName.toUpperCase()}
+            </div>
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
               This color appears on your dashboard, progress bars, and cards.
@@ -93,7 +112,17 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
           Tint the Academy&apos;s atmosphere. The steampunk details stay fixed — only the ambient color shifts.
         </div>
         <HexPicker value={bgColor} onChange={handleBgColorChange} label="Hue Tint" />
-        <div style={{ marginTop: 12, padding: 10, borderRadius: 7, background: "rgba(0,0,0,0.28)", fontSize: 13, color: "#404858", lineHeight: 1.6 }}>
+        <div
+          style={{
+            marginTop: 12,
+            padding: 10,
+            borderRadius: 7,
+            background: "rgba(0,0,0,0.28)",
+            fontSize: 13,
+            color: "#404858",
+            lineHeight: 1.6,
+          }}
+        >
           Try deep blues (#1A3A5C), forest greens (#1A3A28), or warm ambers (#3A2010) for different moods.
         </div>
       </div>

@@ -233,9 +233,9 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
     else if (baseKey === "EXDATE") evExdates.push(toDateKey(line));
   }
 
-  // Sort chronologically, cap at 8
+  // Sort chronologically, cap at 5
   collected.sort((a, b) => a.date.getTime() - b.date.getTime());
-  return collected.slice(0, 8).map((c) => c.event);
+  return collected.slice(0, 5).map((c) => c.event);
 }
 
 /**

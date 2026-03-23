@@ -42,6 +42,12 @@ export function CalendarWidget({ color, events }: CalendarWidgetProps) {
               <span style={{ fontSize: 14, flexShrink: 0 }}>{e.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
+                  className="cinzel"
+                  style={{ fontSize: 12, color: "#D4A830", letterSpacing: "0.07em", marginBottom: 3, fontWeight: 700 }}
+                >
+                  {e.date.toUpperCase()}
+                </div>
+                <div
                   style={{
                     fontSize: 13,
                     color: "#EEE4CC",
@@ -53,7 +59,6 @@ export function CalendarWidget({ color, events }: CalendarWidgetProps) {
                 >
                   {e.label}
                 </div>
-                <div style={{ fontSize: 13, color: "#506070" }}>{e.date}</div>
               </div>
             </div>
           ))}

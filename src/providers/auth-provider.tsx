@@ -8,6 +8,7 @@ export interface AuthUser {
   id: string;
   role: "admin" | "student";
   studentId: string | null; // maps to profiles.student_key ('deven', 'shaan', null for admin)
+  color: string;
 }
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  setUserColor: (color: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -34,9 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(
     async (userId: string) => {
       if (!supabase) return;
-      const { data } = await supabase.from("profiles").select("role, student_key").eq("id", userId).single();
+      const { data } = await supabase.from("profiles").select("role, student_key, color").eq("id", userId).single();
       if (data) {
-        setUser({ id: userId, role: data.role as "admin" | "student", studentId: data.student_key ?? null });
+        setUser({
+          id: userId,
+          role: data.role as "admin" | "student",
+          studentId: data.student_key ?? null,
+          color: data.color ?? "#4A90D0",
+        });
       } else {
         setUser(null);
       }
@@ -87,7 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   }, [supabase, router]);
 
-  const value = useMemo(() => ({ user, isLoading, signIn, signOut }), [user, isLoading, signIn, signOut]);
+  const setUserColor = useCallback((color: string) => {
+    setUser((prev) => (prev ? { ...prev, color } : prev));
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, isLoading, signIn, signOut, setUserColor }),
+    [user, isLoading, signIn, signOut, setUserColor],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -36,12 +36,12 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
 
   // Support both proofTypes array and legacy proofType field
   const proofTypes: string[] = task.proofTypes?.length ? task.proofTypes : [task.proofType ?? "checkbox"];
-  const needsFile = proofTypes.some((pt) => pt === "photo" || pt === "file");
+  const needsFile = proofTypes.some((pt) => pt === "photo" || pt === "file" || pt === "audio");
   const needsTimer = proofTypes.includes("timer");
   const isCheckbox = proofTypes.includes("checkbox") && !needsFile && !needsTimer;
   // Text is the primary proof when it's the only (or dominant) submission type
   const needsText = proofTypes.includes("text") && !needsFile && !needsTimer;
-  const acceptAttr = proofTypes.includes("photo") ? "image/*" : "*/*";
+  const acceptAttr = proofTypes.includes("photo") ? "image/*" : proofTypes.includes("audio") ? "audio/*" : "*/*";
 
   useEffect(() => {
     if (running) {
@@ -167,7 +167,9 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
               <div style={{ fontSize: 13 }}>
                 {proofTypes.includes("photo")
                   ? "Tap to add photos — multiple pages OK"
-                  : "Tap to attach a file (photo, PDF, doc, audio…)"}
+                  : proofTypes.includes("audio")
+                    ? "Tap to attach your audio recording"
+                    : "Tap to attach a file (photo, PDF, doc, audio…)"}
               </div>
               <input type="file" accept={acceptAttr} multiple onChange={addFiles} style={{ display: "none" }} />
             </label>

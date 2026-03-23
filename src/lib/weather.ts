@@ -63,7 +63,7 @@ export async function fetchWeather(): Promise<WeatherData | null> {
       "&hourly=temperature_2m,weathercode" +
       "&timezone=America%2FDenver" +
       "&temperature_unit=fahrenheit" +
-      "&forecast_days=1";
+      "&forecast_days=2";
 
     const res = await fetch(url, { next: { revalidate: 900 } });
     if (!res.ok) return null;
@@ -73,25 +73,21 @@ export async function fetchWeather(): Promise<WeatherData | null> {
 
     const [condition, icon] = wmoInfo(Number(data.current.weathercode));
 
-    // Current Denver hour extracted from the API's local-time strings
-    // e.g. "2026-03-21T09:00" → 9
-    const nowHour = Number(
-      new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        hour12: false,
-        timeZone: "America/Denver",
-      }).format(new Date()),
-    );
-
-    // Pick up to 8 upcoming hourly slots
+    // Pick next 8 upcoming hourly slots (spans midnight if needed)
     const times: string[] = data.hourly.time;
     const temps: number[] = data.hourly.temperature_2m;
     const codes: number[] = data.hourly.weathercode;
 
+    // Current Denver datetime as "YYYY-MM-DDTHH:00" for string comparison
+    const nowDenver = new Date()
+      .toLocaleString("sv-SE", { timeZone: "America/Denver" })
+      .replace(" ", "T")
+      .slice(0, 16);
+
     const hourly: WeatherData["hourly"] = [];
     for (let i = 0; i < times.length && hourly.length < 8; i++) {
+      if (times[i] < nowDenver) continue;
       const h = Number(times[i].slice(11, 13)); // "T09:00" → 9
-      if (h < nowHour) continue;
       const [, hIcon] = wmoInfo(codes[i]);
       hourly.push({ t: hourLabel(h), icon: hIcon, temp: Math.round(temps[i]) });
     }

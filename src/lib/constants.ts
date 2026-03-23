@@ -16,6 +16,7 @@ export const ICON_MAP: Record<string, string> = {
   geography: "/assets/icon-geography.png",
   science: "/assets/icon-science.png",
   reading: "/assets/icon-reading-writing.png",
+  "reading-writing": "/assets/icon-reading-writing.png",
   coding: "/assets/icon-coding.png",
   music: "/assets/icon-music-composition.png",
   piano: "/assets/icon-piano.png",

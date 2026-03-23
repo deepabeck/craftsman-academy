@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cinzel, Space_Grotesk } from "next/font/google";
 import { ClientLayout } from "./client-layout";
 import "./globals.css";
@@ -20,6 +20,20 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Craftsman Academy",
   description: "Homeschool Management Portal",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Craftsman Academy",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    apple: "/assets/logo-craftsmanacademy.png",
+  },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#08111E",
 };
 
 export default function RootLayout({

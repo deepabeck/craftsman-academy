@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { awardWeeklyBonus } from "@/app/actions/points";
 import { ensureWeekTasks } from "@/app/actions/tasks";
 import { createClient } from "@/lib/supabase/server";
 import type { Student, Task } from "@/lib/types";
@@ -47,6 +48,15 @@ export default async function WeekPage() {
   } catch (e) {
     console.error("ensureWeekTasks threw:", e);
   }
+
+  // Award weekly bonuses for the prior week (idempotent — dedup index prevents double-awarding)
+  const prevMonday = new Date(monday);
+  prevMonday.setDate(monday.getDate() - 7);
+  const prevFriday = new Date(prevMonday);
+  prevFriday.setDate(prevMonday.getDate() + 4);
+  awardWeeklyBonus(user.id, localDateStr(prevMonday), localDateStr(prevFriday)).catch((e) =>
+    console.error("awardWeeklyBonus error:", e),
+  );
 
   // Fetch all this week's tasks
   const { data: rawTasks, error } = await supabase

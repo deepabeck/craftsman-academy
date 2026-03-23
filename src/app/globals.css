@@ -42,6 +42,7 @@ body {
   height: 100%;
   overflow: hidden;
   font-family: var(--font-body), "Space Grotesk", sans-serif;
+  background-color: #08111e;
 }
 #__next {
   height: 100%;
@@ -553,6 +554,15 @@ textarea.inp {
 }
 .coin-spin {
   animation: coinSpin 3s linear infinite;
+  display: inline-block;
+}
+
+@keyframes gearSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.gear-spin {
+  animation: gearSpin 1.8s linear infinite;
   display: inline-block;
 }
 

@@ -15,11 +15,25 @@ const NAV_ITEMS = [
   { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },
 ];
 
-interface StudentSidebarProps {
-  student: Student;
+function CoinIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Coin face */}
+      <circle cx="12" cy="12" r="10.5" fill="#6B4608" stroke="#E8A820" strokeWidth="1.4" />
+      {/* Inner ring detail */}
+      <circle cx="12" cy="12" r="8" fill="none" stroke="#C8860A" strokeWidth="0.7" strokeDasharray="2.2 1.6" />
+      {/* 4-pointed star */}
+      <path d="M12 6 L13.8 10.2 L18 12 L13.8 13.8 L12 18 L10.2 13.8 L6 12 L10.2 10.2 Z" fill="#E8A820" />
+    </svg>
+  );
 }
 
-export function StudentSidebar({ student }: StudentSidebarProps) {
+interface StudentSidebarProps {
+  student: Student;
+  pointsBalance: number | null;
+}
+
+export function StudentSidebar({ student, pointsBalance }: StudentSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
 
@@ -53,6 +67,30 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
             {student.tagline}
           </div>
         </div>
+        {pointsBalance !== null && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "5px 14px 2px",
+            }}
+          >
+            <CoinIcon />
+            <span
+              className="cinzel"
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#E8A820",
+                letterSpacing: "0.04em",
+                textShadow: "0 1px 6px rgba(0,0,0,0.9)",
+              }}
+            >
+              {pointsBalance.toLocaleString()} pts
+            </span>
+          </div>
+        )}
         <Divider />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, paddingTop: 4, overflowY: "auto" }}>
           {NAV_ITEMS.map((t) => (

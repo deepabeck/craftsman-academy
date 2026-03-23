@@ -17,3 +17,4 @@ out/
 # misc
 outputs/
 .github_token
+.vercel

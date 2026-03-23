@@ -4,25 +4,33 @@ import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { fetchWeather } from "@/lib/weather";
-import type { WeekSummary } from "./today-client";
+import type { LateTask, WeekSummary } from "./today-client";
 import { TodayClient } from "./today-client";
 
-/** Returns the Mon–Sun of the calendar week immediately preceding today. */
+/** Family's local timezone — Vercel servers run in UTC so we must be explicit. */
+const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+
+function fmt(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Returns the Mon–Fri of the immediately preceding school week (for Saturday rest day). */
+function currentWeekMonFri(saturday: Date): { start: string; end: string } {
+  const monday = new Date(saturday);
+  monday.setDate(saturday.getDate() - 5); // Saturday − 5 = Monday
+  const friday = new Date(saturday);
+  friday.setDate(saturday.getDate() - 1); // Saturday − 1 = Friday
+  return { start: fmt(monday), end: fmt(friday) };
+}
+
+/** Returns the Mon–Fri of the most recently completed school week (for generic rest days). */
 function getPrecedingWeek(today: Date): { start: string; end: string; label: string } {
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-  const dow = today.getDay(); // 0=Sun, 1=Mon … 6=Sat
+  const dow = today.getDay();
   const daysSinceMonday = dow === 0 ? 6 : dow - 1;
-
-  // Last Sunday = this Monday − 1 day
   const lastSunday = new Date(today);
   lastSunday.setDate(today.getDate() - daysSinceMonday - 1);
-
-  // Last Monday = last Sunday − 6 days
   const lastMonday = new Date(lastSunday);
   lastMonday.setDate(lastSunday.getDate() - 6);
-
   const label = `${lastMonday.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${lastSunday.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
   return { start: fmt(lastMonday), end: fmt(lastSunday), label };
 }
@@ -34,7 +42,6 @@ export default async function TodayPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name, color, avatar_url, student_key")
@@ -43,10 +50,11 @@ export default async function TodayPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Use the server machine's LOCAL date so weekend/weekday is correct.
-  // toISOString() is UTC and causes off-by-one errors in evening hours.
-  const _d = new Date();
-  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+  // Use the family's local timezone — Vercel runs in UTC which causes off-by-one
+  // errors (Sunday evening shows Monday, etc.)
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ }); // YYYY-MM-DD
+  const _d = new Date(`${today}T12:00:00`); // noon local, safe for day arithmetic
+  const dayOfWeek = _d.getDay(); // 0=Sun 1=Mon … 6=Sat
 
   // Fetch current grade from school_years
   const { data: schoolYear } = await supabase
@@ -83,9 +91,8 @@ export default async function TodayPage() {
     .eq("task_date", today);
 
   if (error) console.error("Today tasks fetch error:", error.message, "student:", user.id, "date:", today);
-  console.log(`Today tasks for ${profile.student_key} on ${today}: ${rawTasks?.length ?? 0} rows`);
+  console.log(`Today tasks for ${profile.student_key} on ${today} (${dayOfWeek}): ${rawTasks?.length ?? 0} rows`);
 
-  // Map DB rows → Task shape (compatible with existing UI components)
   const tasks: Task[] = (rawTasks ?? [])
     .sort(
       (a, b) =>
@@ -119,10 +126,38 @@ export default async function TodayPage() {
       };
     });
 
-  // When there are no tasks today, fetch preceding week summary for the
-  // contextual message (all done vs. still incomplete).
+  // ── Saturday: fetch incomplete tasks from this week (Mon–Fri) ───────────────
+  let lateTasks: LateTask[] = [];
+  if (dayOfWeek === 6 || tasks.length === 0) {
+    const range =
+      dayOfWeek === 6
+        ? currentWeekMonFri(_d)
+        : getPrecedingWeek(_d);
+
+    const { data: lateData } = await supabase
+      .from("tasks")
+      .select("id, status, subjects!inner(name, icon, color)")
+      .eq("student_id", user.id)
+      .gte("task_date", range.start)
+      .lte("task_date", range.end)
+      .in("status", ["pending", "missed"]);
+
+    lateTasks = (lateData ?? []).map((t) => {
+      // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+      const sub = t.subjects as any;
+      return {
+        id: t.id,
+        subjectName: sub.name,
+        subjectIcon: sub.icon,
+        subjectColor: sub.color,
+        status: t.status as "pending" | "missed",
+      };
+    });
+  }
+
+  // ── Generic rest-day week summary (for non-Saturday no-task days) ───────────
   let weekSummary: WeekSummary | null = null;
-  if (tasks.length === 0) {
+  if (tasks.length === 0 && dayOfWeek !== 6 && dayOfWeek !== 0) {
     const { start, end, label } = getPrecedingWeek(_d);
     const { data: prevTasks } = await supabase
       .from("tasks")
@@ -156,6 +191,8 @@ export default async function TodayPage() {
       weather={weatherData}
       calendarEvents={calendarEvents}
       weekSummary={weekSummary}
+      dayOfWeek={dayOfWeek}
+      lateTasks={lateTasks}
     />
   );
 }

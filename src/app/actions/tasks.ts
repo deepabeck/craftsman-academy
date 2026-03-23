@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { scoreTaskWithAI } from "./ai-score";
+import { awardApprovalPoints, awardSubmissionPoints } from "./points";
 
 /** Called on page load — marks yesterday's missed tasks then generates today's. */
 export async function ensureDailyTasks(date: string) {
@@ -141,6 +142,7 @@ export async function submitTaskProof(
   if (newStatus === "review") {
     after(() => scoreTaskWithAI(taskId).catch((err) => console.error("[tasks] AI scoring error:", err)));
   }
+  after(() => awardSubmissionPoints(taskId, user.id).catch((err) => console.error("[points] submission error:", err)));
 
   return { success: true, status: newStatus };
 }
@@ -170,6 +172,9 @@ export async function approveTask(taskId: string, score: number, reviewerNotes?:
     })
     .eq("id", taskId);
   if (error) return { success: false, error: error.message };
+
+  after(() => awardApprovalPoints(taskId, score).catch((err) => console.error("[points] approval error:", err)));
+
   return { success: true };
 }
 

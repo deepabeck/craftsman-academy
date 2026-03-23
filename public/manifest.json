@@ -1,0 +1,17 @@
+{
+  "name": "Craftsman Academy",
+  "short_name": "Craftsman",
+  "description": "Homeschool Management Portal",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08111E",
+  "theme_color": "#08111E",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/assets/logo-craftsmanacademy.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

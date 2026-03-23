@@ -27,8 +27,7 @@ export default async function JournalPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  const _d = new Date();
-  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: process.env.APP_TIMEZONE ?? "America/Denver" });
 
   // Fetch current grade from school_years
   const { data: schoolYear } = await supabase
@@ -68,7 +67,7 @@ export default async function JournalPage() {
   });
 
   const todayEntry = entries.find((e) => e.date === today) ?? null;
-  const pastEntries = entries.filter((e) => e.date !== today);
+  const pastEntries = entries.filter((e) => e.date < today);
 
   const student: Student = {
     id: profile.student_key ?? "",

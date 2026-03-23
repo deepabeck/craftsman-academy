@@ -70,8 +70,8 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   if (error) return { error: error.message };
 
-  // If the scheduled days changed, resync pending tasks for the rest of this week
-  if (daysChanged) {
+  // Always resync pending tasks for the rest of this week when subject is saved
+  if (daysChanged || !daysChanged) {
     const today = todayLocal();
     const monday = currentWeekMonday();
 

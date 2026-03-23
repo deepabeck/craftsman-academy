@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
-import { getStudentBalance } from "@/app/actions/points";
+import { type ReactNode } from "react";
 import { StudentSidebar } from "@/components/layout/student-sidebar";
+import { PointsProvider } from "@/contexts/points-context";
 import { BASE_STUDENTS, SUBJECTS_ALL } from "@/lib/constants";
 import type { Student } from "@/lib/types";
 import { useAuth } from "@/providers/auth-provider";
@@ -17,20 +17,14 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
     subjects: SUBJECTS_ALL.filter((s) => !s.only || s.only === studentId),
   };
 
-  const [pointsBalance, setPointsBalance] = useState<number | null>(null);
-  useEffect(() => {
-    if (!user?.id) return;
-    getStudentBalance(user.id)
-      .then(setPointsBalance)
-      .catch(() => setPointsBalance(0));
-  }, [user?.id]);
-
   return (
-    <div style={{ height: "100vh", display: "flex", overflow: "hidden" }}>
-      <StudentSidebar student={student} pointsBalance={pointsBalance} />
-      <div className="main-scroll">
-        <div className="content-wrap">{children}</div>
+    <PointsProvider>
+      <div style={{ height: "100vh", display: "flex", overflow: "hidden" }}>
+        <StudentSidebar student={student} />
+        <div className="main-scroll">
+          <div className="content-wrap">{children}</div>
+        </div>
       </div>
-    </div>
+    </PointsProvider>
   );
 }

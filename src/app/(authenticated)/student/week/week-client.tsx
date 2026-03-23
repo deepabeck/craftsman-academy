@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { markTaskDone, submitTaskProof } from "@/app/actions/tasks";
 import { type StoragePath, SubmitModal } from "@/components/modals/submit-modal";
 import { Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
+import { usePoints } from "@/contexts/points-context";
 import type { Student, Task } from "@/lib/types";
 import { rgba } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
   });
   const [modal, setModal] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
+  const { refreshBalance } = usePoints();
 
   const today = todayStr();
 
@@ -63,6 +65,8 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
         setTasks((prev) =>
           prev.map((t) => (t.id === tid ? { ...t, status: task.status, completedAt: task.completedAt } : t)),
         );
+      } else if (nowDone) {
+        refreshBalance(1500);
       }
     });
   };
@@ -94,6 +98,8 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
       });
       if (!result.success) {
         setTasks((prev) => prev.map((t) => (t.id === tid ? { ...t, status: task.status, notes: task.notes } : t)));
+      } else {
+        refreshBalance(1500);
       }
     });
   };

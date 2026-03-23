@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Divider, Icon, PortraitFrame } from "@/components/ui";
+import { usePoints } from "@/contexts/points-context";
 import type { Student } from "@/lib/types";
 import { useAuth } from "@/providers/auth-provider";
 
@@ -30,12 +31,12 @@ function CoinIcon() {
 
 interface StudentSidebarProps {
   student: Student;
-  pointsBalance: number | null;
 }
 
-export function StudentSidebar({ student, pointsBalance }: StudentSidebarProps) {
+export function StudentSidebar({ student }: StudentSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const { balance: pointsBalance } = usePoints();
 
   return (
     <div className="sidebar">

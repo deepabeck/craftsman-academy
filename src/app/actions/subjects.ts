@@ -134,6 +134,18 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
         .upsert(taskRows, { onConflict: "student_id,subject_id,task_date", ignoreDuplicates: true });
       if (insertErr) console.error("Failed to insert resynced tasks:", insertErr.message);
     }
+
+    // Always sync requires_review on pending tasks this week — ignoreDuplicates above
+    // won't update existing tasks, so we patch it separately.
+    if (weekDates.length > 0) {
+      await service
+        .from("tasks")
+        .update({ requires_review: subject.requiresReview ?? false })
+        .eq("subject_id", id)
+        .eq("status", "pending")
+        .gte("task_date", weekDates[0].dateStr)
+        .lte("task_date", weekDates[weekDates.length - 1].dateStr);
+    }
   }
 
   revalidatePath("/admin/subjects");

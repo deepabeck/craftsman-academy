@@ -33,6 +33,11 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Wall-clock anchor: Date.now() value at which elapsed seconds = 0
+  // Set to (Date.now() - sec*1000) when timer starts/resumes so background time is counted
+  const startEpochRef = useRef<number | null>(null);
+  const secRef = useRef(sec);
+  useEffect(() => { secRef.current = sec; }, [sec]);
 
   // Support both proofTypes array and legacy proofType field
   const proofTypes: string[] = task.proofTypes?.length ? task.proofTypes : [task.proofType ?? "checkbox"];
@@ -43,15 +48,33 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const needsText = proofTypes.includes("text") && !needsFile && !needsTimer;
   const acceptAttr = proofTypes.includes("photo") ? "image/*" : proofTypes.includes("audio") ? "audio/*" : "*/*";
 
+  // Timer: derive elapsed from wall clock so background time is counted correctly on iPad PWA
   useEffect(() => {
     if (running) {
-      intervalRef.current = setInterval(() => setSec((s) => s + 1), 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      startEpochRef.current = Date.now() - secRef.current * 1000;
+      intervalRef.current = setInterval(() => {
+        if (startEpochRef.current !== null) {
+          setSec(Math.floor((Date.now() - startEpochRef.current) / 1000));
+        }
+      }, 500);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+  }, [running]);
+
+  // When the app comes back to the foreground (iPad returning from piano app),
+  // immediately recalculate elapsed time from wall clock
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden && running && startEpochRef.current !== null) {
+        setSec(Math.floor((Date.now() - startEpochRef.current) / 1000));
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [running]);
 
   const addFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,6 +304,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                 onClick={() => {
                   setSec(0);
                   setRunning(false);
+                  startEpochRef.current = null;
                 }}
               >
                 ↺ Reset

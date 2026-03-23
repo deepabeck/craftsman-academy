@@ -5,20 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Subject } from "@/lib/types";
 
-/** Today as YYYY-MM-DD in local time */
+const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+
+/** Today as YYYY-MM-DD in Mountain Time (matches Vercel UTC server) */
 function todayLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 }
 
-/** Monday of the current week as YYYY-MM-DD */
+/** Monday of the current week as YYYY-MM-DD (Mountain Time) */
 function currentWeekMonday(): string {
-  const d = new Date();
-  const dow = d.getDay();
+  const today = todayLocal();
+  const d = new Date(`${today}T12:00:00`);
+  const dow = d.getDay(); // 0=Sun,1=Mon,...
   const diff = dow === 0 ? -6 : 1 - dow;
   d.setDate(d.getDate() + diff);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return d.toLocaleDateString("en-CA", { timeZone: APP_TZ });
 }
+
+/** Day-offset 0–4 → 'Mon'/'Tue'/…/'Fri' */
+const DOW_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 
 /** Slugify a subject name into a stable ID for new subjects. */
 function slugify(name: string): string {
@@ -70,35 +75,62 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   if (error) return { error: error.message };
 
-  // If the scheduled days changed, resync pending tasks for the rest of this week
+  // If the scheduled days changed (or subject is new), resync pending tasks for the rest of this week
   if (daysChanged) {
     const today = todayLocal();
     const monday = currentWeekMonday();
 
-    // Delete all pending tasks for this subject from today through Friday
-    await service
-      .from("tasks")
-      .delete()
-      .eq("subject_id", id)
-      .eq("status", "pending")
-      .gte("task_date", today)
-      .lte(
-        "task_date",
-        (() => {
-          const fri = new Date(`${monday}T00:00:00`);
-          fri.setDate(fri.getDate() + 4);
-          return `${fri.getFullYear()}-${String(fri.getMonth() + 1).padStart(2, "0")}-${String(fri.getDate()).padStart(2, "0")}`;
-        })(),
-      );
-
-    // Re-run generate_daily_tasks for each remaining day — recreates on correct new days
+    // Build list of dates Mon–Fri from today onward
+    const weekDates: { dateStr: string; dayName: string }[] = [];
     for (let i = 0; i <= 4; i++) {
-      const d = new Date(`${monday}T00:00:00`);
+      const d = new Date(`${monday}T12:00:00`);
       d.setDate(d.getDate() + i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      if (dateStr >= today) {
-        await service.rpc("generate_daily_tasks", { p_date: dateStr });
+      const dateStr = d.toLocaleDateString("en-CA", { timeZone: APP_TZ });
+      if (dateStr >= today) weekDates.push({ dateStr, dayName: DOW_NAMES[i] });
+    }
+
+    // Delete all pending tasks for this subject this week (from today on)
+    if (weekDates.length > 0) {
+      await service
+        .from("tasks")
+        .delete()
+        .eq("subject_id", id)
+        .eq("status", "pending")
+        .gte("task_date", weekDates[0].dateStr)
+        .lte("task_date", weekDates[weekDates.length - 1].dateStr);
+    }
+
+    // Get all students this subject applies to
+    const { data: students } = await service.from("profiles").select("id, student_key").eq("role", "student");
+
+    const applicableStudents = (students ?? []).filter(
+      // biome-ignore lint/suspicious/noExplicitAny: student row
+      (s: any) => !subject.only || s.student_key === subject.only,
+    );
+
+    // Directly insert tasks for each student × each scheduled day remaining this week
+    // biome-ignore lint/suspicious/noExplicitAny: task row
+    const taskRows: any[] = [];
+    for (const { dateStr, dayName } of weekDates) {
+      if (!(newDays as string[]).includes(dayName)) continue;
+      for (const student of applicableStudents) {
+        taskRows.push({
+          student_id: student.id,
+          subject_id: id,
+          task_date: dateStr,
+          proof_type: (subject.proofTypes ?? ["checkbox"])[0],
+          requires_review: subject.requiresReview ?? false,
+          duration: subject.duration ?? 45,
+          status: "pending",
+        });
       }
+    }
+
+    if (taskRows.length > 0) {
+      const { error: insertErr } = await service
+        .from("tasks")
+        .upsert(taskRows, { onConflict: "student_id,subject_id,task_date", ignoreDuplicates: true });
+      if (insertErr) console.error("Failed to insert resynced tasks:", insertErr.message);
     }
   }
 
@@ -126,11 +158,16 @@ export async function deleteSubject(id: string): Promise<{ error?: string }> {
     };
   }
 
+  // Delete pending tasks first — FK is ON DELETE RESTRICT so they must go before the subject
+  await service.from("tasks").delete().eq("subject_id", id).eq("status", "pending");
+
   const supabase = await createClient();
   const { error } = await supabase.from("subjects").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/subjects");
   revalidatePath("/admin/lessons");
+  revalidatePath("/student/week");
+  revalidatePath("/student/today");
   return {};
 }
 

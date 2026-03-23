@@ -44,6 +44,17 @@ export async function setStudentPassword(userId: string, password: string): Prom
 }
 
 /**
+ * Change the currently logged-in admin's own password.
+ */
+export async function changeOwnPassword(password: string): Promise<{ error?: string }> {
+  if (password.length < 6) return { error: "Password must be at least 6 characters." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  return {};
+}
+
+/**
  * Upload an avatar image server-side using the service role client (bypasses RLS).
  * Returns the public URL of the uploaded file.
  */

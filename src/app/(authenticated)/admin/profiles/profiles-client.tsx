@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
+import { changeOwnPassword, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { Icon, PageHeader } from "@/components/ui";
 import { gradeLabel, rgba } from "@/lib/utils";
 import type { ProfileData } from "./page";
@@ -27,12 +27,19 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Password reset state
+  // Student password reset state
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [pwSaved, setPwSaved] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [isPwPending, startPwTransition] = useTransition();
+
+  // Admin own password state
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminPwSaved, setAdminPwSaved] = useState(false);
+  const [adminPwError, setAdminPwError] = useState<string | null>(null);
+  const [isAdminPwPending, startAdminPwTransition] = useTransition();
 
   const profile = profiles.find((p) => p.id === activeId) ?? profiles[0];
 
@@ -51,6 +58,21 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
         setPwSaved(true);
         setNewPassword("");
         setTimeout(() => setPwSaved(false), 3000);
+      }
+    });
+  };
+
+  const handleAdminPassword = () => {
+    setAdminPwError(null);
+    setAdminPwSaved(false);
+    startAdminPwTransition(async () => {
+      const result = await changeOwnPassword(adminPassword);
+      if (result.error) {
+        setAdminPwError(result.error);
+      } else {
+        setAdminPwSaved(true);
+        setAdminPassword("");
+        setTimeout(() => setAdminPwSaved(false), 3000);
       }
     });
   };
@@ -369,6 +391,64 @@ export function ProfilesClient({ profiles: initialProfiles }: Props) {
                 Min 6 characters · takes effect immediately
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* My Account */}
+      <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.25)" }}>
+        <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+          MY ACCOUNT
+        </div>
+        <div style={{ maxWidth: 340 }}>
+          <div style={labelStyle}>Change My Password</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input
+                className="inp"
+                type={showAdminPassword ? "text" : "password"}
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="New password…"
+                style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
+                onKeyDown={(e) => e.key === "Enter" && adminPassword.length >= 6 && handleAdminPassword()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPassword((v) => !v)}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "#506070",
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {showAdminPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
+              onClick={handleAdminPassword}
+              disabled={isAdminPwPending || adminPassword.length < 6}
+            >
+              {isAdminPwPending ? "…" : "Set"}
+            </button>
+          </div>
+          {adminPwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{adminPwError}</div>}
+          {adminPwSaved && (
+            <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>
+          )}
+          <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
+            Min 6 characters · takes effect immediately
           </div>
         </div>
       </div>

@@ -203,10 +203,10 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
               padding: 16,
               cursor: "pointer",
               borderRadius: 10,
-              background: activeId === s.id ? rgba(s.color, 0.16) : undefined,
+              background: activeId === s.id ? rgba(s.color, 0.32) : undefined,
               transition: "all 0.2s",
-              borderColor: rgba(s.color, activeId === s.id ? 0.42 : 0.2),
-              boxShadow: activeId === s.id ? `0 0 22px ${rgba(s.color, 0.18)}` : "none",
+              borderColor: rgba(s.color, activeId === s.id ? 0.65 : 0.2),
+              boxShadow: activeId === s.id ? `0 0 28px ${rgba(s.color, 0.35)}` : "none",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>

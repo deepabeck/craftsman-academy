@@ -38,8 +38,10 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   // Fetch old days before updating so we can detect changes
   const { data: existing } = await supabase.from("subjects").select("days").eq("id", id).maybeSingle();
-  const oldDays: number[] = existing?.days ?? [];
-  const newDays: number[] = subject.days ?? [];
+  // biome-ignore lint/suspicious/noExplicitAny: days can be string[] or number[] depending on DB type
+  const oldDays: any[] = existing?.days ?? [];
+  // biome-ignore lint/suspicious/noExplicitAny: days can be string[] or number[] depending on Subject type
+  const newDays: any[] = subject.days ?? [];
   const daysChanged =
     oldDays.length !== newDays.length ||
     oldDays.some((d) => !newDays.includes(d)) ||

@@ -75,8 +75,10 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   if (error) return { error: error.message };
 
-  // If the scheduled days changed (or subject is new), resync pending tasks for the rest of this week
-  if (daysChanged) {
+  // Always ensure tasks exist for the rest of this week when a subject is saved.
+  // On day changes: delete old tasks first. Always upsert for current scheduled days.
+  const isActive = subject.active ?? true;
+  if (isActive && newDays.length > 0) {
     const today = todayLocal();
     const monday = currentWeekMonday();
 
@@ -89,8 +91,8 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
       if (dateStr >= today) weekDates.push({ dateStr, dayName: DOW_NAMES[i] });
     }
 
-    // Delete all pending tasks for this subject this week (from today on)
-    if (weekDates.length > 0) {
+    // If days changed, delete pending tasks for this week so wrong-day tasks are removed
+    if (daysChanged && weekDates.length > 0) {
       await service
         .from("tasks")
         .delete()

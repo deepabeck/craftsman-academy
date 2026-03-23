@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { id: "subjects", path: "/admin/subjects", label: "Subjects", icon: "subjects" },
   { id: "schedule", path: "/admin/lessons", label: "Schedule", icon: "schedule" },
   { id: "review", path: "/admin/review", label: "Review Queue", icon: "review" },
-  { id: "profiles", path: "/admin/profiles", label: "Student Profiles", icon: "profile" },
+  { id: "profiles", path: "/admin/profiles", label: "Profiles", icon: "profile" },
 ];
 
 export function AdminSidebar() {

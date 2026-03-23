@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { awardApprovalPoints } from "@/app/actions/points";
-import { updateTaskTimer } from "@/app/actions/tasks";
+import { approveTask, updateTaskTimer } from "@/app/actions/tasks";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 
@@ -102,7 +101,15 @@ function FilePreview({ sub }: { sub: SubmissionFile }) {
   );
 }
 
-function EditTimerPanel({ taskId, currentSeconds, onSaved }: { taskId: string; currentSeconds: number | null; onSaved: (taskId: string, seconds: number) => void }) {
+function EditTimerPanel({
+  taskId,
+  currentSeconds,
+  onSaved,
+}: {
+  taskId: string;
+  currentSeconds: number | null;
+  onSaved: (taskId: string, seconds: number) => void;
+}) {
   const [minutes, setMinutes] = useState(currentSeconds != null ? Math.round(currentSeconds / 60) : 0);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState("");
@@ -143,8 +150,9 @@ function EditTimerPanel({ taskId, currentSeconds, onSaved }: { taskId: string; c
   );
 }
 
-function AwardPointsPanel({ item, onAwarded }: { item: SubmissionItem; onAwarded: (taskId: string) => void }) {
+function GradePanel({ item, onGraded }: { item: SubmissionItem; onGraded: (taskId: string, score: number) => void }) {
   const [score, setScore] = useState(100);
+  const [note, setNote] = useState("");
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
   const [, startTransition] = useTransition();
@@ -152,36 +160,46 @@ function AwardPointsPanel({ item, onAwarded }: { item: SubmissionItem; onAwarded
   const handle = () => {
     setErr("");
     startTransition(async () => {
-      try {
-        await awardApprovalPoints(item.taskId, score);
+      const result = await approveTask(item.taskId, score, note || undefined);
+      if (result.success) {
         setDone(true);
-        onAwarded(item.taskId);
-      } catch (e) {
-        setErr(String(e));
+        onGraded(item.taskId, score);
+      } else {
+        setErr(result.error ?? "Failed to save grade");
       }
     });
   };
 
-  if (done) return <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Points awarded</span>;
+  if (done) return <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Graded & approved</span>;
 
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-      <select
-        value={score}
-        onChange={(e) => setScore(Number(e.target.value))}
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <select
+          value={score}
+          onChange={(e) => setScore(Number(e.target.value))}
+          className="inp"
+          style={{ fontSize: 12, padding: "4px 8px", width: "auto" }}
+        >
+          {SCORES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 14px" }} onClick={handle}>
+          Grade & Approve
+        </button>
+        {err && <span style={{ fontSize: 11, color: "#F08080" }}>{err}</span>}
+      </div>
+      <input
+        type="text"
         className="inp"
-        style={{ fontSize: 12, padding: "4px 8px", width: "auto" }}
-      >
-        {SCORES.map((s) => (
-          <option key={s.value} value={s.value}>
-            {s.label}
-          </option>
-        ))}
-      </select>
-      <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 12px" }} onClick={handle}>
-        Award Approval Points
-      </button>
-      {err && <span style={{ fontSize: 11, color: "#F08080" }}>{err}</span>}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Optional note to student…"
+        style={{ fontSize: 12, padding: "5px 10px" }}
+      />
     </div>
   );
 }
@@ -189,7 +207,7 @@ function AwardPointsPanel({ item, onAwarded }: { item: SubmissionItem; onAwarded
 export function SubmissionsClient({ items, students }: Props) {
   const [activeStudentId, setActiveStudentId] = useState<string>("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [awardedIds, setAwardedIds] = useState<Set<string>>(new Set());
+  const [gradedItems, setGradedItems] = useState<Record<string, number>>({});
   const [timerOverrides, setTimerOverrides] = useState<Record<string, number>>({});
 
   const filtered = activeStudentId === "all" ? items : items.filter((i) => i.student.id === activeStudentId);
@@ -201,7 +219,7 @@ export function SubmissionsClient({ items, students }: Props) {
       return next;
     });
 
-  const markAwarded = (taskId: string) => setAwardedIds((prev) => new Set([...prev, taskId]));
+  const markGraded = (taskId: string, score: number) => setGradedItems((prev) => ({ ...prev, [taskId]: score }));
   const markTimerSaved = (taskId: string, seconds: number) =>
     setTimerOverrides((prev) => ({ ...prev, [taskId]: seconds }));
 
@@ -279,10 +297,12 @@ export function SubmissionsClient({ items, students }: Props) {
                   const hasText = item.submissions.some((s) => s.content);
                   const effectiveTimer = timerOverrides[item.taskId] ?? item.timerSeconds;
                   const hasTimer = effectiveTimer != null && effectiveTimer > 0;
-                  const needsPoints =
-                    !item.hasApprovalPoints &&
-                    !awardedIds.has(item.taskId) &&
-                    (item.status === "done" || item.status === "approved");
+                  const effectiveScore = gradedItems[item.taskId] ?? item.finalScore;
+                  const effectiveStatus = gradedItems[item.taskId] != null ? "approved" : item.status;
+                  const needsGrade =
+                    gradedItems[item.taskId] == null &&
+                    item.finalScore == null &&
+                    (item.status === "done" || item.status === "review");
 
                   return (
                     <div
@@ -339,17 +359,15 @@ export function SubmissionsClient({ items, students }: Props) {
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           {hasFiles && <span style={{ fontSize: 12, color: "#9AABBC" }}>📎</span>}
                           {hasTimer && (
-                            <span style={{ fontSize: 12, color: "#9AABBC" }}>
-                              ⏱ {formatSeconds(effectiveTimer!)}
-                            </span>
+                            <span style={{ fontSize: 12, color: "#9AABBC" }}>⏱ {formatSeconds(effectiveTimer!)}</span>
                           )}
                           {hasText && <span style={{ fontSize: 12, color: "#9AABBC" }}>📝</span>}
-                          {item.finalScore != null && (
+                          {effectiveScore != null && (
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#70E090" }}>
-                              {Math.round(item.finalScore)}%
+                              {Math.round(effectiveScore)}%
                             </span>
                           )}
-                          {needsPoints && (
+                          {needsGrade && (
                             <span
                               style={{
                                 fontSize: 11,
@@ -359,10 +377,10 @@ export function SubmissionsClient({ items, students }: Props) {
                                 borderRadius: 4,
                               }}
                             >
-                              no grade pts
+                              ungraded
                             </span>
                           )}
-                          <StatusBadge status={item.status as never} />
+                          <StatusBadge status={effectiveStatus as never} />
                           <span style={{ color: "#506070", fontSize: 14 }}>{isOpen ? "▲" : "▼"}</span>
                         </div>
                       </button>
@@ -430,7 +448,10 @@ export function SubmissionsClient({ items, students }: Props) {
 
                             {/* Edit timer */}
                             <div>
-                              <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 6 }} className="cinzel">
+                              <div
+                                style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 6 }}
+                                className="cinzel"
+                              >
                                 TIMER DURATION
                               </div>
                               <EditTimerPanel
@@ -440,16 +461,16 @@ export function SubmissionsClient({ items, students }: Props) {
                               />
                             </div>
 
-                            {/* Award points if missing */}
-                            {needsPoints && (
+                            {/* Grade & approve */}
+                            {needsGrade && (
                               <div>
                                 <div
-                                  style={{ fontSize: 11, color: "#F08080", letterSpacing: "0.08em", marginBottom: 6 }}
+                                  style={{ fontSize: 11, color: "#D4A830", letterSpacing: "0.08em", marginBottom: 6 }}
                                   className="cinzel"
                                 >
-                                  APPROVAL POINTS NOT YET AWARDED
+                                  GRADE THIS SUBMISSION
                                 </div>
-                                <AwardPointsPanel item={item} onAwarded={markAwarded} />
+                                <GradePanel item={item} onGraded={markGraded} />
                               </div>
                             )}
                           </div>

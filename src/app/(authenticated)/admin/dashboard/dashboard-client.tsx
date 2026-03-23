@@ -220,7 +220,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: s.color }}>
                   {s.name}
                 </div>
-                <div style={{ fontSize: 13, color: "#506070" }}>{gradeLabel(s.currentGrade)}</div>
+                <div style={{ fontSize: 13, color: "#EEE4CC" }}>{gradeLabel(s.currentGrade)}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.todayPct}%</div>

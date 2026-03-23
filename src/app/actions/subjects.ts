@@ -32,8 +32,18 @@ function slugify(name: string): string {
 
 export async function saveSubject(subject: Subject): Promise<{ error?: string }> {
   const supabase = await createClient();
+  const service = createServiceClient();
 
   const id = subject.id.startsWith("new-") ? slugify(subject.name) || `subj-${Date.now()}` : subject.id;
+
+  // Fetch old days before updating so we can detect changes
+  const { data: existing } = await supabase.from("subjects").select("days").eq("id", id).maybeSingle();
+  const oldDays: number[] = existing?.days ?? [];
+  const newDays: number[] = subject.days ?? [];
+  const daysChanged =
+    oldDays.length !== newDays.length ||
+    oldDays.some((d) => !newDays.includes(d)) ||
+    newDays.some((d) => !oldDays.includes(d));
 
   const { error } = await supabase.from("subjects").upsert(
     {
@@ -58,8 +68,42 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   if (error) return { error: error.message };
 
+  // If the scheduled days changed, resync pending tasks for the rest of this week
+  if (daysChanged) {
+    const today = todayLocal();
+    const monday = currentWeekMonday();
+
+    // Delete all pending tasks for this subject from today through Friday
+    await service
+      .from("tasks")
+      .delete()
+      .eq("subject_id", id)
+      .eq("status", "pending")
+      .gte("task_date", today)
+      .lte(
+        "task_date",
+        (() => {
+          const fri = new Date(`${monday}T00:00:00`);
+          fri.setDate(fri.getDate() + 4);
+          return `${fri.getFullYear()}-${String(fri.getMonth() + 1).padStart(2, "0")}-${String(fri.getDate()).padStart(2, "0")}`;
+        })(),
+      );
+
+    // Re-run generate_daily_tasks for each remaining day — recreates on correct new days
+    for (let i = 0; i <= 4; i++) {
+      const d = new Date(`${monday}T00:00:00`);
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (dateStr >= today) {
+        await service.rpc("generate_daily_tasks", { p_date: dateStr });
+      }
+    }
+  }
+
   revalidatePath("/admin/subjects");
   revalidatePath("/admin/lessons");
+  revalidatePath("/student/week");
+  revalidatePath("/student/today");
   return {};
 }
 

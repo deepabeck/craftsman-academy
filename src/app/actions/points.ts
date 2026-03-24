@@ -7,7 +7,6 @@ const PTS_SUBMIT = 5;
 const PTS_DAILY_SUBMIT_BONUS = 20;
 const PTS_DAILY_APPROVE_BONUS = 10;
 const PTS_WEEKLY_COMPLETE = 50;
-const PTS_WEEKLY_NO_MISS = 30;
 const PTS_WEEKLY_GRADE_B = 25;
 const PTS_WEEKLY_GRADE_A = 50;
 const PTS_WEEKLY_PERFECT = 100;
@@ -132,7 +131,6 @@ export async function awardApprovalPoints(taskId: string, score: number) {
  *
  * Bonuses:
  *   +50  all tasks completed (no pending/missed)
- *   +30  zero missed tasks
  *   +25  weekly average ≥ 80% (B)
  *   +50  weekly average ≥ 90% (A) — replaces the B bonus
  *   +100 perfect week: all done + no misses + A average
@@ -163,16 +161,6 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
       source_date: weekStart,
       points: PTS_WEEKLY_COMPLETE,
       note: "All tasks completed this week",
-    });
-  }
-
-  if (missed === 0) {
-    await logPoints({
-      student_id: studentId,
-      category: "weekly_no_miss",
-      source_date: weekStart,
-      points: PTS_WEEKLY_NO_MISS,
-      note: "Zero missed tasks this week",
     });
   }
 

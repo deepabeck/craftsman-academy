@@ -84,7 +84,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
             </Link>
             <div
               style={{
-                padding: "10px 20px 10px 44px",
+                padding: "8px 14px 8px 40px",
                 display: "flex",
                 alignItems: "center",
                 background: "rgba(232,168,32,0.07)",
@@ -94,14 +94,14 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
               }}
             >
               {/* Single centered row: balance · Cogs · Shop → */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <span
                   className="cinzel"
                   style={{
-                    fontSize: 20,
+                    fontSize: 15,
                     fontWeight: 700,
                     color: "#E8A820",
-                    letterSpacing: "0.04em",
+                    letterSpacing: "0.02em",
                     lineHeight: 1,
                     textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
                   }}
@@ -111,24 +111,24 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 <span
                   className="cinzel"
                   style={{
-                    fontSize: 16,
+                    fontSize: 13,
                     color: "#C8860A",
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.08em",
                     lineHeight: 1,
                     textShadow: "0 1px 4px rgba(0,0,0,0.8)",
                   }}
                 >
                   Cogs
                 </span>
-                <span style={{ color: "rgba(232,168,32,0.3)", fontSize: 12 }}>|</span>
+                <span style={{ color: "rgba(232,168,32,0.3)", fontSize: 10 }}>|</span>
                 <Link
                   href="/student/shop"
                   className="cinzel"
                   style={{
-                    fontSize: 13,
+                    fontSize: 11,
                     color: "#E8A820",
                     textDecoration: "none",
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.08em",
                     lineHeight: 1,
                     opacity: 0.85,
                   }}

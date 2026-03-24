@@ -407,7 +407,9 @@ export function TodayClient({
                         </div>
                         {isCancelled ? (
                           <div style={{ fontSize: 12, color: "#4A5A70", marginTop: 3 }}>
-                            Excused · {task.cancelledReason ?? "Cancelled"}
+                            {task.cancelledReason?.startsWith("⚡")
+                              ? task.cancelledReason
+                              : `Excused · ${task.cancelledReason ?? "Cancelled"}`}
                           </div>
                         ) : (
                           <>

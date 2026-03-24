@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { MarketplaceItem, MarketplacePurchase } from "@/app/actions/marketplace";
+import type { MarketplaceItem, MarketplacePurchase, SkippableTask } from "@/app/actions/marketplace";
 import {
   approvePurchase,
   deleteMarketplaceItem,
+  getStudentSkippableTasks,
   rejectPurchase,
+  skipDayAndApprove,
+  skipTaskAndApprove,
   upsertMarketplaceItem,
 } from "@/app/actions/marketplace";
 import { PageHeader } from "@/components/ui";
@@ -33,16 +36,82 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
   const [err, setErr] = useState("");
   const [, startTransition] = useTransition();
 
-  const handle = (action: "approved" | "rejected") => {
+  // Skip-task picker state
+  const [showTaskPicker, setShowTaskPicker] = useState(false);
+  const [skippableTasks, setSkippableTasks] = useState<SkippableTask[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
+  // Day-off picker state
+  const [showDayPicker, setShowDayPicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+
+  const isSkipTask = purchase.item.id === "skip-task";
+  const isDayOff = purchase.item.id === "school-day-off";
+  const needsPicker = isSkipTask || isDayOff;
+
+  const handleApproveClick = () => {
+    if (isSkipTask) {
+      setLoadingTasks(true);
+      startTransition(async () => {
+        const tasks = await getStudentSkippableTasks(purchase.student.id);
+        setSkippableTasks(tasks);
+        setSelectedTaskId(tasks[0]?.id ?? "");
+        setLoadingTasks(false);
+        setShowTaskPicker(true);
+      });
+    } else if (isDayOff) {
+      setShowDayPicker(true);
+    } else {
+      handleStandardApprove();
+    }
+  };
+
+  const handleStandardApprove = () => {
     startTransition(async () => {
-      const fn = action === "approved" ? approvePurchase : rejectPurchase;
-      const result = await fn(purchase.id, note || undefined);
+      const result = await approvePurchase(purchase.id, note || undefined);
       if (result.success) {
         setDone(true);
         onAction(purchase.id);
-      } else {
-        setErr(result.error ?? "Failed");
-      }
+      } else setErr(result.error ?? "Failed");
+    });
+  };
+
+  const handleSkipTaskConfirm = () => {
+    if (!selectedTaskId) {
+      setErr("Please select a task");
+      return;
+    }
+    startTransition(async () => {
+      const result = await skipTaskAndApprove(selectedTaskId, purchase.id, note || undefined);
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
+    });
+  };
+
+  const handleSkipDayConfirm = () => {
+    if (!selectedDate) {
+      setErr("Please select a date");
+      return;
+    }
+    startTransition(async () => {
+      const result = await skipDayAndApprove(purchase.student.id, selectedDate, purchase.id, note || undefined);
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
+    });
+  };
+
+  const handleReject = () => {
+    startTransition(async () => {
+      const result = await rejectPurchase(purchase.id, note || undefined);
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
     });
   };
 
@@ -60,6 +129,7 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
         gap: 10,
       }}
     >
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>{purchase.item.emoji}</div>
         <div style={{ flex: 1 }}>
@@ -78,32 +148,138 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          type="text"
-          className="inp"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Optional note to student…"
-          style={{ flex: 1, minWidth: 160, fontSize: 12, padding: "5px 10px" }}
-        />
-        <button
-          type="button"
-          className="btn-brass"
-          style={{ fontSize: 12, padding: "6px 16px" }}
-          onClick={() => handle("approved")}
+
+      {/* Skip-task picker */}
+      {showTaskPicker && (
+        <div
+          style={{
+            background: "rgba(232,168,32,0.06)",
+            border: "1px solid rgba(232,168,32,0.2)",
+            borderRadius: 8,
+            padding: "12px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
         >
-          ✓ Approve
-        </button>
-        <button
-          type="button"
-          className="btn-ghost"
-          style={{ fontSize: 12, padding: "6px 14px", color: "#F08080" }}
-          onClick={() => handle("rejected")}
+          <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em" }}>
+            SELECT TASK TO SKIP
+          </div>
+          {loadingTasks ? (
+            <div style={{ fontSize: 12, color: "#506070" }}>Loading tasks…</div>
+          ) : skippableTasks.length === 0 ? (
+            <div style={{ fontSize: 12, color: "#F08080" }}>No pending tasks found for {purchase.student.name}.</div>
+          ) : (
+            <select
+              className="inp"
+              value={selectedTaskId}
+              onChange={(e) => setSelectedTaskId(e.target.value)}
+              style={{ fontSize: 13, padding: "6px 10px" }}
+            >
+              {skippableTasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.date} — {t.subjectName}
+                </option>
+              ))}
+            </select>
+          )}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: "5px 12px" }}
+              onClick={() => setShowTaskPicker(false)}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ fontSize: 12, padding: "5px 16px" }}
+              onClick={handleSkipTaskConfirm}
+              disabled={!selectedTaskId}
+            >
+              ⚡ Skip This Task & Approve
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Day-off date picker */}
+      {showDayPicker && (
+        <div
+          style={{
+            background: "rgba(232,168,32,0.06)",
+            border: "1px solid rgba(232,168,32,0.2)",
+            borderRadius: 8,
+            padding: "12px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
         >
-          ✕ Reject
-        </button>
-      </div>
+          <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em" }}>
+            SELECT DAY OFF
+          </div>
+          <input
+            type="date"
+            className="inp"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ fontSize: 13, padding: "6px 10px", width: 180 }}
+          />
+          <div style={{ fontSize: 11, color: "#506070" }}>All pending tasks on this date will be cancelled.</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: "5px 12px" }}
+              onClick={() => setShowDayPicker(false)}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ fontSize: 12, padding: "5px 16px" }}
+              onClick={handleSkipDayConfirm}
+              disabled={!selectedDate}
+            >
+              📚 Grant Day Off & Approve
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Note + action buttons */}
+      {!showTaskPicker && !showDayPicker && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <input
+            type="text"
+            className="inp"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional note to student…"
+            style={{ flex: 1, minWidth: 160, fontSize: 12, padding: "5px 10px" }}
+          />
+          <button
+            type="button"
+            className="btn-brass"
+            style={{ fontSize: 12, padding: "6px 16px" }}
+            onClick={handleApproveClick}
+          >
+            {loadingTasks ? "Loading…" : needsPicker ? "✓ Approve →" : "✓ Approve"}
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "6px 14px", color: "#F08080" }}
+            onClick={handleReject}
+          >
+            ✕ Reject
+          </button>
+        </div>
+      )}
       {err && <div style={{ fontSize: 11, color: "#F08080" }}>{err}</div>}
     </div>
   );

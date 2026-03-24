@@ -230,6 +230,86 @@ export async function rejectPurchase(
   return { success: true };
 }
 
+// ── Skip task / day helpers ──────────────────────────────────────────────────
+
+export interface SkippableTask {
+  id: string;
+  date: string;
+  subjectName: string;
+  subjectIcon: string;
+}
+
+/** Admin: get a student's pending (and missed) tasks for the next 14 days. */
+export async function getStudentSkippableTasks(studentId: string): Promise<SkippableTask[]> {
+  const service = createServiceClient();
+  const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+  const today = new Date(new Date().toLocaleString("en-US", { timeZone: APP_TZ }));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const end = new Date(today);
+  end.setDate(today.getDate() + 14);
+
+  const { data } = await service
+    .from("tasks")
+    .select("id, task_date, subject:subjects(name, icon)")
+    .eq("student_id", studentId)
+    .in("status", ["pending", "missed"])
+    .gte("task_date", fmt(today))
+    .lte("task_date", fmt(end))
+    .order("task_date");
+
+  return (data ?? []).map((r) => {
+    const subj = (Array.isArray(r.subject) ? r.subject[0] : r.subject) as {
+      name: string;
+      icon: string;
+    };
+    return {
+      id: r.id,
+      date: r.task_date,
+      subjectName: subj?.name ?? "Task",
+      subjectIcon: subj?.icon ?? "today",
+    };
+  });
+}
+
+/** Admin: skip one task and approve the purchase atomically. */
+export async function skipTaskAndApprove(
+  taskId: string,
+  purchaseId: string,
+  adminNote?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const service = createServiceClient();
+
+  // Cancel the task
+  const { error: taskErr } = await service
+    .from("tasks")
+    .update({ status: "cancelled", cancelled_reason: "⚡ Skipped — marketplace reward" })
+    .eq("id", taskId);
+  if (taskErr) return { success: false, error: taskErr.message };
+
+  return approvePurchase(purchaseId, adminNote);
+}
+
+/** Admin: skip all pending tasks for a given date and approve the purchase. */
+export async function skipDayAndApprove(
+  studentId: string,
+  date: string,
+  purchaseId: string,
+  adminNote?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const service = createServiceClient();
+
+  const { error: taskErr } = await service
+    .from("tasks")
+    .update({ status: "cancelled", cancelled_reason: "⚡ Day off — marketplace reward" })
+    .eq("student_id", studentId)
+    .eq("task_date", date)
+    .in("status", ["pending", "missed"]);
+  if (taskErr) return { success: false, error: taskErr.message };
+
+  return approvePurchase(purchaseId, adminNote);
+}
+
 /** Admin: all marketplace items (including inactive). */
 export async function getAllMarketplaceItems(): Promise<(MarketplaceItem & { isActive: boolean })[]> {
   const service = createServiceClient();

@@ -84,7 +84,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
             </Link>
             <div
               style={{
-                padding: "10px 12px 10px 44px",
+                padding: "6px 12px 6px 44px",
                 background: "rgba(232,168,32,0.07)",
                 border: "1px solid rgba(232,168,32,0.35)",
                 borderRadius: 10,
@@ -107,18 +107,29 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 </span>
                 <span
                   className="cinzel"
-                  style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.15em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+                  style={{
+                    fontSize: 16,
+                    color: "#C8860A",
+                    letterSpacing: "0.1em",
+                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+                  }}
                 >
                   Cogs
                 </span>
               </div>
               {/* Divider */}
-              <div style={{ margin: "6px 0", borderTop: "1px solid rgba(232,168,32,0.25)" }} />
+              <div style={{ margin: "4px 0", borderTop: "1px solid rgba(232,168,32,0.25)" }} />
               {/* Row 3: shop link */}
               <Link
                 href="/student/shop"
                 className="cinzel"
-                style={{ fontSize: 10, color: "#E8A820", textDecoration: "none", letterSpacing: "0.12em", opacity: 0.85 }}
+                style={{
+                  fontSize: 10,
+                  color: "#E8A820",
+                  textDecoration: "none",
+                  letterSpacing: "0.12em",
+                  opacity: 0.85,
+                }}
               >
                 Shop →
               </Link>

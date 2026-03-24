@@ -944,21 +944,23 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                             </span>
                           )}
                           {textNote && (
-                            <span
+                            <div
                               style={{
-                                fontSize: 13,
-                                color: "#B0C0D0",
-                                fontStyle: "italic",
-                                flex: 1,
-                                minWidth: 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                width: "100%",
+                                marginTop: 4,
+                                padding: "10px 12px",
+                                borderRadius: 6,
+                                background: "rgba(0,0,0,0.35)",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                fontSize: 14,
+                                color: "#D0E0F0",
+                                lineHeight: 1.6,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
                               }}
-                              title={textNote}
                             >
-                              💬 {textNote}
-                            </span>
+                              {textNote}
+                            </div>
                           )}
                           {fileSubs.length === 0 && !timerSub && !textNote && (
                             <span style={{ fontSize: 13, color: "#506070", fontStyle: "italic" }}>

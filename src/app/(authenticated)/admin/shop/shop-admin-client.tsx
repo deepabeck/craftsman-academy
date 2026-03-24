@@ -334,7 +334,7 @@ function ItemRow({
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.22)",
+        background: "rgba(0,0,0,0.6)",
         border: `1px solid ${item.isActive ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}`,
         borderRadius: 8,
         padding: "12px 14px",

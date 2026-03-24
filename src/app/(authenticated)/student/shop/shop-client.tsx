@@ -80,7 +80,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases }: Props) 
             <div
               key={item.id}
               style={{
-                background: "rgba(0,0,0,0.3)",
+                background: "rgba(0,0,0,0.65)",
                 border: `1px solid ${isApproved ? "rgba(112,224,144,0.35)" : isPending ? "rgba(212,168,48,0.35)" : "rgba(255,255,255,0.08)"}`,
                 borderRadius: 10,
                 padding: "16px 14px",

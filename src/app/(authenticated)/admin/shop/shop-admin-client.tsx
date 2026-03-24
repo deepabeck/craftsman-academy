@@ -562,7 +562,7 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
 export function ShopAdminClient({ pending: initialPending, history, items: initialItems }: Props) {
   const [pending, setPending] = useState(initialPending);
   const [items, setItems] = useState(initialItems);
-  const [tab, setTab] = useState<"pending" | "history" | "items">("pending");
+  const [tab, setTab] = useState<"pending" | "history" | "items">("items");
 
   const handleAction = (id: string) => setPending((prev) => prev.filter((p) => p.id !== id));
   const handleSaved = (updated: MarketplaceItem & { isActive: boolean }) =>
@@ -574,40 +574,36 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
-      >
-        <PageHeader
-          icon="review"
-          title="Shop"
-          sub={pending.length > 0 ? `${pending.length} pending approval` : "Manage items & approve requests"}
-        />
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-            type="button"
-            className={tab === "pending" ? "btn-brass" : "btn-ghost"}
-            style={{ fontSize: 12, padding: "6px 14px" }}
-            onClick={() => setTab("pending")}
-          >
-            Pending{pending.length > 0 ? ` (${pending.length})` : ""}
-          </button>
-          <button
-            type="button"
-            className={tab === "items" ? "btn-brass" : "btn-ghost"}
-            style={{ fontSize: 12, padding: "6px 14px" }}
-            onClick={() => setTab("items")}
-          >
-            Manage Items
-          </button>
-          <button
-            type="button"
-            className={tab === "history" ? "btn-brass" : "btn-ghost"}
-            style={{ fontSize: 12, padding: "6px 14px" }}
-            onClick={() => setTab("history")}
-          >
-            History
-          </button>
-        </div>
+      <PageHeader
+        icon="coin"
+        title="Shop"
+        sub={pending.length > 0 ? `${pending.length} pending approval` : "Manage items & approve requests"}
+      />
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          type="button"
+          className={tab === "items" ? "btn-brass" : "btn-ghost"}
+          style={{ fontSize: 12, padding: "6px 14px" }}
+          onClick={() => setTab("items")}
+        >
+          Manage Items
+        </button>
+        <button
+          type="button"
+          className={tab === "pending" ? "btn-brass" : "btn-ghost"}
+          style={{ fontSize: 12, padding: "6px 14px" }}
+          onClick={() => setTab("pending")}
+        >
+          Pending{pending.length > 0 ? ` (${pending.length})` : ""}
+        </button>
+        <button
+          type="button"
+          className={tab === "history" ? "btn-brass" : "btn-ghost"}
+          style={{ fontSize: 12, padding: "6px 14px" }}
+          onClick={() => setTab("history")}
+        >
+          History
+        </button>
       </div>
 
       {/* ── Pending tab ── */}

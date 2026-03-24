@@ -224,7 +224,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.todayPct}%</div>
-                <div style={{ fontSize: 13, color: "#506070" }}>today</div>
+                <div style={{ fontSize: 13, color: "#FFFFFF" }}>today</div>
               </div>
             </div>
             <ProgBar value={s.todayPct} color={s.color} />

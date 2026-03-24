@@ -42,7 +42,7 @@ export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
     .from("marketplace_items")
     .select("id, name, description, price, emoji, weekly_limit, sort_order")
     .eq("is_active", true)
-    .order("sort_order");
+    .order("price");
   if (error || !data) return [];
   return data.map((r) => ({
     id: r.id,

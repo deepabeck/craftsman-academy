@@ -91,8 +91,8 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
               }}
             >
-              {/* Row 1: balance + label */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, lineHeight: 1 }}>
+              {/* Single centered row: balance · Cogs · Shop → */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 <span
                   className="cinzel"
                   style={{
@@ -100,6 +100,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                     fontWeight: 700,
                     color: "#E8A820",
                     letterSpacing: "0.04em",
+                    lineHeight: 1,
                     textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
                   }}
                 >
@@ -107,30 +108,15 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 </span>
                 <span
                   className="cinzel"
-                  style={{
-                    fontSize: 16,
-                    color: "#C8860A",
-                    letterSpacing: "0.1em",
-                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
-                  }}
+                  style={{ fontSize: 16, color: "#C8860A", letterSpacing: "0.1em", lineHeight: 1, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
                   Cogs
                 </span>
-              </div>
-              {/* Divider */}
-              <div style={{ margin: "4px 0", borderTop: "1px solid rgba(232,168,32,0.25)" }} />
-              {/* Row 3: shop link — right justified */}
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ color: "rgba(232,168,32,0.3)", fontSize: 12 }}>|</span>
                 <Link
                   href="/student/shop"
                   className="cinzel"
-                  style={{
-                    fontSize: 13,
-                    color: "#E8A820",
-                    textDecoration: "none",
-                    letterSpacing: "0.1em",
-                    opacity: 0.85,
-                  }}
+                  style={{ fontSize: 13, color: "#E8A820", textDecoration: "none", letterSpacing: "0.1em", lineHeight: 1, opacity: 0.85 }}
                 >
                   Shop →
                 </Link>

@@ -22,7 +22,9 @@ export function AdminSidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-content">
-        <PortraitFrame src="/assets/profile-admin-framed.png" name="Parent" />
+        <div style={{ marginBottom: -12 }}>
+          <PortraitFrame src="/assets/profile-admin-framed.png" name="Parent" />
+        </div>
         <div style={{ padding: "4px 14px 6px", flexShrink: 0 }}>
           <div
             className="cinzel"

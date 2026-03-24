@@ -29,7 +29,9 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
   return (
     <div className="sidebar">
       <div className="sidebar-content">
-        <PortraitFrame src={student.avatar} name={student.name} />
+        <div style={{ marginBottom: -12 }}>
+          <PortraitFrame src={student.avatar} name={student.name} />
+        </div>
         <div style={{ padding: "4px 14px 6px", flexShrink: 0 }}>
           <div
             className="cinzel"

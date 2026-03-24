@@ -448,7 +448,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
 
       {/* ── Manage Items tab ── */}
       {tab === "items" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 500 }}>
           {items.map((item) => (
             <ItemRow key={item.id} item={item} onSaved={handleSaved} onDeleted={handleDeleted} />
           ))}

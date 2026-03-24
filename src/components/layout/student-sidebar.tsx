@@ -84,7 +84,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
             </Link>
             <div
               style={{
-                padding: "10px 12px 10px 44px",
+                padding: "10px 20px 10px 44px",
                 display: "flex",
                 alignItems: "center",
                 background: "rgba(232,168,32,0.07)",

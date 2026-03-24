@@ -57,29 +57,37 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
           </div>
         </div>
         {pointsBalance !== null && (
-          <div
-            style={{
-              margin: "6px 12px 4px",
-              padding: "10px 12px",
-              background: "rgba(232,168,32,0.07)",
-              border: "1px solid rgba(232,168,32,0.35)",
-              borderRadius: 10,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
-            }}
-          >
-            <Link href="/student/shop" style={{ textDecoration: "none", flexShrink: 0 }}>
+          <div style={{ margin: "4px 12px 4px 28px", position: "relative" }}>
+            {/* Coin overlapping the left border, centred vertically — same pattern as task cards */}
+            <Link
+              href="/student/shop"
+              style={{
+                textDecoration: "none",
+                position: "absolute",
+                left: -20,
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "block",
+                zIndex: 4,
+              }}
+            >
               <Image
                 src="/assets/icon_coin.png"
                 alt="cogs"
-                width={36}
-                height={36}
-                style={{ display: "block", filter: "drop-shadow(0 0 6px rgba(232,168,32,0.5))" }}
+                width={56}
+                height={56}
+                style={{ display: "block", filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(232,168,32,0.55))" }}
               />
             </Link>
-            <div style={{ lineHeight: 1 }}>
+            <div
+              style={{
+                padding: "10px 12px 10px 44px",
+                background: "rgba(232,168,32,0.07)",
+                border: "1px solid rgba(232,168,32,0.35)",
+                borderRadius: 10,
+                boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
+              }}
+            >
               <div
                 className="cinzel"
                 style={{
@@ -87,6 +95,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                   fontWeight: 700,
                   color: "#E8A820",
                   letterSpacing: "0.04em",
+                  lineHeight: 1,
                   textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
                 }}
               >
@@ -95,25 +104,14 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                 <span
                   className="cinzel"
-                  style={{
-                    fontSize: 10,
-                    color: "#C8860A",
-                    letterSpacing: "0.2em",
-                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
-                  }}
+                  style={{ fontSize: 10, color: "#C8860A", letterSpacing: "0.2em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
                   Cogs
                 </span>
                 <Link
                   href="/student/shop"
-                  style={{
-                    fontSize: 10,
-                    color: "#E8A820",
-                    textDecoration: "none",
-                    letterSpacing: "0.1em",
-                    opacity: 0.8,
-                  }}
                   className="cinzel"
+                  style={{ fontSize: 10, color: "#E8A820", textDecoration: "none", letterSpacing: "0.1em", opacity: 0.8 }}
                 >
                   | SHOP →
                 </Link>

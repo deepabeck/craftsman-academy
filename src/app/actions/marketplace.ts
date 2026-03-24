@@ -11,6 +11,7 @@ export interface MarketplaceItem {
   emoji: string;
   weeklyLimit: number;
   sortOrder: number;
+  shared: boolean;
 }
 
 export interface MarketplacePurchase {
@@ -21,8 +22,19 @@ export interface MarketplacePurchase {
   requestedAt: string;
   reviewedAt: string | null;
   adminNote: string | null;
+  note: string | null;
+  contributionAmount: number | null;
   item: MarketplaceItem;
   student: { id: string; name: string; color: string; avatarUrl: string | null };
+}
+
+export interface SharedContribution {
+  itemId: string;
+  studentId: string;
+  studentName: string;
+  studentColor: string;
+  status: string;
+  note: string | null;
 }
 
 function currentWeekStart(): string {
@@ -40,7 +52,7 @@ export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("marketplace_items")
-    .select("id, name, description, price, emoji, weekly_limit, sort_order")
+    .select("id, name, description, price, emoji, weekly_limit, sort_order, shared")
     .eq("is_active", true)
     .order("price");
   if (error || !data) return [];
@@ -52,11 +64,14 @@ export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
     emoji: r.emoji,
     weeklyLimit: r.weekly_limit,
     sortOrder: r.sort_order,
+    shared: r.shared ?? false,
   }));
 }
 
 /** Student's purchases for the current week. */
-export async function getMyWeeklyPurchases(): Promise<{ itemId: string; status: string }[]> {
+export async function getMyWeeklyPurchases(): Promise<
+  { itemId: string; status: string; note: string | null }[]
+> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,15 +81,52 @@ export async function getMyWeeklyPurchases(): Promise<{ itemId: string; status: 
   const weekStart = currentWeekStart();
   const { data } = await supabase
     .from("marketplace_purchases")
-    .select("item_id, status")
+    .select("item_id, status, note")
     .eq("student_id", user.id)
     .eq("week_start", weekStart)
     .neq("status", "rejected");
-  return (data ?? []).map((r) => ({ itemId: r.item_id, status: r.status }));
+  return (data ?? []).map((r) => ({ itemId: r.item_id, status: r.status, note: r.note ?? null }));
 }
 
-/** Student requests a marketplace item. */
-export async function requestPurchase(itemId: string): Promise<{ success: boolean; error?: string }> {
+/** All this-week contributions to shared items (used to show co-contributor status). */
+export async function getSharedItemContributions(): Promise<SharedContribution[]> {
+  const service = createServiceClient();
+  const weekStart = currentWeekStart();
+
+  const { data: sharedItems } = await service
+    .from("marketplace_items")
+    .select("id")
+    .eq("shared", true)
+    .eq("is_active", true);
+
+  const sharedIds = (sharedItems ?? []).map((i: { id: string }) => i.id);
+  if (sharedIds.length === 0) return [];
+
+  const { data } = await service
+    .from("marketplace_purchases")
+    .select("item_id, status, student_id, note, student:profiles(display_name, color)")
+    .in("item_id", sharedIds)
+    .eq("week_start", weekStart)
+    .neq("status", "rejected");
+
+  return (data ?? []).map((r: Record<string, unknown>) => {
+    const student = r.student as Record<string, unknown>;
+    return {
+      itemId: r.item_id as string,
+      studentId: r.student_id as string,
+      studentName: (student?.display_name as string) ?? "?",
+      studentColor: (student?.color as string) ?? "#4A90D0",
+      status: r.status as string,
+      note: (r.note as string | null) ?? null,
+    };
+  });
+}
+
+/** Student requests a marketplace item. Shared items charge price ÷ 2 per student. */
+export async function requestPurchase(
+  itemId: string,
+  note?: string,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -83,7 +135,7 @@ export async function requestPurchase(itemId: string): Promise<{ success: boolea
 
   const weekStart = currentWeekStart();
 
-  // Check weekly limit
+  // Already requested this week?
   const { data: existing } = await supabase
     .from("marketplace_purchases")
     .select("id")
@@ -91,51 +143,60 @@ export async function requestPurchase(itemId: string): Promise<{ success: boolea
     .eq("item_id", itemId)
     .eq("week_start", weekStart)
     .neq("status", "rejected");
-
   if (existing && existing.length > 0) return { success: false, error: "Already requested this week" };
+
+  // Fetch item
+  const { data: item } = await supabase
+    .from("marketplace_items")
+    .select("price, shared")
+    .eq("id", itemId)
+    .single();
+  if (!item) return { success: false, error: "Item not found" };
+
+  // Shared items cost half each; solo items cost full price
+  const contributionAmount = item.shared ? Math.ceil(item.price / 2) : item.price;
 
   // Check balance
   const service = createServiceClient();
   const { data: logs } = await service.from("points_log").select("points").eq("student_id", user.id);
   const balance = (logs ?? []).reduce((s: number, r: { points: number }) => s + r.points, 0);
-
-  const { data: item } = await supabase.from("marketplace_items").select("price").eq("id", itemId).single();
-  if (!item) return { success: false, error: "Item not found" };
-  if (balance < item.price) return { success: false, error: "Not enough Cogs" };
+  if (balance < contributionAmount) return { success: false, error: "Not enough Cogs" };
 
   const { error } = await supabase.from("marketplace_purchases").insert({
     student_id: user.id,
     item_id: itemId,
     week_start: weekStart,
+    note: note?.trim() || null,
+    contribution_amount: contributionAmount,
   });
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-/** Admin: get all pending purchase requests. */
+/** Admin: all pending purchase requests. */
 export async function getPendingPurchases(): Promise<MarketplacePurchase[]> {
   const service = createServiceClient();
   const { data, error } = await service
     .from("marketplace_purchases")
     .select(`
-      id, item_id, status, week_start, requested_at, reviewed_at, admin_note,
-      item:marketplace_items(id, name, description, price, emoji, weekly_limit, sort_order),
+      id, item_id, status, week_start, requested_at, reviewed_at, admin_note, note, contribution_amount,
+      item:marketplace_items(id, name, description, price, emoji, weekly_limit, sort_order, shared),
       student:profiles(id, display_name, color, avatar_url)
     `)
     .eq("status", "pending")
-    .order("requested_at", { ascending: false });
+    .order("requested_at", { ascending: true });
   if (error || !data) return [];
   return data.map(mapPurchase);
 }
 
-/** Admin: get all purchases (full history). */
+/** Admin: all purchases (full history). */
 export async function getAllPurchases(): Promise<MarketplacePurchase[]> {
   const service = createServiceClient();
   const { data, error } = await service
     .from("marketplace_purchases")
     .select(`
-      id, item_id, status, week_start, requested_at, reviewed_at, admin_note,
-      item:marketplace_items(id, name, description, price, emoji, weekly_limit, sort_order),
+      id, item_id, status, week_start, requested_at, reviewed_at, admin_note, note, contribution_amount,
+      item:marketplace_items(id, name, description, price, emoji, weekly_limit, sort_order, shared),
       student:profiles(id, display_name, color, avatar_url)
     `)
     .order("requested_at", { ascending: false });
@@ -144,7 +205,8 @@ export async function getAllPurchases(): Promise<MarketplacePurchase[]> {
 }
 
 function mapPurchase(r: Record<string, unknown>): MarketplacePurchase {
-  const item = r.item as Record<string, unknown>;
+  const rawItem = r.item as Record<string, unknown> | Record<string, unknown>[];
+  const itemData = Array.isArray(rawItem) ? rawItem[0] : rawItem;
   const student = r.student as Record<string, unknown>;
   return {
     id: r.id as string,
@@ -154,14 +216,17 @@ function mapPurchase(r: Record<string, unknown>): MarketplacePurchase {
     requestedAt: r.requested_at as string,
     reviewedAt: (r.reviewed_at as string | null) ?? null,
     adminNote: (r.admin_note as string | null) ?? null,
+    note: (r.note as string | null) ?? null,
+    contributionAmount: (r.contribution_amount as number | null) ?? null,
     item: {
-      id: item.id as string,
-      name: item.name as string,
-      description: item.description as string,
-      price: item.price as number,
-      emoji: item.emoji as string,
-      weeklyLimit: item.weekly_limit as number,
-      sortOrder: item.sort_order as number,
+      id: itemData.id as string,
+      name: itemData.name as string,
+      description: itemData.description as string,
+      price: itemData.price as number,
+      emoji: itemData.emoji as string,
+      weeklyLimit: itemData.weekly_limit as number,
+      sortOrder: itemData.sort_order as number,
+      shared: (itemData.shared as boolean) ?? false,
     },
     student: {
       id: student.id as string,
@@ -172,7 +237,7 @@ function mapPurchase(r: Record<string, unknown>): MarketplacePurchase {
   };
 }
 
-/** Admin: approve a purchase — deducts COGS via points_log. */
+/** Admin: approve a purchase — deducts contribution_amount (or item.price for legacy rows). */
 export async function approvePurchase(
   purchaseId: string,
   adminNote?: string,
@@ -181,7 +246,7 @@ export async function approvePurchase(
 
   const { data: purchase } = await service
     .from("marketplace_purchases")
-    .select("student_id, item_id, item:marketplace_items(name, price)")
+    .select("student_id, item_id, contribution_amount, item:marketplace_items(name, price)")
     .eq("id", purchaseId)
     .single();
   if (!purchase) return { success: false, error: "Purchase not found" };
@@ -189,17 +254,18 @@ export async function approvePurchase(
   const rawItem = purchase.item as unknown;
   const item = (Array.isArray(rawItem) ? rawItem[0] : rawItem) as { name: string; price: number };
 
-  // Deduct COGS
+  // Use contribution_amount for shared items; fall back to full price for legacy rows
+  const deductAmount = (purchase.contribution_amount as number | null) ?? item.price;
+
   const { error: pointsErr } = await service.from("points_log").insert({
     student_id: purchase.student_id,
     category: "purchase",
     source_id: purchaseId,
-    points: -item.price,
+    points: -deductAmount,
     note: `Redeemed: ${item.name}`,
   });
   if (pointsErr) return { success: false, error: pointsErr.message };
 
-  // Update status
   const { error } = await service
     .from("marketplace_purchases")
     .update({
@@ -212,7 +278,18 @@ export async function approvePurchase(
   return { success: true };
 }
 
-/** Admin: reject a purchase — no COGS deducted. */
+/** Admin: approve all purchases in a shared group (deducts each student's share). */
+export async function approveSharedGroup(
+  purchaseIds: string[],
+  adminNote?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const results = await Promise.all(purchaseIds.map((id) => approvePurchase(id, adminNote)));
+  const failed = results.find((r) => !r.success);
+  if (failed) return { success: false, error: failed.error ?? "Some approvals failed" };
+  return { success: true };
+}
+
+/** Admin: reject a purchase — no Cogs deducted. */
 export async function rejectPurchase(
   purchaseId: string,
   adminNote?: string,
@@ -227,6 +304,16 @@ export async function rejectPurchase(
     })
     .eq("id", purchaseId);
   if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Admin: reject all purchases in a shared group. */
+export async function rejectSharedGroup(
+  purchaseIds: string[],
+  adminNote?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const results = await Promise.all(purchaseIds.map((id) => rejectPurchase(id, adminNote)));
+  if (results.some((r) => !r.success)) return { success: false, error: "Some rejections failed" };
   return { success: true };
 }
 
@@ -259,10 +346,7 @@ export async function getStudentSkippableTasks(studentId: string): Promise<Skipp
     .order("task_date");
 
   return (data ?? []).map((r) => {
-    const subj = (Array.isArray(r.subject) ? r.subject[0] : r.subject) as {
-      name: string;
-      icon: string;
-    };
+    const subj = (Array.isArray(r.subject) ? r.subject[0] : r.subject) as { name: string; icon: string };
     return {
       id: r.id,
       date: r.task_date,
@@ -279,14 +363,11 @@ export async function skipTaskAndApprove(
   adminNote?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const service = createServiceClient();
-
-  // Cancel the task
   const { error: taskErr } = await service
     .from("tasks")
     .update({ status: "cancelled", cancelled_reason: "⚡ Skipped — marketplace reward" })
     .eq("id", taskId);
   if (taskErr) return { success: false, error: taskErr.message };
-
   return approvePurchase(purchaseId, adminNote);
 }
 
@@ -298,7 +379,6 @@ export async function skipDayAndApprove(
   adminNote?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const service = createServiceClient();
-
   const { error: taskErr } = await service
     .from("tasks")
     .update({ status: "cancelled", cancelled_reason: "⚡ Day off — marketplace reward" })
@@ -306,7 +386,6 @@ export async function skipDayAndApprove(
     .eq("task_date", date)
     .in("status", ["pending", "missed"]);
   if (taskErr) return { success: false, error: taskErr.message };
-
   return approvePurchase(purchaseId, adminNote);
 }
 
@@ -315,7 +394,7 @@ export async function getAllMarketplaceItems(): Promise<(MarketplaceItem & { isA
   const service = createServiceClient();
   const { data } = await service
     .from("marketplace_items")
-    .select("id, name, description, price, emoji, is_active, weekly_limit, sort_order")
+    .select("id, name, description, price, emoji, is_active, weekly_limit, sort_order, shared")
     .order("sort_order");
   return (data ?? []).map((r) => ({
     id: r.id,
@@ -326,6 +405,7 @@ export async function getAllMarketplaceItems(): Promise<(MarketplaceItem & { isA
     isActive: r.is_active,
     weeklyLimit: r.weekly_limit,
     sortOrder: r.sort_order,
+    shared: r.shared ?? false,
   }));
 }
 
@@ -338,6 +418,7 @@ export async function upsertMarketplaceItem(item: {
   emoji: string;
   weeklyLimit: number;
   isActive: boolean;
+  shared: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   const service = createServiceClient();
   const id =
@@ -354,18 +435,17 @@ export async function upsertMarketplaceItem(item: {
     emoji: item.emoji,
     weekly_limit: item.weeklyLimit,
     is_active: item.isActive,
+    shared: item.shared,
   });
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-/** Admin: delete a marketplace item (only if no purchases reference it). */
+/** Admin: delete a marketplace item (soft-deactivates if purchases exist). */
 export async function deleteMarketplaceItem(id: string): Promise<{ success: boolean; error?: string }> {
   const service = createServiceClient();
-  // Check for any purchases first
   const { data: purchases } = await service.from("marketplace_purchases").select("id").eq("item_id", id).limit(1);
   if (purchases && purchases.length > 0) {
-    // Soft-delete: just deactivate it
     const { error } = await service.from("marketplace_items").update({ is_active: false }).eq("id", id);
     if (error) return { success: false, error: error.message };
     return { success: true };

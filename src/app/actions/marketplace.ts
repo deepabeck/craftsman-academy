@@ -248,3 +248,49 @@ export async function getAllMarketplaceItems(): Promise<(MarketplaceItem & { isA
     sortOrder: r.sort_order,
   }));
 }
+
+/** Admin: save (create or update) a marketplace item. */
+export async function upsertMarketplaceItem(item: {
+  id?: string;
+  name: string;
+  description: string;
+  price: number;
+  emoji: string;
+  weeklyLimit: number;
+  isActive: boolean;
+}): Promise<{ success: boolean; error?: string }> {
+  const service = createServiceClient();
+  const id =
+    item.id ??
+    item.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  const { error } = await service.from("marketplace_items").upsert({
+    id,
+    name: item.name,
+    description: item.description,
+    price: item.price,
+    emoji: item.emoji,
+    weekly_limit: item.weeklyLimit,
+    is_active: item.isActive,
+  });
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Admin: delete a marketplace item (only if no purchases reference it). */
+export async function deleteMarketplaceItem(id: string): Promise<{ success: boolean; error?: string }> {
+  const service = createServiceClient();
+  // Check for any purchases first
+  const { data: purchases } = await service.from("marketplace_purchases").select("id").eq("item_id", id).limit(1);
+  if (purchases && purchases.length > 0) {
+    // Soft-delete: just deactivate it
+    const { error } = await service.from("marketplace_items").update({ is_active: false }).eq("id", id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }
+  const { error } = await service.from("marketplace_items").delete().eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

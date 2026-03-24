@@ -76,7 +76,10 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 alt="cogs"
                 width={56}
                 height={56}
-                style={{ display: "block", filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(232,168,32,0.55))" }}
+                style={{
+                  display: "block",
+                  filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(232,168,32,0.55))",
+                }}
               />
             </Link>
             <div
@@ -88,34 +91,37 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
               }}
             >
-              <div
-                className="cinzel"
-                style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: "#E8A820",
-                  letterSpacing: "0.04em",
-                  lineHeight: 1,
-                  textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
-                }}
-              >
-                {pointsBalance.toLocaleString()}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+              {/* Row 1: balance + label */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 5, lineHeight: 1 }}>
                 <span
                   className="cinzel"
-                  style={{ fontSize: 10, color: "#C8860A", letterSpacing: "0.2em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: "#E8A820",
+                    letterSpacing: "0.04em",
+                    textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
+                  }}
+                >
+                  {pointsBalance.toLocaleString()}
+                </span>
+                <span
+                  className="cinzel"
+                  style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.15em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
                 >
                   Cogs
                 </span>
-                <Link
-                  href="/student/shop"
-                  className="cinzel"
-                  style={{ fontSize: 10, color: "#E8A820", textDecoration: "none", letterSpacing: "0.1em", opacity: 0.8 }}
-                >
-                  | SHOP →
-                </Link>
               </div>
+              {/* Divider */}
+              <div style={{ margin: "6px 0", borderTop: "1px solid rgba(232,168,32,0.25)" }} />
+              {/* Row 3: shop link */}
+              <Link
+                href="/student/shop"
+                className="cinzel"
+                style={{ fontSize: 10, color: "#E8A820", textDecoration: "none", letterSpacing: "0.12em", opacity: 0.85 }}
+              >
+                Shop →
+              </Link>
             </div>
           </div>
         )}

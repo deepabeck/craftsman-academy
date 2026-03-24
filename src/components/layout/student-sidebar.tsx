@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Divider, Icon, PortraitFrame } from "@/components/ui";
@@ -15,19 +16,6 @@ const NAV_ITEMS = [
   { id: "history", path: "/student/history", label: "Mission Log", icon: "history" },
   { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },
 ];
-
-function CoinIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {/* Coin face */}
-      <circle cx="12" cy="12" r="10.5" fill="#6B4608" stroke="#E8A820" strokeWidth="1.4" />
-      {/* Inner ring detail */}
-      <circle cx="12" cy="12" r="8" fill="none" stroke="#C8860A" strokeWidth="0.7" strokeDasharray="2.2 1.6" />
-      {/* 4-pointed star */}
-      <path d="M12 6 L13.8 10.2 L18 12 L13.8 13.8 L12 18 L10.2 13.8 L6 12 L10.2 10.2 Z" fill="#E8A820" />
-    </svg>
-  );
-}
 
 interface StudentSidebarProps {
   student: Student;
@@ -71,25 +59,50 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
         {pointsBalance !== null && (
           <div
             style={{
+              margin: "6px 12px 4px",
+              padding: "10px 12px",
+              background: "rgba(232,168,32,0.07)",
+              border: "1px solid rgba(232,168,32,0.35)",
+              borderRadius: 10,
               display: "flex",
               alignItems: "center",
-              gap: 6,
-              padding: "5px 14px 2px",
+              gap: 10,
+              boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
             }}
           >
-            <CoinIcon />
-            <span
-              className="cinzel"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#E8A820",
-                letterSpacing: "0.04em",
-                textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-              }}
-            >
-              {pointsBalance.toLocaleString()} pts
-            </span>
+            <Image
+              src="/assets/icon_coin.png"
+              alt="cogs"
+              width={36}
+              height={36}
+              style={{ flexShrink: 0, filter: "drop-shadow(0 0 6px rgba(232,168,32,0.5))" }}
+            />
+            <div style={{ lineHeight: 1 }}>
+              <div
+                className="cinzel"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "#E8A820",
+                  letterSpacing: "0.04em",
+                  textShadow: "0 0 14px rgba(232,168,32,0.6), 0 1px 4px rgba(0,0,0,0.9)",
+                }}
+              >
+                {pointsBalance.toLocaleString()}
+              </div>
+              <div
+                className="cinzel"
+                style={{
+                  fontSize: 10,
+                  color: "#C8860A",
+                  letterSpacing: "0.2em",
+                  marginTop: 3,
+                  textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+                }}
+              >
+                COGS
+              </div>
+            </div>
           </div>
         )}
         <Divider />

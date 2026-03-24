@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { id: "journal", path: "/student/journal", label: "Writing Journal", icon: "reading-writing" },
   { id: "progress", path: "/student/progress", label: "Progress", icon: "progress" },
   { id: "history", path: "/student/history", label: "Mission Log", icon: "history" },
-  { id: "shop", path: "/student/shop", label: "COGS Shop", icon: "customize" },
+  { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },
 ];
 
 interface StudentSidebarProps {

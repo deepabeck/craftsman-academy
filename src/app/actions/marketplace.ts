@@ -186,7 +186,8 @@ export async function approvePurchase(
     .single();
   if (!purchase) return { success: false, error: "Purchase not found" };
 
-  const item = purchase.item as { name: string; price: number };
+  const rawItem = purchase.item as unknown;
+  const item = (Array.isArray(rawItem) ? rawItem[0] : rawItem) as { name: string; price: number };
 
   // Deduct COGS
   const { error: pointsErr } = await service.from("points_log").insert({

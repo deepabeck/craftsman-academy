@@ -102,7 +102,7 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                     textShadow: "0 1px 4px rgba(0,0,0,0.8)",
                   }}
                 >
-                  COGS
+                  Cogs
                 </span>
                 <Link
                   href="/student/shop"

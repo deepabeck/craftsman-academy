@@ -142,7 +142,7 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
           <div style={{ fontSize: 12, color: "#7A8B9C", marginTop: 2 }}>{purchase.item.description}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
             <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700 }}>
-              {purchase.item.price.toLocaleString()} COGS
+              {purchase.item.price.toLocaleString()} Cogs
             </span>
             <span style={{ fontSize: 11, color: "#506070" }}>Requested {formatDate(purchase.requestedAt)}</span>
           </div>
@@ -364,7 +364,7 @@ function ItemRow({
             <div style={{ fontSize: 12, color: "#506070", marginTop: 1 }}>{item.description}</div>
           </div>
           <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700, flexShrink: 0 }}>
-            {item.price.toLocaleString()} COGS
+            {item.price.toLocaleString()} Cogs
           </span>
           <button
             type="button"
@@ -406,7 +406,7 @@ function ItemRow({
               value={form.price}
               onChange={(e) => set("price", Number(e.target.value))}
               style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
-              placeholder="COGS"
+              placeholder="Cogs"
             />
           </div>
           <input
@@ -528,7 +528,7 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
             value={form.price}
             onChange={(e) => set("price", Number(e.target.value))}
             style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
-            placeholder="COGS"
+            placeholder="Cogs"
           />
         </div>
         <input
@@ -660,7 +660,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span className="cinzel" style={{ fontSize: 12, color: "#C8860A" }}>
-                    {p.item.price} COGS
+                    {p.item.price} Cogs
                   </span>
                   <span
                     style={{ fontSize: 11, fontWeight: 700, color: statusColor(p.status), textTransform: "capitalize" }}

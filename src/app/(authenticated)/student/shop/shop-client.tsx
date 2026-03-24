@@ -39,7 +39,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases }: Props) 
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
       >
-        <PageHeader icon="customize" title="COGS Shop" sub="Spend your earned COGS on rewards" />
+        <PageHeader icon="coin" title="Cogs Shop" sub="Spend your earned Cogs on rewards" />
         <div
           style={{
             display: "flex",
@@ -56,7 +56,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases }: Props) 
             {balance?.toLocaleString() ?? "—"}
           </span>
           <span className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.15em" }}>
-            COGS
+            Cogs
           </span>
         </div>
       </div>
@@ -103,7 +103,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases }: Props) 
                   {item.price.toLocaleString()}
                 </span>
                 <span className="cinzel" style={{ fontSize: 10, color: "#C8860A", letterSpacing: "0.15em" }}>
-                  COGS
+                  Cogs
                 </span>
               </div>
 
@@ -138,7 +138,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases }: Props) 
                     disabled={!canAfford}
                     onClick={() => handleRequest(item.id)}
                   >
-                    {canAfford ? "Request" : "Not enough COGS"}
+                    {canAfford ? "Request" : "Not enough Cogs"}
                   </button>
                 )}
                 {msg && !isPending && !isApproved && (

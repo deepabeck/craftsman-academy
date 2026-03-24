@@ -101,7 +101,7 @@ export async function requestPurchase(itemId: string): Promise<{ success: boolea
 
   const { data: item } = await supabase.from("marketplace_items").select("price").eq("id", itemId).single();
   if (!item) return { success: false, error: "Item not found" };
-  if (balance < item.price) return { success: false, error: "Not enough COGS" };
+  if (balance < item.price) return { success: false, error: "Not enough Cogs" };
 
   const { error } = await supabase.from("marketplace_purchases").insert({
     student_id: user.id,

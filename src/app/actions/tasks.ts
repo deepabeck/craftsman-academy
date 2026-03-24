@@ -37,6 +37,9 @@ export async function ensureWeekTasks(weekStart: string) {
 /** Toggle a checkbox task between pending ↔ done. */
 export async function markTaskDone(taskId: string, done: boolean) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("tasks")
     .update({
@@ -45,6 +48,10 @@ export async function markTaskDone(taskId: string, done: boolean) {
     })
     .eq("id", taskId);
   if (error) return { success: false, error: error.message };
+  // Award submission points (+5) and check daily bonus (+20) just like submitTaskProof
+  if (done && user) {
+    after(() => awardSubmissionPoints(taskId, user.id).catch((err) => console.error("[points] checkbox error:", err)));
+  }
   return { success: true };
 }
 

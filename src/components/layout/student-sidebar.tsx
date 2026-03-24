@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { id: "journal", path: "/student/journal", label: "Writing Journal", icon: "reading-writing" },
   { id: "progress", path: "/student/progress", label: "Progress", icon: "progress" },
   { id: "history", path: "/student/history", label: "Mission Log", icon: "history" },
-  { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },
+  { id: "shop", path: "/student/shop", label: "COGS Shop", icon: "customize" },
 ];
 
 interface StudentSidebarProps {
@@ -70,13 +70,15 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
               boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
             }}
           >
-            <Image
-              src="/assets/icon_coin.png"
-              alt="cogs"
-              width={36}
-              height={36}
-              style={{ flexShrink: 0, filter: "drop-shadow(0 0 6px rgba(232,168,32,0.5))" }}
-            />
+            <Link href="/student/shop" style={{ textDecoration: "none", flexShrink: 0 }}>
+              <Image
+                src="/assets/icon_coin.png"
+                alt="cogs"
+                width={36}
+                height={36}
+                style={{ display: "block", filter: "drop-shadow(0 0 6px rgba(232,168,32,0.5))" }}
+              />
+            </Link>
             <div style={{ lineHeight: 1 }}>
               <div
                 className="cinzel"
@@ -90,17 +92,31 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
               >
                 {pointsBalance.toLocaleString()}
               </div>
-              <div
-                className="cinzel"
-                style={{
-                  fontSize: 10,
-                  color: "#C8860A",
-                  letterSpacing: "0.2em",
-                  marginTop: 3,
-                  textShadow: "0 1px 4px rgba(0,0,0,0.8)",
-                }}
-              >
-                COGS
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+                <span
+                  className="cinzel"
+                  style={{
+                    fontSize: 10,
+                    color: "#C8860A",
+                    letterSpacing: "0.2em",
+                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+                  }}
+                >
+                  COGS
+                </span>
+                <Link
+                  href="/student/shop"
+                  style={{
+                    fontSize: 10,
+                    color: "#E8A820",
+                    textDecoration: "none",
+                    letterSpacing: "0.1em",
+                    opacity: 0.8,
+                  }}
+                  className="cinzel"
+                >
+                  | SHOP →
+                </Link>
               </div>
             </div>
           </div>

@@ -46,14 +46,14 @@ create policy "students insert own purchases"
 -- ── Seed items ─────────────────────────────────────────────────────────────────
 
 insert into marketplace_items (id, name, description, price, emoji, sort_order) values
-  ('early-tech',     'Early Tech Time',      'Start tech time 30 minutes early today',          75,  '⏰', 10),
-  ('extra-tech',     'Extra Tech Time',      'Add a full hour of extra tech time',              125, '🕹️', 20),
-  ('skip-task',      'Skip a Task',          'Skip one task of your choice this week',          150, '⚡', 30),
-  ('choose-movie',   'Choose the Movie',     'You pick the movie for family movie night',        80, '🎬', 40),
-  ('family-activity','Choose Family Activity','Pick the activity for the next family outing',   100, '🎯', 50),
-  ('pick-restaurant','Pick the Restaurant',  'Choose where the family eats out',                60, '🍕', 60),
-  ('new-video-game', 'New Video Game',       'Earn a new video game of your choice',            400, '🎮', 70),
-  ('school-day-off', 'Homeschool Day Off',   'Take a full day off from school — earned it!',   300, '📚', 80),
-  ('stay-up-late',   'Stay Up Late',         'Stay up 30 minutes past bedtime',                 60, '🌙', 90),
-  ('choose-dessert', 'Choose Dessert',       'Pick tonight''s dessert for the whole family',    40, '🍦', 100)
+  ('early-tech',     'Early Tech Time',      'Start tech time 30 minutes early today',          375,  '⏰', 10),
+  ('extra-tech',     'Extra Tech Time',      'Add a full hour of extra tech time',              625,  '🕹️', 20),
+  ('skip-task',      'Skip a Task',          'Skip one task of your choice this week',          750,  '⚡', 30),
+  ('choose-movie',   'Choose the Movie',     'You pick the movie for family movie night',       400,  '🎬', 40),
+  ('family-activity','Choose Family Activity','Pick the activity for the next family outing',   500,  '🎯', 50),
+  ('pick-restaurant','Pick the Restaurant',  'Choose where the family eats out',                300,  '🍕', 60),
+  ('new-video-game', 'New Video Game',       'Earn a new video game of your choice',            2000, '🎮', 70),
+  ('school-day-off', 'Homeschool Day Off',   'Take a full day off from school — earned it!',   1500, '📚', 80),
+  ('stay-up-late',   'Stay Up Late',         'Stay up 30 minutes past bedtime',                 300,  '🌙', 90),
+  ('choose-dessert', 'Choose Dessert',       'Pick tonight''s dessert for the whole family',    200,  '🍦', 100)
 on conflict (id) do nothing;

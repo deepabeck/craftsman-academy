@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { saveBgColor } from "@/app/actions/customize";
 import { changeOwnPassword, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
-import { Icon, PageHeader } from "@/components/ui";
+import { HexPicker, Icon, PageHeader } from "@/components/ui";
 import { gradeLabel, rgba } from "@/lib/utils";
+import { useTheme } from "@/providers/theme-provider";
 import type { AdminProfileData, ProfileData } from "./page";
 
 interface Props {
@@ -20,6 +22,7 @@ const labelStyle = {
 };
 
 export function ProfilesClient({ profiles: initialProfiles, adminProfile: initialAdmin }: Props) {
+  const { setBgColor } = useTheme();
   const [profiles, setProfiles] = useState(initialProfiles);
   const [activeId, setActiveId] = useState(initialProfiles[0]?.id ?? "");
   const [saved, setSaved] = useState(false);
@@ -49,6 +52,23 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   const [adminPwSaved, setAdminPwSaved] = useState(false);
   const [adminPwError, setAdminPwError] = useState<string | null>(null);
   const [isAdminPwPending, startAdminPwTransition] = useTransition();
+
+  // Admin bg color state
+  const [adminBgColor, setAdminBgColor] = useState(initialAdmin.bgColor);
+  const [bgSaved, setBgSaved] = useState(false);
+  const bgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleAdminBgColorChange = (newBg: string) => {
+    setAdminBgColor(newBg);
+    setBgColor(newBg);
+    setBgSaved(false);
+    if (bgTimer.current) clearTimeout(bgTimer.current);
+    bgTimer.current = setTimeout(async () => {
+      await saveBgColor(newBg);
+      setBgSaved(true);
+      setTimeout(() => setBgSaved(false), 2500);
+    }, 600);
+  };
 
   const profile = profiles.find((p) => p.id === activeId) ?? profiles[0];
 
@@ -219,47 +239,101 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
 
       {/* ── Admin Profile ─────────────────────────────────────────────────── */}
       <div>
-        <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", marginBottom: 10, paddingLeft: 2 }}>
+        <div
+          className="cinzel brass"
+          style={{ fontSize: 11, letterSpacing: "0.12em", marginBottom: 10, paddingLeft: 2 }}
+        >
           MY PROFILE
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr", gap: 14, alignItems: "start" }}>
           {/* Photo */}
-          <div className="glass-warm" style={{ padding: 16, borderColor: "rgba(232,168,32,0.32)", textAlign: "center" }}>
+          <div
+            className="glass-warm"
+            style={{ padding: 16, borderColor: "rgba(232,168,32,0.32)", textAlign: "center" }}
+          >
             <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 12 }}>
               PROFILE PHOTO
             </div>
             <button
               type="button"
-              style={{ position: "relative", width: "85%", margin: "0 auto", lineHeight: 0, cursor: "pointer", padding: 0, border: "none", background: "none", display: "block" }}
+              style={{
+                position: "relative",
+                width: "85%",
+                margin: "0 auto",
+                lineHeight: 0,
+                cursor: "pointer",
+                padding: 0,
+                border: "none",
+                background: "none",
+                display: "block",
+              }}
               onClick={() => adminFileRef.current?.click()}
             >
               {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
               <img
                 src={adminAvatarSrc}
                 alt={admin.displayName}
-                onError={(e) => { e.currentTarget.src = "/assets/profile-admin.png"; }}
+                onError={(e) => {
+                  e.currentTarget.src = "/assets/profile-admin.png";
+                }}
                 style={{ width: "100%", display: "block", borderRadius: 6 }}
               />
               <div
-                style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: adminUploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)", transition: "background 0.2s", fontSize: 12, color: adminUploading ? "#E8C870" : "transparent", fontWeight: 600, borderRadius: 6 }}
-                onMouseEnter={(e) => { if (!adminUploading) { e.currentTarget.style.background = "rgba(0,0,0,0.55)"; e.currentTarget.style.color = "#E8C870"; } }}
-                onMouseLeave={(e) => { if (!adminUploading) { e.currentTarget.style.background = "rgba(0,0,0,0)"; e.currentTarget.style.color = "transparent"; } }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: adminUploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+                  transition: "background 0.2s",
+                  fontSize: 12,
+                  color: adminUploading ? "#E8C870" : "transparent",
+                  fontWeight: 600,
+                  borderRadius: 6,
+                }}
+                onMouseEnter={(e) => {
+                  if (!adminUploading) {
+                    e.currentTarget.style.background = "rgba(0,0,0,0.55)";
+                    e.currentTarget.style.color = "#E8C870";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!adminUploading) {
+                    e.currentTarget.style.background = "rgba(0,0,0,0)";
+                    e.currentTarget.style.color = "transparent";
+                  }
+                }}
               >
                 {adminUploading ? "Uploading…" : "Change Photo"}
               </div>
             </button>
-            <input ref={adminFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAdminAvatarChange} />
+            <input
+              ref={adminFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleAdminAvatarChange}
+            />
             <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
           </div>
 
           {/* Identity */}
           <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>IDENTITY</div>
+              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
+                IDENTITY
+              </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 {adminSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
                 {adminError && <span style={{ fontSize: 12, color: "#F08080" }}>{adminError}</span>}
-                <button type="button" className="btn-brass" style={{ padding: "7px 16px", fontSize: 13 }} onClick={handleAdminSave} disabled={isAdminPending}>
+                <button
+                  type="button"
+                  className="btn-brass"
+                  style={{ padding: "7px 16px", fontSize: 13 }}
+                  onClick={handleAdminSave}
+                  disabled={isAdminPending}
+                >
                   {isAdminPending ? "Saving…" : "Save"}
                 </button>
               </div>
@@ -267,18 +341,29 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <div style={labelStyle}>Display Name</div>
-                <input className="inp" value={admin.displayName} onChange={(e) => setAdmin((p) => ({ ...p, displayName: e.target.value }))} />
+                <input
+                  className="inp"
+                  value={admin.displayName}
+                  onChange={(e) => setAdmin((p) => ({ ...p, displayName: e.target.value }))}
+                />
               </div>
               <div>
                 <div style={labelStyle}>Title / Tagline</div>
-                <input className="inp" value={admin.tagline} onChange={(e) => setAdmin((p) => ({ ...p, tagline: e.target.value }))} placeholder="e.g. Operations Engineer" />
+                <input
+                  className="inp"
+                  value={admin.tagline}
+                  onChange={(e) => setAdmin((p) => ({ ...p, tagline: e.target.value }))}
+                  placeholder="e.g. Operations Engineer"
+                />
               </div>
             </div>
           </div>
 
           {/* Password */}
           <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)" }}>
-            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>PASSWORD</div>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+              PASSWORD
+            </div>
             <div>
               <div style={labelStyle}>Set New Password</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -292,218 +377,9 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                     style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
                     onKeyDown={(e) => e.key === "Enter" && adminPassword.length >= 6 && handleAdminPassword()}
                   />
-                  <button type="button" onClick={() => setShowAdminPassword((v) => !v)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#506070", padding: 0, lineHeight: 1 }}>
-                    {showAdminPassword ? "🙈" : "👁️"}
-                  </button>
-                </div>
-                <button type="button" className="btn-brass" style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }} onClick={handleAdminPassword} disabled={isAdminPwPending || adminPassword.length < 6}>
-                  {isAdminPwPending ? "…" : "Set"}
-                </button>
-              </div>
-              {adminPwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{adminPwError}</div>}
-              {adminPwSaved && <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>}
-              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>Min 6 characters · takes effect immediately</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Student Profiles ──────────────────────────────────────────────── */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", paddingLeft: 2 }}>
-            STUDENT PROFILES
-          </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
-            {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
-            <button type="button" className="btn-brass" style={{ padding: "8px 18px", fontSize: 13 }} onClick={handleSave} disabled={isPending}>
-              {isPending ? "Saving…" : "Save Changes"}
-            </button>
-          </div>
-        </div>
-
-      {/* Student tabs */}
-      <div style={{ display: "flex", gap: 10 }}>
-        {profiles.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => {
-              setActiveId(p.id);
-              setSaved(false);
-              setError(null);
-              setNewPassword("");
-              setPwSaved(false);
-              setPwError(null);
-            }}
-            className={p.id === activeId ? "btn-brass" : "btn-ghost"}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px" }}
-          >
-            {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
-            <img
-              src={p.avatarUrl ?? `/assets/profile-${p.studentKey || "deven"}.png`}
-              alt={p.displayName}
-              onError={(e) => {
-                e.currentTarget.src = `/assets/profile-${p.studentKey || "deven"}.png`;
-              }}
-              style={{ width: 24, height: 24, borderRadius: 3, objectFit: "cover", objectPosition: "top" }}
-            />
-            {p.displayName}
-          </button>
-        ))}
-      </div>
-
-      {/* Top row: Photo + 2 editing panels */}
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr", gap: 14, alignItems: "start" }}>
-        {/* Photo */}
-        <div
-          className="glass-warm"
-          style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}
-        >
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 12 }}>
-            PROFILE PHOTO
-          </div>
-          <button
-            type="button"
-            style={{
-              position: "relative",
-              width: "85%",
-              margin: "0 auto",
-              lineHeight: 0,
-              cursor: "pointer",
-              padding: 0,
-              border: "none",
-              background: "none",
-              display: "block",
-            }}
-            onClick={() => fileRef.current?.click()}
-          >
-            {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
-            <img
-              src={avatarSrc}
-              alt={profile.displayName}
-              onError={(e) => {
-                e.currentTarget.src = fallbackAvatar;
-              }}
-              style={{ width: "100%", display: "block", borderRadius: 6 }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: uploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
-                transition: "background 0.2s",
-                fontSize: 12,
-                color: uploading ? "#E8C870" : "transparent",
-                fontWeight: 600,
-                borderRadius: 6,
-              }}
-              onMouseEnter={(e) => {
-                if (!uploading) {
-                  e.currentTarget.style.background = "rgba(0,0,0,0.55)";
-                  e.currentTarget.style.color = "#E8C870";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!uploading) {
-                  e.currentTarget.style.background = "rgba(0,0,0,0)";
-                  e.currentTarget.style.color = "transparent";
-                }
-              }}
-            >
-              {uploading ? "Uploading…" : "Change Photo"}
-            </div>
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-          <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
-        </div>
-
-        {/* Identity */}
-        <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
-            IDENTITY
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <div style={labelStyle}>Display Name</div>
-              <input className="inp" value={profile.displayName} onChange={(e) => upd("displayName", e.target.value)} />
-            </div>
-            <div>
-              <div style={labelStyle}>Tagline / Title</div>
-              <input
-                className="inp"
-                value={profile.tagline}
-                onChange={(e) => upd("tagline", e.target.value)}
-                placeholder="e.g. Explorer of Systems"
-              />
-            </div>
-            <div>
-              <div style={labelStyle}>Grade</div>
-              <div
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 6,
-                  background: "rgba(0,0,0,0.3)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  fontSize: 13,
-                  color: "#9AABBC",
-                }}
-              >
-                {gradeLabel(profile.currentGrade)}
-                {profile.yearLabel && <span style={{ color: "#506070", marginLeft: 8 }}>· {profile.yearLabel}</span>}
-              </div>
-              <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
-                Auto-advances on the 2nd Monday of August
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Login & Access */}
-        <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-          <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
-            LOGIN & ACCESS
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <div style={labelStyle}>Email</div>
-              <div
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 6,
-                  background: "rgba(0,0,0,0.3)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  fontSize: 12,
-                  color: "#6A7A8A",
-                  fontFamily: "monospace",
-                  wordBreak: "break-all",
-                }}
-              >
-                {profile.studentKey === "deven"
-                  ? process.env.NEXT_PUBLIC_DEVEN_EMAIL
-                  : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
-              </div>
-            </div>
-            <div>
-              <div style={labelStyle}>Set New Password</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div style={{ position: "relative", flex: 1 }}>
-                  <input
-                    className="inp"
-                    type={showPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password…"
-                    style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
-                    onKeyDown={(e) => e.key === "Enter" && newPassword.length >= 6 && handleSetPassword()}
-                  />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((v) => !v)}
+                    onClick={() => setShowAdminPassword((v) => !v)}
                     style={{
                       position: "absolute",
                       right: 8,
@@ -518,21 +394,21 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                       lineHeight: 1,
                     }}
                   >
-                    {showPassword ? "🙈" : "👁️"}
+                    {showAdminPassword ? "🙈" : "👁️"}
                   </button>
                 </div>
                 <button
                   type="button"
                   className="btn-brass"
                   style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
-                  onClick={handleSetPassword}
-                  disabled={isPwPending || newPassword.length < 6}
+                  onClick={handleAdminPassword}
+                  disabled={isAdminPwPending || adminPassword.length < 6}
                 >
-                  {isPwPending ? "…" : "Set"}
+                  {isAdminPwPending ? "…" : "Set"}
                 </button>
               </div>
-              {pwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{pwError}</div>}
-              {pwSaved && (
+              {adminPwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{adminPwError}</div>}
+              {adminPwSaved && (
                 <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Password updated</div>
               )}
               <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
@@ -540,8 +416,278 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
               </div>
             </div>
           </div>
+
+          {/* Background color — spans all 3 columns */}
+          <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)", gridColumn: "1 / -1" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
+                WORLD BACKGROUND COLOR
+              </div>
+              {bgSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+            </div>
+            <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
+              Tint the Academy&apos;s atmosphere. The steampunk details stay fixed — only the ambient color shifts.
+            </div>
+            <HexPicker value={adminBgColor} onChange={handleAdminBgColorChange} label="Hue Tint" />
+            <div style={{ marginTop: 10, fontSize: 12, color: "#404858", lineHeight: 1.6 }}>
+              Try deep blues (#1A3A5C), forest greens (#1A3A28), or warm ambers (#3A2010).
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ── Student Profiles ──────────────────────────────────────────────── */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", paddingLeft: 2 }}>
+            STUDENT PROFILES
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+            {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ padding: "8px 18px", fontSize: 13 }}
+              onClick={handleSave}
+              disabled={isPending}
+            >
+              {isPending ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </div>
+
+        {/* Student tabs */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => {
+                setActiveId(p.id);
+                setSaved(false);
+                setError(null);
+                setNewPassword("");
+                setPwSaved(false);
+                setPwError(null);
+              }}
+              className={p.id === activeId ? "btn-brass" : "btn-ghost"}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px" }}
+            >
+              {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
+              <img
+                src={p.avatarUrl ?? `/assets/profile-${p.studentKey || "deven"}.png`}
+                alt={p.displayName}
+                onError={(e) => {
+                  e.currentTarget.src = `/assets/profile-${p.studentKey || "deven"}.png`;
+                }}
+                style={{ width: 24, height: 24, borderRadius: 3, objectFit: "cover", objectPosition: "top" }}
+              />
+              {p.displayName}
+            </button>
+          ))}
+        </div>
+
+        {/* Top row: Photo + 2 editing panels */}
+        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr", gap: 14, alignItems: "start" }}>
+          {/* Photo */}
+          <div
+            className="glass-warm"
+            style={{ padding: 16, borderColor: rgba(profile.color, 0.32), textAlign: "center" }}
+          >
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 12 }}>
+              PROFILE PHOTO
+            </div>
+            <button
+              type="button"
+              style={{
+                position: "relative",
+                width: "85%",
+                margin: "0 auto",
+                lineHeight: 0,
+                cursor: "pointer",
+                padding: 0,
+                border: "none",
+                background: "none",
+                display: "block",
+              }}
+              onClick={() => fileRef.current?.click()}
+            >
+              {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
+              <img
+                src={avatarSrc}
+                alt={profile.displayName}
+                onError={(e) => {
+                  e.currentTarget.src = fallbackAvatar;
+                }}
+                style={{ width: "100%", display: "block", borderRadius: 6 }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: uploading ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+                  transition: "background 0.2s",
+                  fontSize: 12,
+                  color: uploading ? "#E8C870" : "transparent",
+                  fontWeight: 600,
+                  borderRadius: 6,
+                }}
+                onMouseEnter={(e) => {
+                  if (!uploading) {
+                    e.currentTarget.style.background = "rgba(0,0,0,0.55)";
+                    e.currentTarget.style.color = "#E8C870";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!uploading) {
+                    e.currentTarget.style.background = "rgba(0,0,0,0)";
+                    e.currentTarget.style.color = "transparent";
+                  }
+                }}
+              >
+                {uploading ? "Uploading…" : "Change Photo"}
+              </div>
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleAvatarChange}
+            />
+            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
+          </div>
+
+          {/* Identity */}
+          <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+              IDENTITY
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={labelStyle}>Display Name</div>
+                <input
+                  className="inp"
+                  value={profile.displayName}
+                  onChange={(e) => upd("displayName", e.target.value)}
+                />
+              </div>
+              <div>
+                <div style={labelStyle}>Tagline / Title</div>
+                <input
+                  className="inp"
+                  value={profile.tagline}
+                  onChange={(e) => upd("tagline", e.target.value)}
+                  placeholder="e.g. Explorer of Systems"
+                />
+              </div>
+              <div>
+                <div style={labelStyle}>Grade</div>
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    background: "rgba(0,0,0,0.3)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    fontSize: 13,
+                    color: "#9AABBC",
+                  }}
+                >
+                  {gradeLabel(profile.currentGrade)}
+                  {profile.yearLabel && <span style={{ color: "#506070", marginLeft: 8 }}>· {profile.yearLabel}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
+                  Auto-advances on the 2nd Monday of August
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Login & Access */}
+          <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
+              LOGIN & ACCESS
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={labelStyle}>Email</div>
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    background: "rgba(0,0,0,0.3)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    fontSize: 12,
+                    color: "#6A7A8A",
+                    fontFamily: "monospace",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {profile.studentKey === "deven"
+                    ? process.env.NEXT_PUBLIC_DEVEN_EMAIL
+                    : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
+                </div>
+              </div>
+              <div>
+                <div style={labelStyle}>Set New Password</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <input
+                      className="inp"
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New password…"
+                      style={{ paddingRight: 34, width: "100%", boxSizing: "border-box" }}
+                      onKeyDown={(e) => e.key === "Enter" && newPassword.length >= 6 && handleSetPassword()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      style={{
+                        position: "absolute",
+                        right: 8,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 13,
+                        color: "#506070",
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-brass"
+                    style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
+                    onClick={handleSetPassword}
+                    disabled={isPwPending || newPassword.length < 6}
+                  >
+                    {isPwPending ? "…" : "Set"}
+                  </button>
+                </div>
+                {pwError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{pwError}</div>}
+                {pwSaved && (
+                  <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>
+                    ✓ Password updated
+                  </div>
+                )}
+                <div style={{ fontSize: 11, color: "#404858", marginTop: 4 }}>
+                  Min 6 characters · takes effect immediately
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Enrolled Subjects */}
         <div className="glass" style={{ padding: 18 }}>

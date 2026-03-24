@@ -18,23 +18,28 @@ export interface AdminProfileData {
   displayName: string;
   tagline: string;
   avatarUrl: string | null;
+  bgColor: string;
 }
 
 export default async function ProfilesPage() {
   const supabase = await createClient();
 
   // ── Fetch admin profile ───────────────────────────────────────────────────
-  const { data: adminRow } = await supabase
-    .from("profiles")
-    .select("id, display_name, tagline, avatar_url")
-    .eq("role", "admin")
-    .maybeSingle();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+
+  const [{ data: adminRow }, { data: adminSettings }] = await Promise.all([
+    supabase.from("profiles").select("id, display_name, tagline, avatar_url").eq("role", "admin").maybeSingle(),
+    authUser
+      ? supabase.from("user_settings").select("bg_color").eq("user_id", authUser.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const adminProfile: AdminProfileData = {
     id: adminRow?.id ?? "",
     displayName: adminRow?.display_name ?? "Admin",
     tagline: adminRow?.tagline ?? "",
     avatarUrl: adminRow?.avatar_url ?? null,
+    bgColor: adminSettings?.bg_color ?? "#08111E",
   };
 
   // ── Fetch student profiles (exclude admin) ────────────────────────────────

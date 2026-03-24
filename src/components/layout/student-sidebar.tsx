@@ -119,20 +119,22 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
               </div>
               {/* Divider */}
               <div style={{ margin: "4px 0", borderTop: "1px solid rgba(232,168,32,0.25)" }} />
-              {/* Row 3: shop link */}
-              <Link
-                href="/student/shop"
-                className="cinzel"
-                style={{
-                  fontSize: 10,
-                  color: "#E8A820",
-                  textDecoration: "none",
-                  letterSpacing: "0.12em",
-                  opacity: 0.85,
-                }}
-              >
-                Shop →
-              </Link>
+              {/* Row 3: shop link — right justified */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <Link
+                  href="/student/shop"
+                  className="cinzel"
+                  style={{
+                    fontSize: 13,
+                    color: "#E8A820",
+                    textDecoration: "none",
+                    letterSpacing: "0.1em",
+                    opacity: 0.85,
+                  }}
+                >
+                  Shop →
+                </Link>
+              </div>
             </div>
           </div>
         )}

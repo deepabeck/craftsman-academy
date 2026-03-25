@@ -55,7 +55,26 @@ export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
     .select("id, name, description, price, emoji, weekly_limit, sort_order, shared")
     .eq("is_active", true)
     .order("price");
-  if (error || !data) return [];
+
+  if (error || !data) {
+    // Fallback without shared column
+    const { data: fallback } = await supabase
+      .from("marketplace_items")
+      .select("id, name, description, price, emoji, weekly_limit, sort_order")
+      .eq("is_active", true)
+      .order("price");
+    return (fallback ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: r.price,
+      emoji: r.emoji,
+      weeklyLimit: r.weekly_limit,
+      sortOrder: r.sort_order,
+      shared: false,
+    }));
+  }
+
   return data.map((r) => ({
     id: r.id,
     name: r.name,
@@ -392,11 +411,32 @@ export async function skipDayAndApprove(
 /** Admin: all marketplace items (including inactive). */
 export async function getAllMarketplaceItems(): Promise<(MarketplaceItem & { isActive: boolean })[]> {
   const service = createServiceClient();
-  const { data } = await service
+  // Try with shared column; fall back gracefully if migration hasn't run yet
+  const { data, error } = await service
     .from("marketplace_items")
     .select("id, name, description, price, emoji, is_active, weekly_limit, sort_order, shared")
-    .order("sort_order");
-  return (data ?? []).map((r) => ({
+    .order("price");
+
+  if (error || !data) {
+    // Fallback: fetch without shared (pre-migration)
+    const { data: fallback } = await service
+      .from("marketplace_items")
+      .select("id, name, description, price, emoji, is_active, weekly_limit, sort_order")
+      .order("price");
+    return (fallback ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: r.price,
+      emoji: r.emoji,
+      isActive: r.is_active,
+      weeklyLimit: r.weekly_limit,
+      sortOrder: r.sort_order,
+      shared: false,
+    }));
+  }
+
+  return data.map((r) => ({
     id: r.id,
     name: r.name,
     description: r.description,

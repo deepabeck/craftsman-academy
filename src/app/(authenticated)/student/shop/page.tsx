@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getMarketplaceItems, getMyWeeklyPurchases, getSharedItemContributions } from "@/app/actions/marketplace";
 import { ShopClient } from "./shop-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShopPage() {
   const supabase = await createClient();
   const {

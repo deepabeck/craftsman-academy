@@ -234,7 +234,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
 
       {active && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <AISummaryPanel student={active} />
+          <AISummaryPanel key={active.id} student={active} />
           <div className="glass" style={{ padding: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Icon name="active-subjects" size={30} />

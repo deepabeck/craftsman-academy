@@ -85,7 +85,7 @@ export default async function TodayPage() {
       `id, status, proof_type, proof_types, duration,
        lesson_detail, scoring_approach, requires_review,
        admin_note, notes, timer_seconds, completed_at,
-       subjects!inner (id, name, icon, color, sort_order)`,
+       subjects!inner (id, name, icon, color, sort_order, detail)`,
     )
     .eq("student_id", user.id)
     .eq("task_date", today);
@@ -109,7 +109,7 @@ export default async function TodayPage() {
         subjectName: sub.name,
         subjectIcon: sub.icon,
         subjectColor: sub.color,
-        detail: t.lesson_detail || "",
+        detail: t.lesson_detail || sub.detail || "",
         proofType: (proofTypes[0] ?? "checkbox") as "photo" | "timer" | "checkbox",
         proofTypes,
         duration: t.duration ?? 45,

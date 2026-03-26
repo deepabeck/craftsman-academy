@@ -200,21 +200,25 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
 
         <Divider />
 
-        {/* Assignment detail */}
-        <div
-          style={{
-            fontSize: 13,
-            color: "#9AABBC",
-            lineHeight: 1.6,
-            borderRadius: 7,
-            background: "rgba(0,0,0,0.2)",
-            padding: "10px 12px",
-            margin: "10px 0",
-            borderLeft: `3px solid ${rgba(task.subjectColor, 0.6)}`,
-          }}
-        >
-          {task.detail}
-        </div>
+        {/* Assignment detail + admin note */}
+        {(task.detail || task.adminNote) && (
+          <div
+            style={{
+              fontSize: 13,
+              color: "#9AABBC",
+              lineHeight: 1.6,
+              borderRadius: 7,
+              background: "rgba(0,0,0,0.2)",
+              padding: "10px 12px",
+              margin: "10px 0",
+              borderLeft: `3px solid ${rgba(task.subjectColor, 0.6)}`,
+            }}
+          >
+            {task.detail}
+            {task.detail && task.adminNote && <div style={{ marginTop: 6 }} />}
+            {task.adminNote && <div style={{ color: "#B0A0F0" }}>{task.adminNote}</div>}
+          </div>
+        )}
 
         {/* File / photo upload */}
         {needsFile && (

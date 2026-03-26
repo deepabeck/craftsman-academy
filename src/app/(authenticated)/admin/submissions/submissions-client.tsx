@@ -346,10 +346,10 @@ export function SubmissionsClient({ items, students }: Props) {
                                 fontSize: 12,
                                 color: "#506070",
                                 marginTop: 1,
-                                whiteSpace: "nowrap",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
-                                maxWidth: 400,
+                                whiteSpace: isOpen ? "normal" : "nowrap",
+                                maxWidth: isOpen ? "none" : 400,
                               }}
                             >
                               {item.lessonDetail}

@@ -29,6 +29,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [text, setText] = useState("");
   const [sec, setSec] = useState(0);
+  // Track whether the mousedown that started a click came from the backdrop itself
+  // (not from inside the modal). This prevents text-selection drags that end outside
+  // the modal from accidentally closing it.
+  const backdropMouseDownRef = useRef(false);
   const [running, setRunning] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
@@ -40,6 +44,15 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   useEffect(() => {
     secRef.current = sec;
   }, [sec]);
+
+  // Draft text: persisted to localStorage so accidental closes don't lose the answer
+  const draftKey = `ca_draft_${task.id}`;
+  // Restore draft text on mount
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(draftKey);
+    if (saved) setText(saved);
+  }, [draftKey]);
 
   // Restore timer from localStorage on mount — survives iPad PWA full-page reloads
   const timerKey = `ca_timer_${task.id}`;
@@ -162,16 +175,26 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
     }
 
     setUploading(false);
-    // Clear persisted timer — task is submitted, no need to restore
+    // Clear persisted timer and draft — task is submitted
     localStorage.removeItem(timerKey);
+    localStorage.removeItem(draftKey);
     onSubmit(task.id, { storagePaths, text, timer: sec });
   };
 
   const fileExt = (name: string) => name.split(".").pop()?.toUpperCase() ?? "FILE";
 
   return (
-    <div className="modal-bg" onClick={onClose} onKeyDown={() => {}}>
+    <div
+      className="modal-bg"
+      onMouseDown={() => { backdropMouseDownRef.current = true; }}
+      onMouseUp={() => {
+        if (backdropMouseDownRef.current) onClose();
+        backdropMouseDownRef.current = false;
+      }}
+      onKeyDown={() => {}}
+    >
       <div
+        onMouseDown={(e) => { e.stopPropagation(); backdropMouseDownRef.current = false; }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={() => {}}
         role="dialog"
@@ -191,7 +214,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => { localStorage.removeItem(draftKey); onClose(); }}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#506070", fontSize: 20 }}
           >
             &times;
@@ -371,7 +394,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
             <textarea
               className="inp"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); localStorage.setItem(draftKey, e.target.value); }}
               placeholder="Write your response here…"
               style={{ minHeight: 100, fontSize: 14, lineHeight: 1.7 }}
             />
@@ -380,7 +403,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           <textarea
             className="inp"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); localStorage.setItem(draftKey, e.target.value); }}
             placeholder="Notes or questions for your parent… (optional)"
             style={{ marginTop: 10, minHeight: 55, fontSize: 13 }}
           />

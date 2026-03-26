@@ -15,9 +15,11 @@ const NAV_ITEMS = [
   { id: "profiles", path: "/admin/profiles", label: "Profiles", icon: "profile" },
 ];
 
+const SCHOOL_NAME = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "Craftsman Academy";
+
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   return (
     <div className="sidebar">
@@ -36,7 +38,7 @@ export function AdminSidebar() {
               textShadow: "0 1px 8px rgba(0,0,0,0.95)",
             }}
           >
-            DEE
+            {user?.name ?? "Admin"}
           </div>
           <div
             style={{
@@ -47,14 +49,14 @@ export function AdminSidebar() {
               textShadow: "0 1px 5px rgba(0,0,0,0.9)",
             }}
           >
-            Operations Engineer
+            {user?.tagline ?? ""}
           </div>
         </div>
         {/* Compact academy logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 14px 5px", flexShrink: 0 }}>
           <Icon name="logo" size={22} />
           <div className="cinzel" style={{ fontSize: 13, color: "#506070", letterSpacing: "0.2em" }}>
-            CRAFTSMAN ACADEMY
+            {SCHOOL_NAME.toUpperCase()}
           </div>
         </div>
         <Divider />

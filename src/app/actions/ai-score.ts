@@ -18,6 +18,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  */
 export async function scoreTaskWithAI(
   taskId: string,
+  forceReview = false,
 ): Promise<{ score: number | null; feedback: string | null; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -42,11 +43,23 @@ export async function scoreTaskWithAI(
     return { score: null, feedback: null, error: taskError?.message ?? "Task not found" };
   }
 
-  const scoring = (task.scoring_approach ?? "completion") as string;
+  const scoringRaw = (task.scoring_approach ?? "completion") as string;
   // biome-ignore lint/suspicious/noExplicitAny: supabase join type
   const subjectName = (task.subjects as any)?.name ?? "Unknown subject";
   // biome-ignore lint/suspicious/noExplicitAny: supabase row type
   const submissions = (task.submissions ?? []) as any[];
+
+  const hasPhotoSubmissions = submissions.some(
+    (s) => s.file_url && (s.submission_type === "photo" || (s.file_mime_type ?? "").startsWith("image/")),
+  );
+
+  // forceReview=true (admin clicking "AI Score") or photo submission → always do real AI review
+  const scoring =
+    forceReview || (scoringRaw === "completion" && hasPhotoSubmissions)
+      ? hasPhotoSubmissions
+        ? "review_based"
+        : "review_based"
+      : scoringRaw;
 
   // ── Completion scoring: always 100 ─────────────────────────────────────────
   if (scoring === "completion") {
@@ -99,6 +112,12 @@ export async function scoreTaskWithAI(
     return { score, feedback };
   }
 
+  // ── Determine grading mode ──────────────────────────────────────────────────
+  // Photo submissions of academic work (workbooks, quizzes, tests) use strict
+  // answer-checking mode. Text-only submissions (essays, journals) use the
+  // encouraging qualitative mode.
+  const isPhotoGradedWork = imageSubs.length > 0 && textSubs.length === 0;
+
   // Build context text
   let context = `Subject: ${subjectName}\n`;
   if (lessonDetail) context += `Assignment: ${lessonDetail}\n`;
@@ -108,17 +127,14 @@ export async function scoreTaskWithAI(
     context += `Student worked for ${Math.floor(totalSec / 60)}m ${totalSec % 60}s.\n`;
   }
   if (textSubs.length > 0) {
-    context += `Student's note: "${textSubs.map((s) => s.content).join(" ")}"\n`;
+    context += `Student's written response: "${textSubs.map((s) => s.content).join(" ")}"\n`;
   }
   if (imageSubs.length > 0) {
-    context += `Student submitted ${imageSubs.length} image(s) of their work (included below).\n`;
+    context += `Student submitted ${imageSubs.length} image(s) of their handwritten work (attached below).\n`;
   }
   if (otherFileSubs.length > 0) {
     const names = otherFileSubs.map((s) => s.file_name ?? s.submission_type).join(", ");
     context += `Student also submitted: ${names}\n`;
-  }
-  if (submissions.length === 0) {
-    context += "No submission content was found.\n";
   }
 
   // Build message content array
@@ -147,22 +163,49 @@ export async function scoreTaskWithAI(
     }
   }
 
-  userContent.push({
-    type: "text",
-    text: 'Evaluate this student submission and respond with JSON only — no other text:\n{"score": <0-100>, "feedback": "<1-2 short encouraging sentences for the student>"}',
-  });
+  // ── Build prompt based on grading mode ────────────────────────────────────
+  if (isPhotoGradedWork) {
+    userContent.push({
+      type: "text",
+      text: `Review this student's handwritten work image carefully.
+
+Your job:
+1. Count ALL visible questions or problems on the page (total_questions).
+2. Check EACH answer for correctness. For math: solve it yourself and compare. For word problems: determine the expected answer and check the student's answer.
+3. List every problem that has a wrong answer (wrong_items) — be specific, e.g. "7 × 8: student wrote 54, correct is 56".
+4. If you cannot read the handwriting clearly for a problem, skip it and note it.
+5. Score = (correct answers / total questions) × 100, rounded to nearest integer.
+   - If all correct: 100. If half wrong: ~50. Proportional — do NOT inflate.
+6. For word problems: if the problem is ambiguous or requires outside context you don't have, note it but do your best.
+
+Respond ONLY with valid JSON, no other text:
+{"score": <0-100>, "total_questions": <n>, "correct": <n>, "wrong_items": ["<description>", ...], "feedback": "<1-2 sentences for the student noting what to review>"}`,
+    });
+  } else {
+    userContent.push({
+      type: "text",
+      text: 'Evaluate this student submission and respond with JSON only — no other text:\n{"score": <0-100>, "total_questions": null, "correct": null, "wrong_items": [], "feedback": "<1-2 short encouraging sentences for the student>"}',
+    });
+  }
 
   // ── Call Claude ─────────────────────────────────────────────────────────────
+  const systemPrompt = isPhotoGradedWork
+    ? "You are a precise academic grader reviewing a homeschool student's handwritten work. " +
+      "Accuracy is the primary metric — count questions, check every answer, and score proportionally based on correctness. " +
+      "Do not inflate scores. Wrong answers must reduce the score. " +
+      "Feedback should be direct but kind — tell the student specifically what to review. " +
+      "Respond ONLY with valid JSON."
+    : "You are a supportive homeschool tutor reviewing a student's submitted work. " +
+      "Score 0–100 based on effort, quality, and how well it matches the assignment. " +
+      "Keep feedback brief, positive, and constructive — the student will read it. " +
+      "Respond ONLY with valid JSON.";
+
   try {
     const anthropic = new Anthropic({ apiKey });
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 150,
-      system:
-        "You are a supportive homeschool tutor reviewing a student's submitted work. " +
-        "Score 0–100 based on effort, quality, and how well it matches the assignment. " +
-        "Keep feedback brief, positive, and constructive — the student will read it. " +
-        "Respond ONLY with valid JSON.",
+      max_tokens: 400,
+      system: systemPrompt,
       messages: [{ role: "user", content: userContent }],
     });
 
@@ -170,9 +213,27 @@ export async function scoreTaskWithAI(
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error(`Unexpected response: ${rawText.slice(0, 80)}`);
 
-    const parsed = JSON.parse(jsonMatch[0]) as { score: unknown; feedback: unknown };
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      score: unknown;
+      feedback: unknown;
+      total_questions?: unknown;
+      correct?: unknown;
+      wrong_items?: unknown[];
+    };
+
     const score = Math.min(100, Math.max(0, Math.round(Number(parsed.score))));
-    const feedback = String(parsed.feedback ?? "");
+    const totalQ = parsed.total_questions != null ? Number(parsed.total_questions) : null;
+    const correctQ = parsed.correct != null ? Number(parsed.correct) : null;
+    const wrongItems = Array.isArray(parsed.wrong_items) ? (parsed.wrong_items as string[]) : [];
+
+    // Build rich feedback: base feedback + wrong items list if any
+    let feedback = String(parsed.feedback ?? "");
+    if (wrongItems.length > 0) {
+      feedback += ` Review: ${wrongItems.join("; ")}.`;
+    }
+    if (totalQ !== null && correctQ !== null) {
+      feedback = `${correctQ}/${totalQ} correct. ${feedback}`;
+    }
 
     await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
 

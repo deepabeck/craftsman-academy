@@ -14,12 +14,7 @@ interface Props {
   currentStudentId: string;
 }
 
-export function ShopClient({
-  items,
-  weeklyPurchases: initialPurchases,
-  sharedContributions,
-  currentStudentId,
-}: Props) {
+export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedContributions, currentStudentId }: Props) {
   const { balance, refreshBalance } = usePoints();
   const [purchases, setPurchases] = useState(initialPurchases);
   const [, startTransition] = useTransition();
@@ -206,9 +201,7 @@ export function ShopClient({
                     {item.shared && !bothContributed
                       ? "Your contribution is in · Waiting on co-contributor"
                       : "Pending approval"}
-                    {myPurchase?.note && (
-                      <span style={{ color: "#506070", marginLeft: 6 }}>"{myPurchase.note}"</span>
-                    )}
+                    {myPurchase?.note && <span style={{ color: "#506070", marginLeft: 6 }}>"{myPurchase.note}"</span>}
                   </div>
                 ) : isConfirming ? (
                   /* Confirm step: note + submit */
@@ -216,14 +209,10 @@ export function ShopClient({
                     <input
                       className="inp"
                       placeholder={
-                        item.shared
-                          ? "What's this for? e.g. Minecraft Legends (optional)"
-                          : "Add a note (optional)"
+                        item.shared ? "What's this for? e.g. Minecraft Legends (optional)" : "Add a note (optional)"
                       }
                       value={noteInputs[item.id] ?? ""}
-                      onChange={(e) =>
-                        setNoteInputs((prev) => ({ ...prev, [item.id]: e.target.value }))
-                      }
+                      onChange={(e) => setNoteInputs((prev) => ({ ...prev, [item.id]: e.target.value }))}
                       style={{ fontSize: 12, padding: "6px 10px" }}
                     />
                     <div style={{ display: "flex", gap: 6 }}>
@@ -241,9 +230,7 @@ export function ShopClient({
                         style={{ fontSize: 12, padding: "5px 16px", flex: 1 }}
                         onClick={() => handleRequest(item.id)}
                       >
-                        {item.shared
-                          ? `Contribute ${myShare.toLocaleString()} Cogs`
-                          : `Confirm Request`}
+                        {item.shared ? `Contribute ${myShare.toLocaleString()} Cogs` : `Confirm Request`}
                       </button>
                     </div>
                   </div>

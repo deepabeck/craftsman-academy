@@ -129,10 +129,7 @@ export default async function TodayPage() {
   // ── Saturday: fetch incomplete tasks from this week (Mon–Fri) ───────────────
   let lateTasks: LateTask[] = [];
   if (dayOfWeek === 6 || tasks.length === 0) {
-    const range =
-      dayOfWeek === 6
-        ? currentWeekMonFri(_d)
-        : getPrecedingWeek(_d);
+    const range = dayOfWeek === 6 ? currentWeekMonFri(_d) : getPrecedingWeek(_d);
 
     const { data: lateData } = await supabase
       .from("tasks")

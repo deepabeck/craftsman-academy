@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { cancelTask, fulfillTask, restoreTask } from "@/app/actions/calendar-adjustments";
+import {
+  cancelDayTasks,
+  cancelTask,
+  type DayTaskGroup,
+  fulfillTask,
+  getTasksForDate,
+  restoreDayTasks,
+  restoreTask,
+} from "@/app/actions/calendar-adjustments";
 import {
   copyWeekPlans,
   deleteLessonPlan,
@@ -11,7 +19,7 @@ import {
 } from "@/app/actions/lesson-plans";
 import { generateWritingJournalPrompt } from "@/app/actions/writing-journal";
 import { Icon, PageHeader } from "@/components/ui";
-import { type CalendarAdjustment, proposeAdjustments, type TaskSummary } from "@/lib/calendar-task-matcher";
+import { proposeAdjustments, type TaskSummary } from "@/lib/calendar-task-matcher";
 import type { CalendarEvent } from "@/lib/types";
 import { rgba } from "@/lib/utils";
 
@@ -149,6 +157,15 @@ export function LessonPlannerClient({
   const [appliedAdjustments, setAppliedAdjustments] = useState<Set<string>>(new Set());
   const [isApplying, setIsApplying] = useState(false);
 
+  // ── Day Management state ──────────────────────────────────────────────────
+  const [dayMgmtOpen, setDayMgmtOpen] = useState(false);
+  const [dayMgmtDate, setDayMgmtDate] = useState(todayDate);
+  const [dayMgmtTasks, setDayMgmtTasks] = useState<DayTaskGroup[]>(initialStudentTasks);
+  const [dayMgmtLoading, setDayMgmtLoading] = useState(false);
+  const [dayMgmtReason, setDayMgmtReason] = useState("Day off");
+  const [dayMgmtCustomReason, setDayMgmtCustomReason] = useState("");
+  const [dayMgmtBusy, setDayMgmtBusy] = useState<Set<string>>(new Set()); // taskIds or studentIds being updated
+
   // Build proposals for today's events only (tasks already exist)
   const todayEvents = weekCalendarEvents.filter((e) => e.isoDate === todayDate);
 
@@ -224,6 +241,99 @@ export function LessonPlannerClient({
         tasks: group.tasks.map((t) => (t.id === taskId ? { ...t, status: "pending", cancelledReason: null } : t)),
       })),
     );
+  };
+
+  // ── Day Management handlers ───────────────────────────────────────────────
+  const loadDayTasks = async (date: string) => {
+    setDayMgmtLoading(true);
+    const groups = await getTasksForDate(date);
+    setDayMgmtTasks(groups);
+    setDayMgmtLoading(false);
+  };
+
+  const handleDayMgmtDateChange = (date: string) => {
+    setDayMgmtDate(date);
+    loadDayTasks(date);
+  };
+
+  const resolvedReason = dayMgmtReason === "Other…" ? dayMgmtCustomReason.trim() || "Cancelled" : dayMgmtReason;
+
+  const cancelSingleTask = async (taskId: string, reason: string) => {
+    setDayMgmtBusy((p) => new Set([...p, taskId]));
+    await cancelTask(taskId, reason);
+    setDayMgmtTasks((prev) =>
+      prev.map((g) => ({
+        ...g,
+        tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, status: "cancelled", cancelledReason: reason } : t)),
+      })),
+    );
+    setDayMgmtBusy((p) => {
+      const n = new Set(p);
+      n.delete(taskId);
+      return n;
+    });
+  };
+
+  const restoreSingleTask = async (taskId: string) => {
+    setDayMgmtBusy((p) => new Set([...p, taskId]));
+    await restoreTask(taskId);
+    setDayMgmtTasks((prev) =>
+      prev.map((g) => ({
+        ...g,
+        tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, status: "pending", cancelledReason: null } : t)),
+      })),
+    );
+    setDayMgmtBusy((p) => {
+      const n = new Set(p);
+      n.delete(taskId);
+      return n;
+    });
+  };
+
+  const cancelWholeDay = async (studentId: string, studentKey: string) => {
+    setDayMgmtBusy((p) => new Set([...p, studentId]));
+    await cancelDayTasks(studentId, dayMgmtDate, resolvedReason);
+    setDayMgmtTasks((prev) =>
+      prev.map((g) =>
+        g.studentKey !== studentKey
+          ? g
+          : {
+              ...g,
+              tasks: g.tasks.map((t) =>
+                ["pending", "missed"].includes(t.status)
+                  ? { ...t, status: "cancelled", cancelledReason: resolvedReason }
+                  : t,
+              ),
+            },
+      ),
+    );
+    setDayMgmtBusy((p) => {
+      const n = new Set(p);
+      n.delete(studentId);
+      return n;
+    });
+  };
+
+  const restoreWholeDay = async (studentId: string, studentKey: string) => {
+    setDayMgmtBusy((p) => new Set([...p, studentId]));
+    await restoreDayTasks(studentId, dayMgmtDate);
+    setDayMgmtTasks((prev) =>
+      prev.map((g) =>
+        g.studentKey !== studentKey
+          ? g
+          : {
+              ...g,
+              tasks: g.tasks.map((t) =>
+                t.status === "cancelled" ? { ...t, status: "pending", cancelledReason: null } : t,
+              ),
+            },
+      ),
+    );
+    setDayMgmtBusy((p) => {
+      const n = new Set(p);
+      n.delete(studentId);
+      return n;
+    });
   };
 
   // ── Generate AI writing prompt ────────────────────────────────────────────
@@ -756,6 +866,241 @@ export function LessonPlannerClient({
           </div>
         </div>
       )}
+
+      {/* Day Management panel */}
+      <div className="glass" style={{ border: "1px solid rgba(240,128,128,0.25)", background: "rgba(40,10,10,0.45)" }}>
+        {/* Header / toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!dayMgmtOpen) loadDayTasks(dayMgmtDate);
+            setDayMgmtOpen((v) => !v);
+          }}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <span className="cinzel" style={{ fontSize: 13, color: "#F08080", letterSpacing: "0.06em" }}>
+            🚫 CANCEL / MANAGE TASKS
+          </span>
+          <span style={{ fontSize: 13, color: "#506070" }}>{dayMgmtOpen ? "▲ Close" : "▼ Open"}</span>
+        </button>
+
+        {dayMgmtOpen && (
+          <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Date + Reason row */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.06em" }}>DATE</div>
+                <input
+                  type="date"
+                  className="inp"
+                  value={dayMgmtDate}
+                  onChange={(e) => handleDayMgmtDateChange(e.target.value)}
+                  style={{ fontSize: 13, padding: "6px 10px", width: 160 }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 160 }}>
+                <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.06em" }}>REASON</div>
+                <select
+                  className="inp"
+                  value={dayMgmtReason}
+                  onChange={(e) => setDayMgmtReason(e.target.value)}
+                  style={{ fontSize: 13, padding: "6px 10px" }}
+                >
+                  <option>Day off</option>
+                  <option>Sick day</option>
+                  <option>Family outing</option>
+                  <option>Field trip</option>
+                  <option>Holiday / Break</option>
+                  <option>Weather day</option>
+                  <option>Other…</option>
+                </select>
+              </div>
+              {dayMgmtReason === "Other…" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 160 }}>
+                  <div style={{ fontSize: 11, color: "#506070", letterSpacing: "0.06em" }}>SPECIFY</div>
+                  <input
+                    className="inp"
+                    value={dayMgmtCustomReason}
+                    onChange={(e) => setDayMgmtCustomReason(e.target.value)}
+                    placeholder="Enter reason…"
+                    style={{ fontSize: 13, padding: "6px 10px" }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {dayMgmtLoading && (
+              <div style={{ fontSize: 13, color: "#506070", textAlign: "center", padding: 8 }}>Loading tasks…</div>
+            )}
+
+            {/* Per-student task lists */}
+            {!dayMgmtLoading &&
+              dayMgmtTasks.map((group) => {
+                const allCancelled = group.tasks.every((t) => t.status === "cancelled");
+                const hasCancelled = group.tasks.some((t) => t.status === "cancelled");
+                const hasPending = group.tasks.some((t) => ["pending", "missed"].includes(t.status));
+                const busy = dayMgmtBusy.has(group.studentId);
+                return (
+                  <div key={group.studentKey} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Student header + bulk buttons */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        className="cinzel"
+                        style={{
+                          fontSize: 12,
+                          color: "#C0B080",
+                          letterSpacing: "0.06em",
+                          textTransform: "capitalize",
+                          flex: 1,
+                        }}
+                      >
+                        {group.studentKey}
+                      </span>
+                      {hasPending && (
+                        <button
+                          type="button"
+                          onClick={() => cancelWholeDay(group.studentId, group.studentKey)}
+                          disabled={busy}
+                          style={{
+                            fontSize: 11,
+                            padding: "4px 10px",
+                            borderRadius: 5,
+                            border: "1px solid rgba(240,128,128,0.4)",
+                            background: "rgba(240,128,128,0.1)",
+                            color: "#F08080",
+                            cursor: busy ? "default" : "pointer",
+                            opacity: busy ? 0.5 : 1,
+                          }}
+                        >
+                          {busy ? "…" : "Cancel All Day"}
+                        </button>
+                      )}
+                      {hasCancelled && (
+                        <button
+                          type="button"
+                          onClick={() => restoreWholeDay(group.studentId, group.studentKey)}
+                          disabled={busy}
+                          style={{
+                            fontSize: 11,
+                            padding: "4px 10px",
+                            borderRadius: 5,
+                            border: "1px solid rgba(112,224,144,0.4)",
+                            background: "rgba(112,224,144,0.08)",
+                            color: "#70E090",
+                            cursor: busy ? "default" : "pointer",
+                            opacity: busy ? 0.5 : 1,
+                          }}
+                        >
+                          {busy ? "…" : allCancelled ? "Restore All" : "Restore Cancelled"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Task rows */}
+                    {group.tasks.length === 0 && (
+                      <div style={{ fontSize: 12, color: "#3A4858", padding: "4px 0" }}>No tasks for this date.</div>
+                    )}
+                    {group.tasks.map((task) => {
+                      const isBusy = dayMgmtBusy.has(task.id);
+                      const isCancelled = task.status === "cancelled";
+                      const isDone = ["done", "approved", "review"].includes(task.status);
+                      return (
+                        <div
+                          key={task.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "7px 10px",
+                            borderRadius: 6,
+                            background: isCancelled ? "rgba(240,128,128,0.06)" : "rgba(255,255,255,0.03)",
+                            border: `1px solid ${isCancelled ? "rgba(240,128,128,0.2)" : isDone ? "rgba(112,224,144,0.15)" : "rgba(255,255,255,0.07)"}`,
+                          }}
+                        >
+                          {/* Status dot */}
+                          <span
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: "50%",
+                              flexShrink: 0,
+                              background: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
+                            }}
+                          />
+                          {/* Subject name */}
+                          <span
+                            style={{
+                              fontSize: 13,
+                              color: isCancelled ? "#506070" : "#C0B080",
+                              flex: 1,
+                              textDecoration: isCancelled ? "line-through" : "none",
+                            }}
+                          >
+                            {task.subjectName}
+                          </span>
+                          {/* Cancelled reason */}
+                          {isCancelled && task.cancelledReason && (
+                            <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>
+                              {task.cancelledReason}
+                            </span>
+                          )}
+                          {/* Status badge */}
+                          <span
+                            style={{
+                              fontSize: 11,
+                              padding: "1px 5px",
+                              borderRadius: 3,
+                              background: isCancelled
+                                ? "rgba(240,128,128,0.12)"
+                                : isDone
+                                  ? "rgba(112,224,144,0.12)"
+                                  : "rgba(212,168,48,0.12)",
+                              color: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
+                            }}
+                          >
+                            {task.status}
+                          </span>
+                          {/* Action button */}
+                          {!isDone && (
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() =>
+                                isCancelled ? restoreSingleTask(task.id) : cancelSingleTask(task.id, resolvedReason)
+                              }
+                              style={{
+                                fontSize: 11,
+                                padding: "3px 8px",
+                                borderRadius: 4,
+                                border: `1px solid ${isCancelled ? "rgba(112,224,144,0.3)" : "rgba(240,128,128,0.3)"}`,
+                                background: isCancelled ? "rgba(112,224,144,0.08)" : "rgba(240,128,128,0.08)",
+                                color: isCancelled ? "#70E090" : "#F08080",
+                                cursor: isBusy ? "default" : "pointer",
+                                opacity: isBusy ? 0.5 : 1,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isBusy ? "…" : isCancelled ? "Restore" : "Cancel"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
 
       {/* Edit panel — lightbox overlay */}
       {editing && editingSubject && (

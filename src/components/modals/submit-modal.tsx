@@ -37,7 +37,32 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   // Set to (Date.now() - sec*1000) when timer starts/resumes so background time is counted
   const startEpochRef = useRef<number | null>(null);
   const secRef = useRef(sec);
-  useEffect(() => { secRef.current = sec; }, [sec]);
+  useEffect(() => {
+    secRef.current = sec;
+  }, [sec]);
+
+  // Restore timer from localStorage on mount — survives iPad PWA full-page reloads
+  const timerKey = `ca_timer_${task.id}`;
+  useEffect(() => {
+    const saved = localStorage.getItem(timerKey);
+    if (!saved) return;
+    try {
+      const data: { startEpoch: number | null; paused: number | null } = JSON.parse(saved);
+      if (data.startEpoch !== null) {
+        // Was running when the page reloaded — compute elapsed including offline time
+        const elapsed = Math.floor((Date.now() - data.startEpoch) / 1000);
+        secRef.current = elapsed;
+        setSec(elapsed);
+        setRunning(true);
+      } else if (data.paused !== null && data.paused > 0) {
+        // Was paused — restore seconds
+        secRef.current = data.paused;
+        setSec(data.paused);
+      }
+    } catch {
+      localStorage.removeItem(timerKey);
+    }
+  }, [timerKey]);
 
   // Support both proofTypes array and legacy proofType field
   const proofTypes: string[] = task.proofTypes?.length ? task.proofTypes : [task.proofType ?? "checkbox"];
@@ -49,9 +74,12 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   const acceptAttr = proofTypes.includes("photo") ? "image/*" : proofTypes.includes("audio") ? "audio/*" : "*/*";
 
   // Timer: derive elapsed from wall clock so background time is counted correctly on iPad PWA
+  // Also persist to localStorage so state survives full PWA reloads
   useEffect(() => {
     if (running) {
       startEpochRef.current = Date.now() - secRef.current * 1000;
+      // Save running anchor — if the page reloads, we can recompute elapsed on remount
+      localStorage.setItem(timerKey, JSON.stringify({ startEpoch: startEpochRef.current, paused: null }));
       intervalRef.current = setInterval(() => {
         if (startEpochRef.current !== null) {
           setSec(Math.floor((Date.now() - startEpochRef.current) / 1000));
@@ -59,11 +87,15 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
       }, 500);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      // Save paused state so the accumulated time isn't lost
+      if (secRef.current > 0) {
+        localStorage.setItem(timerKey, JSON.stringify({ startEpoch: null, paused: secRef.current }));
+      }
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [running]);
+  }, [running, timerKey]);
 
   // When the app comes back to the foreground (iPad returning from piano app),
   // immediately recalculate elapsed time from wall clock
@@ -130,6 +162,8 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
     }
 
     setUploading(false);
+    // Clear persisted timer — task is submitted, no need to restore
+    localStorage.removeItem(timerKey);
     onSubmit(task.id, { storagePaths, text, timer: sec });
   };
 
@@ -303,8 +337,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
                 className="btn-ghost"
                 onClick={() => {
                   setSec(0);
+                  secRef.current = 0;
                   setRunning(false);
                   startEpochRef.current = null;
+                  localStorage.removeItem(timerKey);
                 }}
               >
                 ↺ Reset

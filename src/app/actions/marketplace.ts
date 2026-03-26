@@ -88,9 +88,7 @@ export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
 }
 
 /** Student's purchases for the current week. */
-export async function getMyWeeklyPurchases(): Promise<
-  { itemId: string; status: string; note: string | null }[]
-> {
+export async function getMyWeeklyPurchases(): Promise<{ itemId: string; status: string; note: string | null }[]> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -142,10 +140,7 @@ export async function getSharedItemContributions(): Promise<SharedContribution[]
 }
 
 /** Student requests a marketplace item. Shared items charge price ÷ 2 per student. */
-export async function requestPurchase(
-  itemId: string,
-  note?: string,
-): Promise<{ success: boolean; error?: string }> {
+export async function requestPurchase(itemId: string, note?: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -165,11 +160,7 @@ export async function requestPurchase(
   if (existing && existing.length > 0) return { success: false, error: "Already requested this week" };
 
   // Fetch item
-  const { data: item } = await supabase
-    .from("marketplace_items")
-    .select("price, shared")
-    .eq("id", itemId)
-    .single();
+  const { data: item } = await supabase.from("marketplace_items").select("price, shared").eq("id", itemId).single();
   if (!item) return { success: false, error: "Item not found" };
 
   // Shared items cost half each; solo items cost full price

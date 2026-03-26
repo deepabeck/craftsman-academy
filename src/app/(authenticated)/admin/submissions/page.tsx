@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { SubmissionsClient, type SubmissionItem } from "./submissions-client";
+import { type SubmissionItem, SubmissionsClient } from "./submissions-client";
 
 export default async function SubmissionsPage() {
   const supabase = await createClient();

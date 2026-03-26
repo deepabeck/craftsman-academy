@@ -79,10 +79,7 @@ export async function fetchWeather(): Promise<WeatherData | null> {
     const codes: number[] = data.hourly.weathercode;
 
     // Current Denver datetime as "YYYY-MM-DDTHH:00" for string comparison
-    const nowDenver = new Date()
-      .toLocaleString("sv-SE", { timeZone: "America/Denver" })
-      .replace(" ", "T")
-      .slice(0, 16);
+    const nowDenver = new Date().toLocaleString("sv-SE", { timeZone: "America/Denver" }).replace(" ", "T").slice(0, 16);
 
     const hourly: WeatherData["hourly"] = [];
     for (let i = 0; i < times.length && hourly.length < 8; i++) {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { scoreTaskWithAI } from "@/app/actions/ai-score";
-import { approveTask, requestRevision } from "@/app/actions/tasks";
+import { manualScoreTask } from "@/app/actions/manual-score";
+import { approveTask, regradeTask, requestRevision } from "@/app/actions/tasks";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { formatTime, rgba } from "@/lib/utils";
 
@@ -16,6 +16,7 @@ export interface ReviewItem {
   status: string;
   aiScore: number | null;
   aiFeedback: string | null;
+  parentScore: number | null;
   student: {
     id: string;
     name: string;
@@ -483,6 +484,12 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
   const [rescoring, setRescoring] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  // Re-grade state (for already-approved tasks)
+  const [regradeTaskId, setRegradeTaskId] = useState<string | null>(null);
+  const [regradeScore, setRegradeScore] = useState("100");
+  const [regradeNote, setRegradeNote] = useState("");
+  const [regrading, setRegrading] = useState(false);
+
   // When week changes, reset day selection to first day with items in new week
   const changeWeek = (offset: number) => {
     const newDates = getWeekDates(offset);
@@ -528,13 +535,15 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
 
   const handleRescore = async (item: ReviewItem) => {
     setRescoring(item.taskId);
-    const result = await scoreTaskWithAI(item.taskId);
+    const result = await manualScoreTask(item.taskId);
     setRescoring(null);
     if (result.score != null) {
       setPending((prev) =>
         prev.map((r) => (r.taskId === item.taskId ? { ...r, aiScore: result.score, aiFeedback: result.feedback } : r)),
       );
       setScore(String(result.score));
+    } else if (result.error) {
+      alert(`AI scoring failed: ${result.error}`);
     }
   };
 
@@ -567,6 +576,35 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
         setDone((p) => p.filter((r) => r.taskId !== item.taskId));
       }
     });
+  };
+
+  const selectRegradeTask = (item: ReviewItem) => {
+    if (regradeTaskId === item.taskId) {
+      setRegradeTaskId(null);
+      return;
+    }
+    setRegradeTaskId(item.taskId);
+    setRegradeScore(String(item.parentScore ?? item.aiScore ?? 100));
+    setRegradeNote(item.adminNote ?? "");
+  };
+
+  const handleRegrade = async (item: ReviewItem) => {
+    const s = Number.parseInt(regradeScore, 10);
+    const finalScore = Number.isNaN(s) ? 100 : Math.min(100, Math.max(0, s));
+    setRegrading(true);
+    const result = await regradeTask(item.taskId, finalScore, regradeNote.trim() || undefined);
+    setRegrading(false);
+    if (result.success) {
+      setDone((prev) =>
+        prev.map((r) =>
+          r.taskId === item.taskId ? { ...r, parentScore: finalScore, aiScore: finalScore, adminNote: regradeNote } : r,
+        ),
+      );
+      setRegradeTaskId(null);
+      setRegradeNote("");
+    } else {
+      alert(`Re-grade failed: ${result.error}`);
+    }
   };
 
   const today = todayStr();
@@ -1077,44 +1115,246 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
             {dayDone.length > 0 && (
               <div>
                 <div className="cinzel text-dim" style={{ fontSize: 13, letterSpacing: "0.1em", marginBottom: 6 }}>
-                  REVIEWED THIS DAY
+                  REVIEWED THIS DAY — click to re-grade
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
-                  {dayDone.map((item) => (
-                    <div
-                      key={item.taskId}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "9px 12px",
-                        borderRadius: 7,
-                        opacity: 0.55,
-                        background: "rgba(8,17,30,0.65)",
-                        border: `1px solid ${rgba(item.student.color, 0.15)}`,
-                      }}
-                    >
-                      <Icon name={item.subject.icon} size={18} style={{ flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
+                    {dayDone.map((item) => {
+                      const isSelRegrade = regradeTaskId === item.taskId;
+                      const displayScore = item.parentScore ?? item.aiScore;
+                      return (
+                        <button
+                          key={item.taskId}
+                          type="button"
+                          onClick={() => selectRegradeTask(item)}
                           style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: "#C0D0E0",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "9px 12px",
+                            borderRadius: 7,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            outline: "none",
+                            transition: "all 0.15s",
+                            background: isSelRegrade ? "rgba(20,30,50,0.88)" : "rgba(8,17,30,0.65)",
+                            border: `1px solid ${isSelRegrade ? rgba(item.student.color, 0.6) : rgba(item.student.color, 0.15)}`,
+                            boxShadow: isSelRegrade ? `0 0 0 2px ${rgba(item.student.color, 0.15)}` : "none",
+                            opacity: isSelRegrade ? 1 : 0.7,
                           }}
                         >
-                          {item.subject.name}
+                          <Icon name={item.subject.icon} size={18} style={{ flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: "#C0D0E0",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {item.subject.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: rgba(item.student.color, 0.9), marginTop: 1 }}>
+                              {item.student.name}
+                            </div>
+                          </div>
+                          {displayScore != null && (
+                            <span
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: displayScore >= 80 ? "#70E090" : displayScore >= 60 ? "#E8A820" : "#F08080",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {displayScore}%
+                            </span>
+                          )}
+                          <StatusBadge status={item.status as "approved" | "pending" | "review" | "done" | "missed"} />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Re-grade panel */}
+                  {regradeTaskId &&
+                    (() => {
+                      const item = dayDone.find((i) => i.taskId === regradeTaskId);
+                      if (!item) return null;
+                      const fileSubs = item.submissions.filter(
+                        (s) =>
+                          (s.type === "photo" || s.type === "file" || s.type === "audio" || s.type === "video") &&
+                          s.fileUrl,
+                      );
+                      const textNote =
+                        item.submissions.find((s) => s.type === "text" && s.content)?.content ?? (item.notes || null);
+                      const timerSub = item.submissions.find((s) => s.type === "timer");
+                      return (
+                        <div
+                          className="glass"
+                          style={{
+                            borderRadius: 9,
+                            border: `1px solid ${rgba(item.student.color, 0.4)}`,
+                            padding: "14px 16px",
+                          }}
+                        >
+                          {/* Header */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                            <Icon name={item.subject.icon} size={22} />
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: "#EEE4CC" }}>
+                                {item.subject.name}
+                              </span>
+                              <span style={{ fontSize: 13, color: "#7A8B9C", marginLeft: 8 }}>{item.student.name}</span>
+                              {item.lessonDetail && (
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#7A8B9C",
+                                    marginTop: 2,
+                                    borderLeft: `2px solid ${rgba(item.subject.color, 0.5)}`,
+                                    paddingLeft: 6,
+                                  }}
+                                >
+                                  {item.lessonDetail}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setRegradeTaskId(null)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#506070",
+                                cursor: "pointer",
+                                fontSize: 18,
+                                lineHeight: 1,
+                                padding: "0 4px",
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+
+                          {/* Submission content */}
+                          {(fileSubs.length > 0 || timerSub || textNote) && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: 10,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <FileThumbs subs={fileSubs} onOpen={(i) => openViewer(fileSubs, i)} />
+                              {timerSub && (
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#4ABCCC",
+                                    background: "rgba(74,188,204,0.1)",
+                                    border: "1px solid rgba(74,188,204,0.25)",
+                                    borderRadius: 4,
+                                    padding: "4px 8px",
+                                  }}
+                                >
+                                  ⏱ {formatTime(timerSub.timerSeconds ?? 0)}
+                                </span>
+                              )}
+                              {textNote && (
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    marginTop: 4,
+                                    padding: "10px 12px",
+                                    borderRadius: 6,
+                                    background: "rgba(0,0,0,0.35)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    fontSize: 14,
+                                    color: "#D0E0F0",
+                                    lineHeight: 1.6,
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {textNote}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Current score display */}
+                          {(item.parentScore != null || item.aiScore != null) && (
+                            <div
+                              style={{
+                                fontSize: 13,
+                                color: "#7A8B9C",
+                                marginBottom: 10,
+                                padding: "6px 10px",
+                                background: "rgba(0,0,0,0.3)",
+                                borderRadius: 5,
+                                border: "1px solid rgba(255,255,255,0.06)",
+                              }}
+                            >
+                              Current grade:{" "}
+                              <strong style={{ color: "#E8A820" }}>{item.parentScore ?? item.aiScore}%</strong>
+                              {item.aiFeedback && (
+                                <span style={{ color: "#506070", marginLeft: 8 }}>{item.aiFeedback}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Re-grade inputs */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <input
+                              className="inp"
+                              type="number"
+                              placeholder="New score"
+                              value={regradeScore}
+                              onChange={(e) => setRegradeScore(e.target.value)}
+                              style={{ width: 80, padding: "5px 8px", fontSize: 13 }}
+                              min={0}
+                              max={100}
+                            />
+                            <input
+                              className="inp"
+                              type="text"
+                              placeholder="Note (optional)"
+                              value={regradeNote}
+                              onChange={(e) => setRegradeNote(e.target.value)}
+                              style={{ flex: 1, padding: "5px 8px", fontSize: 13 }}
+                            />
+                            <button
+                              type="button"
+                              className="btn-brass"
+                              style={{
+                                padding: "5px 16px",
+                                fontSize: 13,
+                                whiteSpace: "nowrap",
+                                opacity: regrading ? 0.6 : 1,
+                              }}
+                              onClick={() => handleRegrade(item)}
+                              disabled={regrading}
+                            >
+                              {regrading ? "Saving…" : "✓ Save Grade"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-ghost"
+                              style={{ padding: "5px 10px", fontSize: 13, whiteSpace: "nowrap" }}
+                              onClick={() => setRegradeTaskId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 13, color: rgba(item.student.color, 0.9), marginTop: 1 }}>
-                          {item.student.name}
-                        </div>
-                      </div>
-                      <StatusBadge status={item.status as "approved" | "pending" | "review" | "done" | "missed"} />
-                    </div>
-                  ))}
+                      );
+                    })()}
                 </div>
               </div>
             )}

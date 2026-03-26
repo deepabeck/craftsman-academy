@@ -418,7 +418,10 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
           </div>
 
           {/* Background color — spans all 3 columns */}
-          <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)", gridColumn: "1 / -1" }}>
+          <div
+            className="glass-warm"
+            style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)", gridColumn: "1 / -1" }}
+          >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
                 WORLD BACKGROUND COLOR
@@ -627,9 +630,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                     wordBreak: "break-all",
                   }}
                 >
-                  {profile.studentKey === "deven"
-                    ? process.env.NEXT_PUBLIC_DEVEN_EMAIL
-                    : process.env.NEXT_PUBLIC_SHAAN_EMAIL}
+                  {profile.email || "—"}
                 </div>
               </div>
               <div>

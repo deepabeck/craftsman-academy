@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { StudentSidebar } from "@/components/layout/student-sidebar";
 import { PointsProvider } from "@/contexts/points-context";
 import { BASE_STUDENTS, SUBJECTS_ALL } from "@/lib/constants";

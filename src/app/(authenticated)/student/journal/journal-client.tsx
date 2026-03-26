@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitTaskProof } from "@/app/actions/tasks";
-import { Icon, PageHeader, StatusBadge } from "@/components/ui";
+import { PageHeader, StatusBadge } from "@/components/ui";
 import type { Student } from "@/lib/types";
 import type { JournalEntry } from "./page";
 
@@ -18,7 +18,7 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
-function formatDateShort(iso: string): string {
+function _formatDateShort(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

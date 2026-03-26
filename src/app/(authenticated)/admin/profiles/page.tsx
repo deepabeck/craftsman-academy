@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { ProfilesClient } from "./profiles-client";
 
 export interface ProfileData {
@@ -10,6 +11,7 @@ export interface ProfileData {
   yearLabel: string | null;
   color: string;
   avatarUrl: string | null;
+  email: string;
   subjects: { id: string; name: string; icon: string; color: string; days: string[] }[];
 }
 
@@ -25,7 +27,9 @@ export default async function ProfilesPage() {
   const supabase = await createClient();
 
   // ── Fetch admin profile ───────────────────────────────────────────────────
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
   const [{ data: adminRow }, { data: adminSettings }] = await Promise.all([
     supabase.from("profiles").select("id, display_name, tagline, avatar_url").eq("role", "admin").maybeSingle(),
@@ -41,6 +45,14 @@ export default async function ProfilesPage() {
     avatarUrl: adminRow?.avatar_url ?? null,
     bgColor: adminSettings?.bg_color ?? "#08111E",
   };
+
+  // ── Fetch auth emails for students (service role) ─────────────────────────
+  const serviceClient = createServiceClient();
+  const { data: authUsers } = await serviceClient.auth.admin.listUsers({ perPage: 100 });
+  const emailMap: Record<string, string> = {};
+  for (const u of authUsers?.users ?? []) {
+    emailMap[u.id] = u.email ?? "";
+  }
 
   // ── Fetch student profiles (exclude admin) ────────────────────────────────
   const { data: profileRows, error } = await supabase
@@ -86,6 +98,7 @@ export default async function ProfilesPage() {
     yearLabel: gradeMap[p.id]?.yearLabel ?? null,
     color: p.color ?? "#4A90D0",
     avatarUrl: p.avatar_url ?? null,
+    email: emailMap[p.id] ?? "",
     subjects: (subjectRows ?? [])
       // biome-ignore lint/suspicious/noExplicitAny: supabase row type
       .filter((s: any) => !s.only_student_key || s.only_student_key === p.student_key)

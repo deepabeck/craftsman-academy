@@ -558,8 +558,12 @@ textarea.inp {
 }
 
 @keyframes gearSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .gear-spin {
   animation: gearSpin 1.8s linear infinite;

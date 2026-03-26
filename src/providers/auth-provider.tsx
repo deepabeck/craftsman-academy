@@ -9,6 +9,8 @@ export interface AuthUser {
   role: "admin" | "student";
   studentId: string | null; // maps to profiles.student_key ('deven', 'shaan', null for admin)
   color: string;
+  name: string;
+  tagline: string;
 }
 
 interface AuthContextType {
@@ -36,13 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(
     async (userId: string) => {
       if (!supabase) return;
-      const { data } = await supabase.from("profiles").select("role, student_key, color").eq("id", userId).single();
+      const { data } = await supabase
+        .from("profiles")
+        .select("role, student_key, color, display_name, tagline")
+        .eq("id", userId)
+        .single();
       if (data) {
         setUser({
           id: userId,
           role: data.role as "admin" | "student",
           studentId: data.student_key ?? null,
           color: data.color ?? "#4A90D0",
+          name: data.display_name ?? "",
+          tagline: data.tagline ?? "",
         });
       } else {
         setUser(null);

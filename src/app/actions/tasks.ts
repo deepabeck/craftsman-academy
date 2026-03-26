@@ -186,6 +186,69 @@ export async function approveTask(taskId: string, score: number, reviewerNotes?:
 }
 
 /**
+ * Admin re-grades an already-approved task.
+ * Updates the score on the task and adjusts the points_log so Cogs reflect the new score.
+ */
+export async function regradeTask(
+  taskId: string,
+  newScore: number,
+  note?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const service = createServiceClient();
+
+  // Fetch current task to get student_id
+  const { data: task, error: fetchErr } = await service
+    .from("tasks")
+    .select("id, student_id, final_score")
+    .eq("id", taskId)
+    .single();
+  if (fetchErr || !task) return { success: false, error: fetchErr?.message ?? "Task not found" };
+
+  const overallScore = Math.round(0.6 * 100 + 0.4 * newScore);
+
+  // Update task scores
+  const { error: updateErr } = await service
+    .from("tasks")
+    .update({
+      parent_score: newScore,
+      final_score: newScore,
+      ai_score: newScore,
+      overall_score: overallScore,
+      admin_note: note ?? "",
+    })
+    .eq("id", taskId);
+  if (updateErr) return { success: false, error: updateErr.message };
+
+  // Adjust points_log: delete old task_approve entry, insert corrected one
+  await service
+    .from("points_log")
+    .delete()
+    .eq("student_id", task.student_id)
+    .eq("category", "task_approve")
+    .eq("source_id", taskId);
+
+  const newPoints = (() => {
+    if (newScore >= 90) return 15;
+    if (newScore >= 80) return 12;
+    if (newScore >= 70) return 8;
+    if (newScore >= 60) return 5;
+    return 0;
+  })();
+
+  if (newPoints > 0) {
+    await service.from("points_log").insert({
+      student_id: task.student_id,
+      category: "task_approve",
+      points: newPoints,
+      source_id: taskId,
+      note: `Approved (re-graded to ${newScore}%)`,
+    });
+  }
+
+  return { success: true };
+}
+
+/**
  * Admin override: update timer_seconds on any task (for manual corrections).
  */
 export async function updateTaskTimer(taskId: string, minutes: number) {

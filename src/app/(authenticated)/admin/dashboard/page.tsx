@@ -1,60 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { AiTag, StudentDashData, SubjectTask } from "./dashboard-client";
+import type { StudentDashData, SubjectMonth } from "./dashboard-client";
 import { DashboardClient } from "./dashboard-client";
 
-/** YYYY-MM-DD from a Date using local components (avoids UTC day-shift). */
+export const dynamic = "force-dynamic";
+
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Returns the Monday (YYYY-MM-DD) of the week containing `today`. */
 function getWeekStart(today: string): string {
   const d = new Date(`${today}T00:00:00`);
-  const dow = d.getDay(); // 0 = Sun
+  const dow = d.getDay();
   const diff = dow === 0 ? -6 : 1 - dow;
   d.setDate(d.getDate() + diff);
   return localDateStr(d);
 }
 
-/** Joins a list of names with commas and "and". */
-function listNames(items: { name: string }[]): string {
-  if (items.length === 1) return items[0].name;
-  if (items.length === 2) return `${items[0].name} and ${items[1].name}`;
-  return `${items
-    .slice(0, -1)
-    .map((i) => i.name)
-    .join(", ")}, and ${items[items.length - 1].name}`;
-}
-
-/** Derives a weekly AI summary and tags from real task completion data. */
-function generateInsights(
-  name: string,
-  subjects: { name: string; pct: number; total: number }[],
-): { summary: string; tags: AiTag[] } {
-  const withData = subjects.filter((s) => s.total > 0);
-  const strong = withData.filter((s) => s.pct >= 80);
-  const monitor = withData.filter((s) => s.pct < 50);
-
-  const tags: AiTag[] = [
-    ...strong.map((s) => ({ l: `Strong: ${s.name}`, t: "auto" as const })),
-    ...monitor.map((s) => ({ l: `Monitor: ${s.name}`, t: "alert" as const })),
-  ];
-
-  let summary: string;
-  if (withData.length === 0) {
-    summary = `No task data yet for this week. Check back after ${name} completes some assignments.`;
-  } else if (strong.length > 0 && monitor.length > 0) {
-    summary = `Excellent progress in ${listNames(strong)} this week. ${listNames(monitor)} may need a closer look — consider a quick check-in to understand any blockers.`;
-  } else if (strong.length > 0) {
-    summary = `Solid week! ${name} is showing strong momentum in ${listNames(strong)}. Keep encouraging that consistency.`;
-  } else if (monitor.length > 0) {
-    summary = `${listNames(monitor)} ${monitor.length === 1 ? "is" : "are"} below target this week. A focused session and some encouragement could make a real difference.`;
-  } else {
-    summary = `${name} is making steady progress across all subjects this week. Consistent effort is the foundation of great learning!`;
-  }
-
-  return { summary, tags };
+function subjectNote(pct: number, done: number, total: number): string {
+  if (total === 0) return "No tasks this month";
+  const missed = total - done;
+  if (pct >= 90) return `${done}/${total} complete · excellent consistency`;
+  if (pct >= 75) return `${done}/${total} complete · strong momentum`;
+  if (pct >= 50) return `${missed} missed this month · room to improve`;
+  return `${missed} missed this month · needs attention`;
 }
 
 export default async function DashboardPage() {
@@ -64,7 +33,11 @@ export default async function DashboardPage() {
   const today = localDateStr(new Date());
   const weekStart = getWeekStart(today);
 
-  // ── Step 1: Fetch all student profiles ──────────────────────────────────────
+  const thirtyDaysAgoDate = new Date(`${today}T00:00:00`);
+  thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30);
+  const thirtyDaysAgoStr = localDateStr(thirtyDaysAgoDate);
+
+  // ── Step 1: Student profiles ─────────────────────────────────────────────
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, display_name, color, avatar_url, tagline, student_key")
@@ -73,12 +46,9 @@ export default async function DashboardPage() {
 
   const students = profiles ?? [];
   const studentIds = students.map((p) => p.id);
+  if (studentIds.length === 0) return <DashboardClient students={[]} />;
 
-  if (studentIds.length === 0) {
-    return <DashboardClient students={[]} />;
-  }
-
-  // ── Step 1b: Fetch current grade for all students from school_years ──────────
+  // ── Step 2: Current grade ────────────────────────────────────────────────
   const gradeMap: Record<string, number | null> = {};
   const { data: schoolYears } = await supabase
     .from("school_years")
@@ -86,11 +56,9 @@ export default async function DashboardPage() {
     .in("student_id", studentIds)
     .lte("start_date", today)
     .gte("end_date", today);
-  for (const sy of schoolYears ?? []) {
-    gradeMap[sy.student_id] = sy.grade;
-  }
+  for (const sy of schoolYears ?? []) gradeMap[sy.student_id] = sy.grade;
 
-  // ── Step 2: Today's tasks for all students ───────────────────────────────────
+  // ── Step 3: Today's tasks ────────────────────────────────────────────────
   const { data: todayTasksRaw } = await supabase
     .from("tasks")
     .select("id, student_id, status, subjects!inner(id, name, icon, color)")
@@ -98,7 +66,7 @@ export default async function DashboardPage() {
     .neq("status", "cancelled")
     .in("student_id", studentIds);
 
-  // ── Step 3: This week's tasks (Mon → today) ──────────────────────────────────
+  // ── Step 4: This week's tasks ────────────────────────────────────────────
   const { data: weekTasksRaw } = await supabase
     .from("tasks")
     .select("id, student_id, status, subjects!inner(id, name, icon, color)")
@@ -107,7 +75,27 @@ export default async function DashboardPage() {
     .neq("status", "cancelled")
     .in("student_id", studentIds);
 
-  // ── Step 4: AI notes for current week (parent notes) ────────────────────────
+  // ── Step 5: 30-day tasks ─────────────────────────────────────────────────
+  const { data: monthTasksRaw } = await supabase
+    .from("tasks")
+    .select("id, student_id, status, subjects!inner(id, name, icon, color)")
+    .gte("task_date", thirtyDaysAgoStr)
+    .lte("task_date", today)
+    .neq("status", "cancelled")
+    .in("student_id", studentIds);
+
+  // ── Step 6: Cogs balance per student ─────────────────────────────────────
+  const { data: pointsLogs } = await service
+    .from("points_log")
+    .select("student_id, points")
+    .in("student_id", studentIds);
+
+  const cogsMap: Record<string, number> = {};
+  for (const log of pointsLogs ?? []) {
+    cogsMap[log.student_id] = (cogsMap[log.student_id] ?? 0) + log.points;
+  }
+
+  // ── Step 7: Parent notes for current week ────────────────────────────────
   const { data: aiNotesRaw } = await supabase
     .from("ai_notes")
     .select("student_id, parent_note")
@@ -115,12 +103,10 @@ export default async function DashboardPage() {
     .eq("week_start", weekStart);
 
   const aiNotesMap: Record<string, string> = {};
-  for (const n of aiNotesRaw ?? []) {
-    aiNotesMap[n.student_id] = n.parent_note ?? "";
-  }
+  for (const n of aiNotesRaw ?? []) aiNotesMap[n.student_id] = n.parent_note ?? "";
 
-  // ── Step 5: Resolve avatar URLs ──────────────────────────────────────────────
-  const resolveAvatar = async (url: string | null, _key: string): Promise<string | null> => {
+  // ── Step 8: Resolve avatar URLs ──────────────────────────────────────────
+  const resolveAvatar = async (url: string | null): Promise<string | null> => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
     const { data } = await service.storage.from("avatars").createSignedUrl(url, 3600);
@@ -130,18 +116,18 @@ export default async function DashboardPage() {
   const completedStatuses = new Set(["done", "approved", "review"]);
   const todayTasks = todayTasksRaw ?? [];
   const weekTasks = weekTasksRaw ?? [];
+  const monthTasks = monthTasksRaw ?? [];
 
-  // ── Step 6: Compute per-student data ────────────────────────────────────────
+  // ── Step 9: Per-student computation ─────────────────────────────────────
   const studentData: StudentDashData[] = await Promise.all(
     students.map(async (profile) => {
-      // Today completion %
+      // Today
       const todayMine = todayTasks.filter((t) => t.student_id === profile.id);
       const todayDone = todayMine.filter((t) => completedStatuses.has(t.status)).length;
       const todayPct = todayMine.length > 0 ? Math.round((todayDone / todayMine.length) * 100) : 0;
 
-      // Today's subjects with real status
-      const todaySubjects: SubjectTask[] = todayMine.map((t) => {
-        // biome-ignore lint/suspicious/noExplicitAny: supabase join type
+      // biome-ignore lint/suspicious/noExplicitAny: supabase join
+      const todaySubjects = todayMine.map((t) => {
         const sub = t.subjects as any;
         return {
           id: `${sub.id}-${t.id}`,
@@ -153,27 +139,38 @@ export default async function DashboardPage() {
         };
       });
 
-      // Week stats per subject for AI summary
+      // This week
       const weekMine = weekTasks.filter((t) => t.student_id === profile.id);
-      const weekSubjectMap: Record<string, { name: string; total: number; done: number }> = {};
-      for (const t of weekMine) {
-        // biome-ignore lint/suspicious/noExplicitAny: supabase join type
+      const weekTotal = weekMine.length;
+      const weekDone = weekMine.filter((t) => completedStatuses.has(t.status)).length;
+      const weekPct = weekTotal > 0 ? Math.round((weekDone / weekTotal) * 100) : 0;
+
+      // 30-day per subject
+      const monthMine = monthTasks.filter((t) => t.student_id === profile.id);
+      const monthMap: Record<string, { name: string; icon: string; color: string; total: number; done: number }> = {};
+      for (const t of monthMine) {
+        // biome-ignore lint/suspicious/noExplicitAny: supabase join
         const sub = t.subjects as any;
-        if (!weekSubjectMap[sub.id]) weekSubjectMap[sub.id] = { name: sub.name, total: 0, done: 0 };
-        weekSubjectMap[sub.id].total++;
-        if (completedStatuses.has(t.status)) weekSubjectMap[sub.id].done++;
+        if (!monthMap[sub.id])
+          monthMap[sub.id] = { name: sub.name, icon: sub.icon, color: sub.color, total: 0, done: 0 };
+        monthMap[sub.id].total++;
+        if (completedStatuses.has(t.status)) monthMap[sub.id].done++;
       }
-      const weekSubjects = Object.entries(weekSubjectMap).map(([id, s]) => ({
-        id,
-        name: s.name,
-        pct: s.total > 0 ? Math.round((s.done / s.total) * 100) : 0,
-        total: s.total,
-      }));
+      const monthSubjects: SubjectMonth[] = Object.entries(monthMap).map(([id, s]) => {
+        const pct30 = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+        return {
+          id,
+          name: s.name,
+          icon: s.icon,
+          color: s.color,
+          pct30,
+          total30: s.total,
+          done30: s.done,
+          aiNote: subjectNote(pct30, s.done, s.total),
+        };
+      });
 
-      // Derive AI summary from real data
-      const { summary: aiSummary, tags: aiTags } = generateInsights(profile.display_name, weekSubjects);
-
-      const avatarUrl = await resolveAvatar(profile.avatar_url, profile.student_key ?? "");
+      const avatarUrl = await resolveAvatar(profile.avatar_url);
 
       return {
         id: profile.id,
@@ -185,8 +182,9 @@ export default async function DashboardPage() {
         studentKey: profile.student_key ?? "",
         todayPct,
         todaySubjects,
-        aiSummary,
-        aiTags,
+        weekPct,
+        monthSubjects,
+        cogsBalance: cogsMap[profile.id] ?? 0,
         parentNote: aiNotesMap[profile.id] ?? "",
         weekStart,
       };

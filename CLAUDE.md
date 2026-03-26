@@ -56,3 +56,114 @@ Husky runs `pnpm biome check --staged --write` before every commit.
 - The `rgba(hex, alpha)` utility in `/src/lib/utils.ts` is used extensively for dynamic color manipulation
 - Background color is managed via ThemeProvider context and applied to the `#bg-color` layer
 - Student/subject colors come from the database and cannot be known at build time — always use runtime style props for these
+
+---
+
+## What Has Been Built
+
+### Users & Roles
+- Two roles: `admin` (instructor/parent) and `student`
+- `profiles` table extends `auth.users` with `display_name`, `tagline`, `avatar_url`, `role`, `grade`, `color` (per-student accent color)
+- `user_settings` table stores per-user preferences: `bg_color` (background hue tint)
+- Currently two students: **Deven** (4th Grade) and **Shaan** (6th Grade)
+- Admin has a profile page with avatar, tagline, and background color picker (same as students)
+
+### Subjects
+- `subjects` table: `id`, `name`, `icon` (emoji), `color` (hex), `created_at`
+- Subjects are global (not yet per-student or per-school)
+- Seeded via `003_seed_subjects.sql`
+
+### Task System
+- `tasks` table: `id`, `student_id`, `subject_id`, `task_date`, `status`, `description`, `timed_task` (bool), `duration_minutes`, `admin_note`, `created_at`
+- Statuses: `pending` → `review` (student submits) → `approved` or back to `pending` (if admin says revise)
+- Checkbox tasks go directly to `done` (no review needed)
+- `export const dynamic = "force-dynamic"` on all pages that read tasks to prevent stale caching
+- Tasks are generated per-day per-student based on the lesson plan / schedule
+- **Timed tasks**: timer stored in localStorage (honor system), duration tracked client-side
+
+### Submissions & Review
+- `submissions` table: `id`, `task_id`, `student_id`, `content` (text), `file_url` (optional), `submitted_at`
+- Students submit text + optional file upload; task moves to `review`
+- Admin review queue at `/admin/review` — shows pending submissions with approve/revise actions
+- Approving sets a score (0–100) and optional admin note; triggers approval points
+- "Revise" sends task back to `pending` for resubmission (student gets another +5 on resubmit)
+- Writing Journal tasks support rich multi-paragraph text entry
+
+### Points / Cogs System (`014_points_system.sql`)
+- `points_log` table: `id`, `student_id`, `category`, `points`, `source_id`, `source_date`, `note`, `earned_at`
+- Categories: `task_submit` (+5), `task_approve` (+0–15 based on score), `daily_submit_bonus` (+20 when all tasks submitted), `weekly_bonus` (accelerator)
+- Score → approval points: 90–100% = +15, 80–89% = +12, 70–79% = +8, 60–69% = +5, below 60% = +0
+- Unique constraint prevents double-awarding (idempotent via 23505 error catch)
+- `awardSubmissionPoints`, `awardApprovalPoints` in `src/app/actions/points.ts`
+- **Important**: auto-fulfilled tasks (via lesson planner calendar) also award points — both submit and approve entries are logged at 100%
+
+### Marketplace / Shop (`015_marketplace.sql`, `016_shared_contributions.sql`)
+- `marketplace_items` table: `id`, `name`, `description`, `price` (Cogs), `icon`, `active`, `shared` (bool — splits cost ÷ 2 per student)
+- `marketplace_purchases` table: `id`, `item_id`, `student_id`, `status` (`pending`/`approved`/`rejected`), `note` (student's optional note), `contribution_amount` (actual Cogs deducted, = price÷2 for shared items), `admin_note`, `requested_at`, `resolved_at`
+- Students request items; admin approves/rejects from `/admin/shop`
+- Shared items: both students each pay half; admin sees a grouped "SharedGroupCard" and can only approve once both have contributed
+- Approval deducts `contribution_amount` from student's Cogs balance via a negative `points_log` entry
+- `getSharedItemContributions()` uses service-role client to bypass RLS and show co-contributor status to students
+
+### Lesson Planner / Schedule (`005_lesson_plans.sql`)
+- `lesson_plans` table: per-student weekly plans with subject/day assignments
+- `school_years` table (`012_school_years.sql`): defines school year start/end, active year
+- Schedule page at `/admin/schedule` — admin assigns subjects to days of the week per student
+- Calendar events can auto-fulfill tasks (e.g. "CU Science Class" fulfills Science task for that day)
+- **Known edge case**: adding a new subject backfills tasks to previous days — points for backfilled tasks should be manually audited if the subject didn't start until a later date
+- Cancel class tool: using "save" on the cancel class UI accidentally auto-submits tasks — be careful
+
+### Command Center Dashboard (`/admin/dashboard`)
+- `export const dynamic = "force-dynamic"` — never cached
+- Student selector cards at top: avatar, name, grade, Cogs balance (inline), today % / week %
+- Left column: today's progress bar, week's progress bar, today's task list with status badges, parent note for the week
+- Right column: 30-day per-subject breakdown with completion % bar and AI-generated one-liner note per subject
+- `SubjectMonth` interface: `{ id, name, icon, color, pct30, total30, done30, aiNote }`
+- `ai_notes` table: per-student per-week parent notes (upserted, never overwritten mid-week)
+- Cogs balance = sum of all `points_log.points` for the student (can go negative after purchases)
+
+### Admin Sections
+- `/admin/dashboard` — Command Center (see above)
+- `/admin/review` — Submission review queue
+- `/admin/shop` — Marketplace management (add/edit items, approve/reject purchases)
+- `/admin/schedule` — Lesson planner / calendar
+- `/admin/profiles` — Admin's own profile (name, tagline, avatar, background color)
+
+### Student Sections
+- `/student/dashboard` — Student's daily view (today's tasks, progress, Cogs balance)
+- `/student/shop` — Browse items, request purchases, see co-contributor status on shared items
+- `/student/profile` — Avatar, tagline, background color picker (`HexPicker` component)
+- `/student/submissions` — View past submissions
+
+### Key Components
+- `PortraitFrame` — Gold-framed avatar with name/tagline, used in sidebars
+- `ProgBar` — Reusable progress bar, accepts `value` (0–100) and `color` (CSS string)
+- `HexPicker` — Color picker for background hue tint, debounced save
+- `ThemeProvider` — Context that applies `bg_color` to the `#bg-color` background layer
+- `AISummaryPanel` — Parent note input for the week (must use `key={student.id}` to reset between students)
+- `SharedGroupCard` — Admin component showing both contributors' amounts/notes for shared shop items
+
+### Database Migrations Summary
+| Migration | Purpose |
+|---|---|
+| 001 | Initial schema: profiles, subjects, tasks, submissions |
+| 002 | Expand schema: admin_note, timed tasks |
+| 003 | Seed subjects with icons and colors |
+| 004 | DB functions (e.g. generate tasks) |
+| 005 | Lesson plans table |
+| 006–008 | Storage buckets for file uploads and avatars |
+| 009 | Writing journal support |
+| 010 | Cancelled class reason field |
+| 011 | Protect historical task data from edits |
+| 012 | School years table |
+| 013 | Student color RLS policy |
+| 014 | Points system (points_log, Cogs) |
+| 015 | Marketplace (items + purchases) |
+| 016 | Shared contributions (shared bool, note, contribution_amount) |
+
+### Known Issues / Gotchas
+- New subject creation backfills tasks to previous days — can cause incorrect point awards for days the subject didn't exist yet
+- Auto-fulfillment via lesson planner calendar does award points (both submit + approve at 100%) — this is intentional
+- Always use `key={student.id}` when rendering per-student stateful components to prevent state bleed between students
+- All admin pages that read live data use `export const dynamic = "force-dynamic"` to prevent Next.js caching stale results
+- `pnpm` only — never `npm`

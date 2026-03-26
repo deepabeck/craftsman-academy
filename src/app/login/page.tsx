@@ -8,33 +8,33 @@ import { rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 // Email addresses must match what you created in Supabase Auth.
-// Update these to match your actual Supabase user emails.
+// Set these in your .env.local (or Vercel environment variables).
 const PROFILES = [
   {
     id: "admin",
-    email: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "dee@craftsmanacademy.app",
+    email: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "",
     color: "#C8860A",
-    label: "DEE",
-    sub: "Operations Engineer",
+    label: process.env.NEXT_PUBLIC_ADMIN_NAME ?? "Admin",
+    sub: process.env.NEXT_PUBLIC_ADMIN_TAGLINE ?? "",
     img: "/assets/profile-admin-framed.png",
   },
   {
-    id: "deven",
-    email: process.env.NEXT_PUBLIC_DEVEN_EMAIL ?? "deven@craftsmanacademy.app",
+    id: "student1",
+    email: process.env.NEXT_PUBLIC_STUDENT1_EMAIL ?? "",
     color: BASE_STUDENTS.deven.color,
-    label: "DEVEN",
-    sub: BASE_STUDENTS.deven.tagline,
+    label: process.env.NEXT_PUBLIC_STUDENT1_NAME ?? "Student 1",
+    sub: process.env.NEXT_PUBLIC_STUDENT1_TAGLINE ?? "",
     img: BASE_STUDENTS.deven.avatar,
   },
   {
-    id: "shaan",
-    email: process.env.NEXT_PUBLIC_SHAAN_EMAIL ?? "shaan@craftsmanacademy.app",
+    id: "student2",
+    email: process.env.NEXT_PUBLIC_STUDENT2_EMAIL ?? "",
     color: BASE_STUDENTS.shaan.color,
-    label: "SHAAN",
-    sub: BASE_STUDENTS.shaan.tagline,
+    label: process.env.NEXT_PUBLIC_STUDENT2_NAME ?? "Student 2",
+    sub: process.env.NEXT_PUBLIC_STUDENT2_TAGLINE ?? "",
     img: BASE_STUDENTS.shaan.avatar,
   },
-];
+].filter((p) => p.email !== "");
 
 export default function LoginPage() {
   const [who, setWho] = useState<string | null>(null);
@@ -227,7 +227,7 @@ export default function LoginPage() {
           )}
         </div>
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#3A4858", letterSpacing: "0.12em" }}>
-          CRAFTSMAN ACADEMY &middot; HOMESCHOOL PORTAL
+          {(process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "CRAFTSMAN ACADEMY").toUpperCase()} &middot; HOMESCHOOL PORTAL
         </div>
       </div>
     </div>

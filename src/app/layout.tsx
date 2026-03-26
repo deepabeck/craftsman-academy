@@ -17,13 +17,15 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "Craftsman Academy";
+
 export const metadata: Metadata = {
-  title: "Craftsman Academy",
+  title: schoolName,
   description: "Homeschool Management Portal",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Craftsman Academy",
+    title: schoolName,
     statusBarStyle: "black-translucent",
   },
   icons: {

@@ -25,7 +25,7 @@ export default async function ReviewPage() {
     .from("tasks")
     .select(
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
-       ai_score, ai_feedback,
+       ai_score, ai_feedback, parent_score, final_score,
        subjects!inner (id, name, icon, color),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
@@ -104,6 +104,7 @@ export default async function ReviewPage() {
       status: t.status,
       aiScore: t.ai_score ?? null,
       aiFeedback: t.ai_feedback ?? null,
+      parentScore: t.parent_score ?? t.final_score ?? null,
       student: {
         id: profile.id,
         name: profile.display_name,

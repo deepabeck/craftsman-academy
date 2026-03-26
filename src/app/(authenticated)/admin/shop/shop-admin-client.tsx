@@ -64,35 +64,49 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
     } else {
       startTransition(async () => {
         const result = await approvePurchase(purchase.id, note || undefined);
-        if (result.success) { setDone(true); onAction(purchase.id); }
-        else setErr(result.error ?? "Failed");
+        if (result.success) {
+          setDone(true);
+          onAction(purchase.id);
+        } else setErr(result.error ?? "Failed");
       });
     }
   };
 
   const handleSkipTaskConfirm = () => {
-    if (!selectedTaskId) { setErr("Please select a task"); return; }
+    if (!selectedTaskId) {
+      setErr("Please select a task");
+      return;
+    }
     startTransition(async () => {
       const result = await skipTaskAndApprove(selectedTaskId, purchase.id, note || undefined);
-      if (result.success) { setDone(true); onAction(purchase.id); }
-      else setErr(result.error ?? "Failed");
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
     });
   };
 
   const handleSkipDayConfirm = () => {
-    if (!selectedDate) { setErr("Please select a date"); return; }
+    if (!selectedDate) {
+      setErr("Please select a date");
+      return;
+    }
     startTransition(async () => {
       const result = await skipDayAndApprove(purchase.student.id, selectedDate, purchase.id, note || undefined);
-      if (result.success) { setDone(true); onAction(purchase.id); }
-      else setErr(result.error ?? "Failed");
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
     });
   };
 
   const handleReject = () => {
     startTransition(async () => {
       const result = await rejectPurchase(purchase.id, note || undefined);
-      if (result.success) { setDone(true); onAction(purchase.id); }
-      else setErr(result.error ?? "Failed");
+      if (result.success) {
+        setDone(true);
+        onAction(purchase.id);
+      } else setErr(result.error ?? "Failed");
     });
   };
 
@@ -180,8 +194,23 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
             </select>
           )}
           <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setShowTaskPicker(false)}>Back</button>
-            <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={handleSkipTaskConfirm} disabled={!selectedTaskId}>⚡ Skip This Task & Approve</button>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: "5px 12px" }}
+              onClick={() => setShowTaskPicker(false)}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ fontSize: 12, padding: "5px 16px" }}
+              onClick={handleSkipTaskConfirm}
+              disabled={!selectedTaskId}
+            >
+              ⚡ Skip This Task & Approve
+            </button>
           </div>
         </div>
       )}
@@ -198,12 +227,35 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
             gap: 8,
           }}
         >
-          <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em" }}>SELECT DAY OFF</div>
-          <input type="date" className="inp" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ fontSize: 13, padding: "6px 10px", width: 180 }} />
+          <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em" }}>
+            SELECT DAY OFF
+          </div>
+          <input
+            type="date"
+            className="inp"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ fontSize: 13, padding: "6px 10px", width: 180 }}
+          />
           <div style={{ fontSize: 11, color: "#506070" }}>All pending tasks on this date will be cancelled.</div>
           <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => setShowDayPicker(false)}>Back</button>
-            <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={handleSkipDayConfirm} disabled={!selectedDate}>📚 Grant Day Off & Approve</button>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: "5px 12px" }}
+              onClick={() => setShowDayPicker(false)}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ fontSize: 12, padding: "5px 16px" }}
+              onClick={handleSkipDayConfirm}
+              disabled={!selectedDate}
+            >
+              📚 Grant Day Off & Approve
+            </button>
           </div>
         </div>
       )}
@@ -218,10 +270,22 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
             placeholder="Optional note to student…"
             style={{ flex: 1, minWidth: 160, fontSize: 12, padding: "5px 10px" }}
           />
-          <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "6px 16px" }} onClick={handleApproveClick}>
+          <button
+            type="button"
+            className="btn-brass"
+            style={{ fontSize: 12, padding: "6px 16px" }}
+            onClick={handleApproveClick}
+          >
             {loadingTasks ? "Loading…" : needsPicker ? "✓ Approve →" : "✓ Approve"}
           </button>
-          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "6px 14px", color: "#F08080" }} onClick={handleReject}>✕ Reject</button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "6px 14px", color: "#F08080" }}
+            onClick={handleReject}
+          >
+            ✕ Reject
+          </button>
         </div>
       )}
       {err && <div style={{ fontSize: 11, color: "#F08080" }}>{err}</div>}
@@ -249,17 +313,27 @@ function SharedGroupCard({
 
   const handleApprove = () => {
     startTransition(async () => {
-      const result = await approveSharedGroup(group.map((p) => p.id), note || undefined);
-      if (result.success) { setDone(true); onGroupAction(group.map((p) => p.id)); }
-      else setErr(result.error ?? "Failed");
+      const result = await approveSharedGroup(
+        group.map((p) => p.id),
+        note || undefined,
+      );
+      if (result.success) {
+        setDone(true);
+        onGroupAction(group.map((p) => p.id));
+      } else setErr(result.error ?? "Failed");
     });
   };
 
   const handleReject = () => {
     startTransition(async () => {
-      const result = await rejectSharedGroup(group.map((p) => p.id), note || undefined);
-      if (result.success) { setDone(true); onGroupAction(group.map((p) => p.id)); }
-      else setErr(result.error ?? "Failed");
+      const result = await rejectSharedGroup(
+        group.map((p) => p.id),
+        note || undefined,
+      );
+      if (result.success) {
+        setDone(true);
+        onGroupAction(group.map((p) => p.id));
+      } else setErr(result.error ?? "Failed");
     });
   };
 
@@ -325,9 +399,7 @@ function SharedGroupCard({
             ))}
             {/* Placeholder for missing contributor */}
             {!isComplete && (
-              <div style={{ fontSize: 12, color: "#506070", fontStyle: "italic" }}>
-                Waiting for co-contributor…
-              </div>
+              <div style={{ fontSize: 12, color: "#506070", fontStyle: "italic" }}>Waiting for co-contributor…</div>
             )}
           </div>
 
@@ -412,7 +484,10 @@ function ItemRow({
       if (result.success) {
         setSaved(true);
         onSaved(form);
-        setTimeout(() => { setSaved(false); setEditing(false); }, 1500);
+        setTimeout(() => {
+          setSaved(false);
+          setEditing(false);
+        }, 1500);
       } else {
         setErr(result.error ?? "Failed");
       }
@@ -458,7 +533,17 @@ function ItemRow({
                 </span>
               )}
               {!item.isActive && (
-                <span style={{ fontSize: 10, color: "#F08080", background: "rgba(240,128,128,0.15)", padding: "1px 6px", borderRadius: 3 }}>hidden</span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "#F08080",
+                    background: "rgba(240,128,128,0.15)",
+                    padding: "1px 6px",
+                    borderRadius: 3,
+                  }}
+                >
+                  hidden
+                </span>
               )}
             </div>
             <div style={{ fontSize: 12, color: "#506070", marginTop: 1 }}>{item.description}</div>
@@ -466,33 +551,108 @@ function ItemRow({
           <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700, flexShrink: 0 }}>
             {item.price.toLocaleString()} Cogs{item.shared ? " total" : ""}
           </span>
-          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setEditing(true)}>Edit</button>
-          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "4px 10px", color: "#F08080" }} onClick={remove}>✕</button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "4px 12px" }}
+            onClick={() => setEditing(true)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "4px 10px", color: "#F08080" }}
+            onClick={remove}
+          >
+            ✕
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input className="inp" value={form.emoji} onChange={(e) => set("emoji", e.target.value)} style={{ width: 56, fontSize: 20, textAlign: "center", padding: "4px 6px" }} placeholder="emoji" />
-            <input className="inp" value={form.name} onChange={(e) => set("name", e.target.value)} style={{ flex: 1, minWidth: 140, fontSize: 13, padding: "5px 10px" }} placeholder="Name" />
-            <input type="number" className="inp" value={form.price} onChange={(e) => set("price", Number(e.target.value))} style={{ width: 90, fontSize: 13, padding: "5px 10px" }} placeholder="Cogs" />
+            <input
+              className="inp"
+              value={form.emoji}
+              onChange={(e) => set("emoji", e.target.value)}
+              style={{ width: 56, fontSize: 20, textAlign: "center", padding: "4px 6px" }}
+              placeholder="emoji"
+            />
+            <input
+              className="inp"
+              value={form.name}
+              onChange={(e) => set("name", e.target.value)}
+              style={{ flex: 1, minWidth: 140, fontSize: 13, padding: "5px 10px" }}
+              placeholder="Name"
+            />
+            <input
+              type="number"
+              className="inp"
+              value={form.price}
+              onChange={(e) => set("price", Number(e.target.value))}
+              style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
+              placeholder="Cogs"
+            />
           </div>
-          <input className="inp" value={form.description} onChange={(e) => set("description", e.target.value)} style={{ fontSize: 12, padding: "5px 10px" }} placeholder="Description shown to students" />
+          <input
+            className="inp"
+            value={form.description}
+            onChange={(e) => set("description", e.target.value)}
+            style={{ fontSize: 12, padding: "5px 10px" }}
+            placeholder="Description shown to students"
+          />
           <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9AABBC", cursor: "pointer" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                color: "#9AABBC",
+                cursor: "pointer",
+              }}
+            >
               <input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} />
               Visible in shop
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#B0A0F0", cursor: "pointer" }}>
-              <input type="checkbox" checked={form.shared} onChange={(e) => set("shared", e.target.checked)} />
-              🤝 Shared item (both students split the cost)
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                color: "#B0A0F0",
+                cursor: "pointer",
+              }}
+            >
+              <input type="checkbox" checked={form.shared} onChange={(e) => set("shared", e.target.checked)} />🤝 Shared
+              item (both students split the cost)
             </label>
             <div style={{ flex: 1 }} />
-            <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => setEditing(false)}>Cancel</button>
-            <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={save}>{saved ? "✓ Saved" : "Save"}</button>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: "5px 14px" }}
+              onClick={() => setEditing(false)}
+            >
+              Cancel
+            </button>
+            <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={save}>
+              {saved ? "✓ Saved" : "Save"}
+            </button>
           </div>
           {form.shared && (
-            <div style={{ fontSize: 11, color: "#B0A0F0", background: "rgba(176,160,240,0.06)", padding: "6px 10px", borderRadius: 6 }}>
-              Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's {form.price.toLocaleString()} Cog total.
+            <div
+              style={{
+                fontSize: 11,
+                color: "#B0A0F0",
+                background: "rgba(176,160,240,0.06)",
+                padding: "6px 10px",
+                borderRadius: 6,
+              }}
+            >
+              Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's{" "}
+              {form.price.toLocaleString()} Cog total.
             </div>
           )}
           {err && <div style={{ fontSize: 11, color: "#F08080" }}>{err}</div>}
@@ -513,11 +673,17 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
   const set = (k: string, v: string | number | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = () => {
-    if (!form.name.trim()) { setErr("Name is required"); return; }
+    if (!form.name.trim()) {
+      setErr("Name is required");
+      return;
+    }
     startTransition(async () => {
       const result = await upsertMarketplaceItem(form);
       if (result.success) {
-        const id = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        const id = form.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
         onAdded({ ...form, id, weeklyLimit: form.weeklyLimit, sortOrder: 0 });
         setForm({ ...BLANK });
         setOpen(false);
@@ -529,36 +695,95 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
 
   if (!open) {
     return (
-      <button type="button" className="btn-ghost" style={{ fontSize: 13, padding: "8px 18px", alignSelf: "flex-start" }} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="btn-ghost"
+        style={{ fontSize: 13, padding: "8px 18px", alignSelf: "flex-start" }}
+        onClick={() => setOpen(true)}
+      >
         + Add Item
       </button>
     );
   }
 
   return (
-    <div style={{ background: "rgba(232,168,32,0.05)", border: "1px solid rgba(232,168,32,0.2)", borderRadius: 8, padding: "14px" }}>
-      <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em", marginBottom: 10 }}>NEW ITEM</div>
+    <div
+      style={{
+        background: "rgba(232,168,32,0.05)",
+        border: "1px solid rgba(232,168,32,0.2)",
+        borderRadius: 8,
+        padding: "14px",
+      }}
+    >
+      <div className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.1em", marginBottom: 10 }}>
+        NEW ITEM
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input className="inp" value={form.emoji} onChange={(e) => set("emoji", e.target.value)} style={{ width: 56, fontSize: 20, textAlign: "center", padding: "4px 6px" }} placeholder="emoji" />
-          <input className="inp" value={form.name} onChange={(e) => set("name", e.target.value)} style={{ flex: 1, minWidth: 140, fontSize: 13, padding: "5px 10px" }} placeholder="Name" />
-          <input type="number" className="inp" value={form.price} onChange={(e) => set("price", Number(e.target.value))} style={{ width: 90, fontSize: 13, padding: "5px 10px" }} placeholder="Cogs" />
+          <input
+            className="inp"
+            value={form.emoji}
+            onChange={(e) => set("emoji", e.target.value)}
+            style={{ width: 56, fontSize: 20, textAlign: "center", padding: "4px 6px" }}
+            placeholder="emoji"
+          />
+          <input
+            className="inp"
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            style={{ flex: 1, minWidth: 140, fontSize: 13, padding: "5px 10px" }}
+            placeholder="Name"
+          />
+          <input
+            type="number"
+            className="inp"
+            value={form.price}
+            onChange={(e) => set("price", Number(e.target.value))}
+            style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
+            placeholder="Cogs"
+          />
         </div>
-        <input className="inp" value={form.description} onChange={(e) => set("description", e.target.value)} style={{ fontSize: 12, padding: "5px 10px" }} placeholder="Description shown to students" />
+        <input
+          className="inp"
+          value={form.description}
+          onChange={(e) => set("description", e.target.value)}
+          style={{ fontSize: 12, padding: "5px 10px" }}
+          placeholder="Description shown to students"
+        />
         <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#B0A0F0", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.shared} onChange={(e) => set("shared", e.target.checked)} />
-            🤝 Shared item (both students split the cost)
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#B0A0F0", cursor: "pointer" }}
+          >
+            <input type="checkbox" checked={form.shared} onChange={(e) => set("shared", e.target.checked)} />🤝 Shared
+            item (both students split the cost)
           </label>
         </div>
         {form.shared && (
-          <div style={{ fontSize: 11, color: "#B0A0F0", background: "rgba(176,160,240,0.06)", padding: "6px 10px", borderRadius: 6 }}>
-            Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's {form.price.toLocaleString()} Cog total.
+          <div
+            style={{
+              fontSize: 11,
+              color: "#B0A0F0",
+              background: "rgba(176,160,240,0.06)",
+              padding: "6px 10px",
+              borderRadius: 6,
+            }}
+          >
+            Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's{" "}
+            {form.price.toLocaleString()} Cog total.
           </div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => setOpen(false)}>Cancel</button>
-          <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={save}>Add to Shop</button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "5px 14px" }}
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </button>
+          <button type="button" className="btn-brass" style={{ fontSize: 12, padding: "5px 16px" }} onClick={save}>
+            Add to Shop
+          </button>
         </div>
         {err && <div style={{ fontSize: 11, color: "#F08080" }}>{err}</div>}
       </div>
@@ -574,16 +799,13 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
   const [tab, setTab] = useState<"pending" | "history" | "items">("items");
 
   const handleAction = (id: string) => setPending((prev) => prev.filter((p) => p.id !== id));
-  const handleGroupAction = (ids: string[]) =>
-    setPending((prev) => prev.filter((p) => !ids.includes(p.id)));
+  const handleGroupAction = (ids: string[]) => setPending((prev) => prev.filter((p) => !ids.includes(p.id)));
   const handleSaved = (updated: MarketplaceItem & { isActive: boolean }) =>
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
   const handleDeleted = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
-  const handleAdded = (item: MarketplaceItem & { isActive: boolean }) =>
-    setItems((prev) => [...prev, item]);
+  const handleAdded = (item: MarketplaceItem & { isActive: boolean }) => setItems((prev) => [...prev, item]);
 
-  const statusColor = (s: string) =>
-    s === "approved" ? "#70E090" : s === "rejected" ? "#F08080" : "#D4A830";
+  const statusColor = (s: string) => (s === "approved" ? "#70E090" : s === "rejected" ? "#F08080" : "#D4A830");
 
   // Split pending into shared groups and solo
   const sharedPending = pending.filter((p) => p.item.shared);
@@ -613,7 +835,11 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
             style={{ fontSize: 12, padding: "6px 14px" }}
             onClick={() => setTab(t)}
           >
-            {t === "items" ? "Manage Items" : t === "pending" ? `Pending${pending.length > 0 ? ` (${pending.length})` : ""}` : "History"}
+            {t === "items"
+              ? "Manage Items"
+              : t === "pending"
+                ? `Pending${pending.length > 0 ? ` (${pending.length})` : ""}`
+                : "History"}
           </button>
         ))}
       </div>
@@ -670,7 +896,17 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                     <span style={{ fontSize: 14, color: "#EEE4CC" }}>{p.item.name}</span>
                     <span style={{ fontSize: 12, color: p.student.color }}>{p.student.name}</span>
                     {p.item.shared && (
-                      <span style={{ fontSize: 10, color: "#B0A0F0", background: "rgba(176,160,240,0.1)", padding: "1px 5px", borderRadius: 3 }}>🤝</span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#B0A0F0",
+                          background: "rgba(176,160,240,0.1)",
+                          padding: "1px 5px",
+                          borderRadius: 3,
+                        }}
+                      >
+                        🤝
+                      </span>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "#506070", marginTop: 2 }}>
@@ -679,11 +915,15 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                     {p.adminNote && <span> · {p.adminNote}</span>}
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}
+                >
                   <span className="cinzel" style={{ fontSize: 12, color: "#C8860A" }}>
                     {(p.contributionAmount ?? p.item.price).toLocaleString()} Cogs
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(p.status), textTransform: "capitalize" }}>
+                  <span
+                    style={{ fontSize: 11, fontWeight: 700, color: statusColor(p.status), textTransform: "capitalize" }}
+                  >
                     {p.status}
                   </span>
                 </div>

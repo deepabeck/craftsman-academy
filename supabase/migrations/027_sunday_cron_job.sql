@@ -101,15 +101,16 @@ BEGIN
       END IF;
     END IF;
 
-    -- Perfect week bonus (+100): all done, none missed, all approved with A avg
+    -- Perfect week bonus (+100): all tasks completed + no misses +
+    -- graded tasks (if any) average A. Checkbox/done tasks count as
+    -- completed — students shouldn't be penalized for task type.
     IF rec.completed = rec.total AND rec.total > 0
        AND rec.missed = 0
-       AND rec.avg_score >= 90
-       AND rec.approved_count = rec.total
+       AND (rec.approved_count = 0 OR rec.avg_score >= 90)
     THEN
       INSERT INTO points_log (student_id, category, source_date, points, note)
       VALUES (rec.student_id, 'weekly_perfect', v_week_start, 100,
-              'Perfect week — all A''s, no misses!')
+              'Perfect week — all done, no misses!')
       ON CONFLICT DO NOTHING;
     END IF;
   END LOOP;

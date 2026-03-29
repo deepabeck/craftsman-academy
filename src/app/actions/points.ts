@@ -184,8 +184,9 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
     }
   }
 
-  // Perfect week: all tasks done, no misses, every approved task is A-level
-  if (allDone && missed === 0 && avgScore >= 90 && approved.length === weekTasks.length) {
+  // Perfect week: all tasks done, no misses, graded tasks (if any) average A
+  // Checkbox/done tasks count as completed — students aren't penalized for task type
+  if (allDone && missed === 0 && (approved.length === 0 || avgScore >= 90)) {
     await logPoints({
       student_id: studentId,
       category: "weekly_perfect",

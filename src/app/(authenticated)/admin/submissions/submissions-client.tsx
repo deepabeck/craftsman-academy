@@ -408,26 +408,26 @@ export function SubmissionsClient({ items, students }: Props) {
                               </div>
                             )}
 
-                            {/* Text response — show only the latest (submissions arrive newest-first) */}
+                            {/* Text submissions — all attempts, newest-first, each with unique content */}
                             {item.submissions
                               .filter((s) => s.content && s.type !== "revision_request")
-                              .slice(0, 1)
-                              .map((s) => (
+                              .map((s, idx) => (
                                 <div key={s.id}>
                                   <div
                                     style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 4 }}
                                     className="cinzel"
                                   >
-                                    WRITTEN RESPONSE
+                                    {idx === 0 ? "LATEST RESPONSE" : `ATTEMPT ${item.submissions.filter((x) => x.content && x.type !== "revision_request").length - idx}`}
                                   </div>
                                   <div
                                     style={{
                                       fontSize: 13,
-                                      color: "#9AABBC",
-                                      background: "rgba(0,0,0,0.2)",
+                                      color: idx === 0 ? "#9AABBC" : "#6A7B8C",
+                                      background: idx === 0 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.12)",
                                       padding: "8px 12px",
                                       borderRadius: 6,
                                       lineHeight: 1.6,
+                                      borderLeft: idx > 0 ? "2px solid rgba(255,255,255,0.06)" : "none",
                                     }}
                                   >
                                     {s.content}

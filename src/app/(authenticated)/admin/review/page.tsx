@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ReviewClient, type ReviewItem } from "./review-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReviewPage() {
   const supabase = await createClient();
 

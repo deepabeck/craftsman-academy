@@ -479,6 +479,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
   const [selTask, setSelTask] = useState<string | null>(null);
   const [score, setScore] = useState("100");
   const [reviewNote, setReviewNote] = useState("");
+  const [reviseNote, setReviseNote] = useState("");
 
   const [viewer, setViewer] = useState<ViewerState | null>(null);
   const [rescoring, setRescoring] = useState<string | null>(null);
@@ -531,6 +532,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
     setSelTask((prev) => (prev === item.taskId ? null : item.taskId));
     setScore(String(item.aiScore ?? 100));
     setReviewNote("");
+    setReviseNote("");
   };
 
   const handleRescore = async (item: ReviewItem) => {
@@ -565,12 +567,14 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
   };
 
   const revise = (item: ReviewItem) => {
+    const noteToSend = reviseNote.trim();
     setPending((p) => p.filter((r) => r.taskId !== item.taskId));
     setDone((p) => [{ ...item, status: "needs-revision" }, ...p]);
     setSelTask(null);
+    setReviseNote("");
     setReviewNote("");
     startTransition(async () => {
-      const result = await requestRevision(item.taskId, reviewNote);
+      const result = await requestRevision(item.taskId, noteToSend || undefined, item.student.id);
       if (!result.success) {
         setPending((p) => [item, ...p]);
         setDone((p) => p.filter((r) => r.taskId !== item.taskId));
@@ -922,9 +926,10 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                         (s.type === "photo" || s.type === "file" || s.type === "audio" || s.type === "video") &&
                         s.fileUrl,
                     );
+                    // tasks.notes is always updated to the latest submission text on every
+                    // resubmit — use it as the primary source so revisions show correctly.
                     const textNote =
-                      selItem.submissions.find((s) => s.type === "text" && s.content)?.content ??
-                      (selItem.notes || null);
+                      selItem.notes || selItem.submissions.find((s) => s.type === "text" && s.content)?.content || null;
                     const timerSub = selItem.submissions.find((s) => s.type === "timer");
 
                     return (
@@ -1054,7 +1059,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           </div>
                         )}
 
-                        {/* Actions row */}
+                        {/* Actions row — approve */}
                         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <input
                             className="inp"
@@ -1069,7 +1074,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           <input
                             className="inp"
                             type="text"
-                            placeholder="Note for student (optional)"
+                            placeholder="Approval note (optional)"
                             value={reviewNote}
                             onChange={(e) => setReviewNote(e.target.value)}
                             style={{ flex: 1, padding: "5px 8px", fontSize: 13 }}
@@ -1096,13 +1101,31 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           >
                             ✓ Approve
                           </button>
+                        </div>
+
+                        {/* Revision row — separate from approve so the reason is explicit */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
+                          <input
+                            className="inp"
+                            type="text"
+                            placeholder="Reason for revision (shown to student)"
+                            value={reviseNote}
+                            onChange={(e) => setReviseNote(e.target.value)}
+                            style={{ flex: 1, padding: "5px 8px", fontSize: 13, borderColor: "rgba(220,100,30,0.4)" }}
+                          />
                           <button
                             type="button"
                             className="btn-ghost"
-                            style={{ padding: "5px 10px", fontSize: 13, whiteSpace: "nowrap" }}
+                            style={{
+                              padding: "5px 10px",
+                              fontSize: 13,
+                              whiteSpace: "nowrap",
+                              color: "#f0a060",
+                              borderColor: "rgba(220,100,30,0.4)",
+                            }}
                             onClick={() => revise(selItem)}
                           >
-                            ↩ Revise
+                            ↩ Send Back
                           </button>
                         </div>
                       </div>
@@ -1190,7 +1213,7 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
                           s.fileUrl,
                       );
                       const textNote =
-                        item.submissions.find((s) => s.type === "text" && s.content)?.content ?? (item.notes || null);
+                        item.notes || item.submissions.find((s) => s.type === "text" && s.content)?.content || null;
                       const timerSub = item.submissions.find((s) => s.type === "timer");
                       return (
                         <div

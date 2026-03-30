@@ -263,9 +263,10 @@ export async function updateTaskTimer(taskId: string, minutes: number) {
 
 /**
  * Admin sends a task back for revision.
- * Sets status → 'pending' so the student sees it again in Today's Missions.
+ * Sets status → 'pending', stores the reason in admin_note, and inserts a
+ * permanent revision_request row in submissions so there's a history record.
  */
-export async function requestRevision(taskId: string, reviewerNotes?: string) {
+export async function requestRevision(taskId: string, reviewerNotes?: string, studentId?: string) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("tasks")
@@ -275,5 +276,22 @@ export async function requestRevision(taskId: string, reviewerNotes?: string) {
     })
     .eq("id", taskId);
   if (error) return { success: false, error: error.message };
+
+  // Log a permanent revision_request record so the history is preserved
+  // even after the task is later approved and admin_note is overwritten.
+  if (studentId) {
+    const service = createServiceClient();
+    await service.from("submissions").insert({
+      task_id: taskId,
+      student_id: studentId,
+      submission_type: "revision_request",
+      content: reviewerNotes || null,
+      timer_seconds: null,
+      file_url: null,
+      file_name: null,
+      file_mime_type: null,
+    });
+  }
+
   return { success: true };
 }

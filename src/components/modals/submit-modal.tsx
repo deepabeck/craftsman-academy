@@ -47,11 +47,16 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
 
   // Draft text: persisted to localStorage so accidental closes don't lose the answer
   const draftKey = `ca_draft_${task.id}`;
-  // Restore draft text on mount
+  // Restore draft text on mount — prefer localStorage draft, fall back to prior
+  // submission content when the task was sent back for revision.
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
     const saved = localStorage.getItem(draftKey);
-    if (saved) setText(saved);
+    if (saved) {
+      setText(saved);
+    } else if (task.previousSubmission) {
+      setText(task.previousSubmission);
+    }
   }, [draftKey]);
 
   // Restore timer from localStorage on mount — survives iPad PWA full-page reloads
@@ -186,7 +191,9 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
   return (
     <div
       className="modal-bg"
-      onMouseDown={() => { backdropMouseDownRef.current = true; }}
+      onMouseDown={() => {
+        backdropMouseDownRef.current = true;
+      }}
       onMouseUp={() => {
         if (backdropMouseDownRef.current) onClose();
         backdropMouseDownRef.current = false;
@@ -194,7 +201,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
       onKeyDown={() => {}}
     >
       <div
-        onMouseDown={(e) => { e.stopPropagation(); backdropMouseDownRef.current = false; }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          backdropMouseDownRef.current = false;
+        }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={() => {}}
         role="dialog"
@@ -214,7 +224,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           </div>
           <button
             type="button"
-            onClick={() => { localStorage.removeItem(draftKey); onClose(); }}
+            onClick={() => {
+              localStorage.removeItem(draftKey);
+              onClose();
+            }}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#506070", fontSize: 20 }}
           >
             &times;
@@ -223,8 +236,44 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
 
         <Divider />
 
-        {/* Assignment detail + admin note */}
-        {(task.detail || task.adminNote) && (
+        {/* Revision feedback banner — shown prominently when task was sent back */}
+        {task.wasRevised && task.adminNote && (
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.6,
+              borderRadius: 7,
+              background: "rgba(220,100,30,0.12)",
+              padding: "10px 12px",
+              margin: "10px 0",
+              borderLeft: "3px solid rgba(220,100,30,0.7)",
+            }}
+          >
+            <div style={{ color: "#f0a060", fontWeight: 700, fontSize: 11, letterSpacing: "0.1em", marginBottom: 4 }}>
+              REVISION FEEDBACK
+            </div>
+            <div style={{ color: "#f0c090" }}>{task.adminNote}</div>
+          </div>
+        )}
+        {task.wasRevised && !task.adminNote && (
+          <div
+            style={{
+              fontSize: 13,
+              color: "#f0a060",
+              lineHeight: 1.6,
+              borderRadius: 7,
+              background: "rgba(220,100,30,0.10)",
+              padding: "10px 12px",
+              margin: "10px 0",
+              borderLeft: "3px solid rgba(220,100,30,0.5)",
+            }}
+          >
+            This assignment was sent back for revision. Please update your answer below.
+          </div>
+        )}
+
+        {/* Assignment detail + admin note (approval notes, not revision feedback) */}
+        {(task.detail || (!task.wasRevised && task.adminNote)) && (
           <div
             style={{
               fontSize: 13,
@@ -238,8 +287,8 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
             }}
           >
             {task.detail}
-            {task.detail && task.adminNote && <div style={{ marginTop: 6 }} />}
-            {task.adminNote && <div style={{ color: "#B0A0F0" }}>{task.adminNote}</div>}
+            {task.detail && !task.wasRevised && task.adminNote && <div style={{ marginTop: 6 }} />}
+            {!task.wasRevised && task.adminNote && <div style={{ color: "#B0A0F0" }}>{task.adminNote}</div>}
           </div>
         )}
 
@@ -394,7 +443,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
             <textarea
               className="inp"
               value={text}
-              onChange={(e) => { setText(e.target.value); localStorage.setItem(draftKey, e.target.value); }}
+              onChange={(e) => {
+                setText(e.target.value);
+                localStorage.setItem(draftKey, e.target.value);
+              }}
               placeholder="Write your response here…"
               style={{ minHeight: 100, fontSize: 14, lineHeight: 1.7 }}
             />
@@ -403,7 +455,10 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
           <textarea
             className="inp"
             value={text}
-            onChange={(e) => { setText(e.target.value); localStorage.setItem(draftKey, e.target.value); }}
+            onChange={(e) => {
+              setText(e.target.value);
+              localStorage.setItem(draftKey, e.target.value);
+            }}
             placeholder="Notes or questions for your parent… (optional)"
             style={{ marginTop: 10, minHeight: 55, fontSize: 13 }}
           />

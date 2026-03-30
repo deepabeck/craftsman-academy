@@ -93,38 +93,59 @@ export default async function TodayPage() {
   if (error) console.error("Today tasks fetch error:", error.message, "student:", user.id, "date:", today);
   console.log(`Today tasks for ${profile.student_key} on ${today} (${dayOfWeek}): ${rawTasks?.length ?? 0} rows`);
 
-  const tasks: Task[] = (rawTasks ?? [])
-    .sort(
-      (a, b) =>
-        // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
-        ((a.subjects as any).sort_order ?? 0) - ((b.subjects as any).sort_order ?? 0),
-    )
-    .map((t) => {
+  const sortedRaw = (rawTasks ?? []).sort(
+    (a, b) =>
       // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
-      const sub = t.subjects as any;
-      const proofTypes: string[] = t.proof_types ?? [t.proof_type ?? "checkbox"];
-      return {
-        id: t.id,
-        subjectId: sub.id,
-        subjectName: sub.name,
-        subjectIcon: sub.icon,
-        subjectColor: sub.color,
-        detail: t.lesson_detail || sub.detail || "",
-        proofType: (proofTypes[0] ?? "checkbox") as "photo" | "timer" | "checkbox",
-        proofTypes,
-        duration: t.duration ?? 45,
-        scoringApproach: t.scoring_approach ?? "completion",
-        requiresReview: t.requires_review ?? false,
-        adminNote: t.admin_note ?? "",
-        status: t.status as Task["status"],
-        // biome-ignore lint/suspicious/noExplicitAny: cancelled_reason column added via migration
-        cancelledReason: (t as any).cancelled_reason ?? null,
-        notes: t.notes ?? "",
-        files: [],
-        timerSeconds: t.timer_seconds ?? 0,
-        completedAt: t.completed_at ?? null,
-      };
-    });
+      ((a.subjects as any).sort_order ?? 0) - ((b.subjects as any).sort_order ?? 0),
+  );
+
+  // For pending tasks, check if they have prior submissions (= were sent back for revision).
+  // Fetch the most recent text content per task so we can pre-populate the submit modal.
+  const pendingIds = sortedRaw.filter((t) => t.status === "pending").map((t) => t.id);
+  const priorSubMap = new Map<string, string>(); // task_id → last text content
+  const revisedTaskIds = new Set<string>();
+  if (pendingIds.length > 0) {
+    const { data: priorSubs } = await supabase
+      .from("submissions")
+      .select("task_id, content, submission_type")
+      .in("task_id", pendingIds)
+      .order("created_at", { ascending: false });
+    for (const s of priorSubs ?? []) {
+      revisedTaskIds.add(s.task_id); // any prior submission means it was revised
+      if (!priorSubMap.has(s.task_id) && s.content && s.submission_type !== "revision_request") {
+        priorSubMap.set(s.task_id, s.content);
+      }
+    }
+  }
+
+  const tasks: Task[] = sortedRaw.map((t) => {
+    // biome-ignore lint/suspicious/noExplicitAny: supabase join typing
+    const sub = t.subjects as any;
+    const proofTypes: string[] = t.proof_types ?? [t.proof_type ?? "checkbox"];
+    return {
+      id: t.id,
+      subjectId: sub.id,
+      subjectName: sub.name,
+      subjectIcon: sub.icon,
+      subjectColor: sub.color,
+      detail: t.lesson_detail || sub.detail || "",
+      proofType: (proofTypes[0] ?? "checkbox") as "photo" | "timer" | "checkbox",
+      proofTypes,
+      duration: t.duration ?? 45,
+      scoringApproach: t.scoring_approach ?? "completion",
+      requiresReview: t.requires_review ?? false,
+      adminNote: t.admin_note ?? "",
+      wasRevised: revisedTaskIds.has(t.id),
+      previousSubmission: priorSubMap.get(t.id),
+      status: t.status as Task["status"],
+      // biome-ignore lint/suspicious/noExplicitAny: cancelled_reason column added via migration
+      cancelledReason: (t as any).cancelled_reason ?? null,
+      notes: t.notes ?? "",
+      files: [],
+      timerSeconds: t.timer_seconds ?? 0,
+      completedAt: t.completed_at ?? null,
+    };
+  });
 
   // ── Saturday: fetch incomplete tasks from this week (Mon–Fri) ───────────────
   let lateTasks: LateTask[] = [];

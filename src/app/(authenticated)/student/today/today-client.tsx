@@ -172,6 +172,7 @@ export function TodayClient({
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* biome-ignore lint/performance/noImgElement: animated asset */}
                     <img
                       src="/assets/icon-techtime-unlocked.png"
                       alt="Tech Time"
@@ -380,6 +381,7 @@ export function TodayClient({
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !isDone) setModal(task);
                       }}
+                      // biome-ignore lint/a11y/useSemanticElements: task card is a styled div, not a plain button
                       role="button"
                       tabIndex={0}
                     >
@@ -413,10 +415,19 @@ export function TodayClient({
                           </div>
                         ) : (
                           <>
-                            <StatusBadge status={task.status} />
+                            <StatusBadge
+                              status={task.wasRevised && task.status === "pending" ? "revision" : task.status}
+                            />
                             {!isDone && (
-                              <div style={{ fontSize: 13, color: "#4ABCCC", marginTop: 2, letterSpacing: "0.02em" }}>
-                                See assignment &rarr;
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  color: task.wasRevised ? "#f0a060" : "#4ABCCC",
+                                  marginTop: 2,
+                                  letterSpacing: "0.02em",
+                                }}
+                              >
+                                {task.wasRevised ? "Feedback waiting — tap to revise" : "See assignment →"}
                               </div>
                             )}
                             {isDone && <div style={{ fontSize: 13, color: "#70C090", marginTop: 2 }}>✓ Complete</div>}

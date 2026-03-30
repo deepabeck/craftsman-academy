@@ -12,7 +12,7 @@ export default async function ReviewPage() {
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
        ai_score, ai_feedback,
        subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
+       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
     )
     .eq("status", "review")
     .order("task_date", { ascending: false });
@@ -27,7 +27,7 @@ export default async function ReviewPage() {
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
        ai_score, ai_feedback, parent_score, final_score,
        subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
+       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
     )
     .in("status", ["approved"])
     .gte("task_date", thirtyDaysAgo)
@@ -118,16 +118,21 @@ export default async function ReviewPage() {
         icon: subject.icon,
         color: subject.color,
       },
-      // biome-ignore lint/suspicious/noExplicitAny: supabase row type
-      submissions: (t.submissions ?? []).map((s: any) => ({
-        id: s.id,
-        type: s.submission_type,
-        content: s.content ?? null,
-        timerSeconds: s.timer_seconds ?? null,
-        fileUrl: s.file_url ?? null,
-        fileName: s.file_name ?? null,
-        fileMimeType: s.file_mime_type ?? null,
-      })),
+      // Sort newest-first so the latest resubmission is always shown first.
+      submissions: (t.submissions ?? [])
+        .slice()
+        // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+        .sort((a: any, b: any) => (a.created_at > b.created_at ? -1 : 1))
+        // biome-ignore lint/suspicious/noExplicitAny: supabase row type
+        .map((s: any) => ({
+          id: s.id,
+          type: s.submission_type,
+          content: s.content ?? null,
+          timerSeconds: s.timer_seconds ?? null,
+          fileUrl: s.file_url ?? null,
+          fileName: s.file_name ?? null,
+          fileMimeType: s.file_mime_type ?? null,
+        })),
     };
   };
 

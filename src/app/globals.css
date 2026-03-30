@@ -339,6 +339,11 @@ body {
   color: #70e090;
   border: 1px solid rgba(50, 160, 80, 0.38);
 }
+.badge-revision {
+  background: rgba(220, 100, 30, 0.18);
+  color: #f0a060;
+  border: 1px solid rgba(220, 100, 30, 0.45);
+}
 
 /* ── PROGRESS ── */
 .prog-track {

@@ -38,7 +38,9 @@ export interface Task {
   duration: number;
   scoringApproach?: string; // 'completion' | 'review_based' | 'time_based' | etc.
   requiresReview?: boolean; // if true, submission goes to 'review' not 'done'
-  adminNote?: string; // per-task note from admin
+  adminNote?: string; // per-task note from admin (revision reason when status=pending)
+  wasRevised?: boolean; // true if task was sent back for revision (has prior submission)
+  previousSubmission?: string; // text content of the student's last submission
   status: "pending" | "done" | "review" | "missed" | "approved" | "cancelled";
   cancelledReason?: string | null; // reason shown when status === 'cancelled'
   notes: string;

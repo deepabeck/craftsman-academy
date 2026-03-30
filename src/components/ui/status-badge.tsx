@@ -6,6 +6,7 @@ const BADGE_CLASS: Record<string, string> = {
   review: "badge-review",
   missed: "badge-missed",
   approved: "badge-approved",
+  revision: "badge-revision",
 };
 
 const BADGE_LABEL: Record<string, string> = {
@@ -14,6 +15,7 @@ const BADGE_LABEL: Record<string, string> = {
   review: "Review",
   missed: "Missed",
   approved: "Approved",
+  revision: "↩ Revise",
 };
 
 interface StatusBadgeProps {

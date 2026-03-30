@@ -408,9 +408,10 @@ export function SubmissionsClient({ items, students }: Props) {
                               </div>
                             )}
 
-                            {/* Text response */}
+                            {/* Text response — show only the latest (submissions arrive newest-first) */}
                             {item.submissions
-                              .filter((s) => s.content)
+                              .filter((s) => s.content && s.type !== "revision_request")
+                              .slice(0, 1)
                               .map((s) => (
                                 <div key={s.id}>
                                   <div

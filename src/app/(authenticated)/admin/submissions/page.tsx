@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { type SubmissionItem, SubmissionsClient } from "./submissions-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function SubmissionsPage() {
   const supabase = await createClient();
   const service = createServiceClient();
@@ -13,7 +15,7 @@ export default async function SubmissionsPage() {
       `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
        final_score, overall_score, student_id,
        subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
+       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
     )
     .in("status", ["done", "approved", "review"])
     .order("task_date", { ascending: false })
@@ -72,9 +74,14 @@ export default async function SubmissionsPage() {
       const subject = t.subjects;
 
       // biome-ignore lint/suspicious/noExplicitAny: supabase row
+      const sortedSubs = (t.submissions ?? [])
+        .slice()
+        // biome-ignore lint/suspicious/noExplicitAny: supabase row
+        .sort((a: any, b: any) => (a.created_at > b.created_at ? -1 : 1));
+      // biome-ignore lint/suspicious/noExplicitAny: supabase row
       const resolvedSubs = await Promise.all(
         // biome-ignore lint/suspicious/noExplicitAny: supabase row
-        (t.submissions ?? []).map(async (s: any) => ({
+        sortedSubs.map(async (s: any) => ({
           id: s.id,
           type: s.submission_type as string,
           content: s.content ?? null,

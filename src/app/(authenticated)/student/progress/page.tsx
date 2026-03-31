@@ -8,11 +8,14 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Compute day streak: consecutive days ending today where ALL tasks are done/review/approved. */
+/** Compute day streak: consecutive school days ending today where ALL tasks are done/review/approved.
+ *  Weekends (Sat/Sun) and days with no non-cancelled tasks are skipped (not counted, not breaking). */
 // biome-ignore lint/suspicious/noExplicitAny: supabase row type
 function computeStreak(tasks: any[], today: string): number {
+  // Build map: date → true (all done) | false (some not done) | undefined (no tasks / cancelled day)
   const byDate: Record<string, boolean> = {};
   for (const t of tasks) {
+    if (t.status === "cancelled") continue; // ignore cancelled tasks entirely
     const done = t.status === "done" || t.status === "approved" || t.status === "review";
     if (byDate[t.task_date] === undefined) byDate[t.task_date] = done;
     else byDate[t.task_date] = byDate[t.task_date] && done;
@@ -20,13 +23,28 @@ function computeStreak(tasks: any[], today: string): number {
 
   let streak = 0;
   const cursor = new Date(`${today}T00:00:00`);
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 60; i++) {
+    const dow = cursor.getDay(); // 0=Sun, 6=Sat
     const ds = localDateStr(cursor);
+
+    if (dow === 0 || dow === 6) {
+      // Weekend — skip, don't break
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+
+    if (byDate[ds] === undefined) {
+      // No non-cancelled tasks this day — treat as a school holiday / cancelled day, skip
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+
     if (byDate[ds] === true) {
       streak++;
-    } else if (byDate[ds] === false) {
-      break;
+    } else {
+      break; // incomplete school day — streak ends
     }
+
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
@@ -58,19 +76,20 @@ export default async function ProgressPage() {
        subjects!inner (id, name, icon, color)`,
     )
     .eq("student_id", user.id)
-    .neq("status", "cancelled")
     .gte("task_date", thirtyDaysAgo)
+    .lte("task_date", today)
     .order("task_date", { ascending: false });
 
   const allTasks = tasks ?? [];
+  const activeTasks = allTasks.filter((t) => t.status !== "cancelled");
 
   // ── Summary stats ─────────────────────────────────────────────────────────
   const completedStatuses = new Set(["done", "approved", "review"]);
-  const totalTasks = allTasks.length;
-  const completedTasks = allTasks.filter((t) => completedStatuses.has(t.status)).length;
+  const totalTasks = activeTasks.length;
+  const completedTasks = activeTasks.filter((t) => completedStatuses.has(t.status)).length;
   const completionPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const scoredTasks = allTasks.filter((t) => t.overall_score != null);
+  const scoredTasks = activeTasks.filter((t) => t.overall_score != null);
   const avgScore =
     scoredTasks.length > 0
       ? Math.round(scoredTasks.reduce((sum, t) => sum + Number(t.overall_score), 0) / scoredTasks.length)
@@ -93,7 +112,7 @@ export default async function ProgressPage() {
     }
   > = {};
 
-  for (const t of allTasks) {
+  for (const t of activeTasks) {
     // biome-ignore lint/suspicious/noExplicitAny: supabase join type
     const sub = t.subjects as any;
     if (!subjectMap[sub.id]) {

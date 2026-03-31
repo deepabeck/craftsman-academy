@@ -41,6 +41,10 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
 
   const id = subject.id.startsWith("new-") ? slugify(subject.name) || `subj-${Date.now()}` : subject.id;
 
+  // Resolve the admin's household_id
+  const { data: hhRow } = await supabase.rpc("get_my_household_id");
+  const householdId: string | null = hhRow ?? null;
+
   // Fetch old days before updating so we can detect changes
   const { data: existing } = await supabase.from("subjects").select("days").eq("id", id).maybeSingle();
   // biome-ignore lint/suspicious/noExplicitAny: days can be string[] or number[] depending on DB type
@@ -55,6 +59,7 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
   const { error } = await supabase.from("subjects").upsert(
     {
       id,
+      household_id: householdId,
       name: subject.name,
       icon: subject.icon,
       color: subject.color,

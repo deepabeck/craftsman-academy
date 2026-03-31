@@ -133,6 +133,17 @@ function parseHour(value: string): number | null {
   return Number(value.slice(tIdx + 1, tIdx + 3));
 }
 
+/** Parse HH and MM from a dtvalue string → "9:00 AM" style, or null for all-day. */
+function parseStartTime(value: string): string | null {
+  const tIdx = value.indexOf("T");
+  if (tIdx === -1) return null;
+  const hh = Number(value.slice(tIdx + 1, tIdx + 3));
+  const mm = Number(value.slice(tIdx + 3, tIdx + 5));
+  const period = hh >= 12 ? "PM" : "AM";
+  const hour = hh % 12 === 0 ? 12 : hh % 12;
+  return mm === 0 ? `${hour} ${period}` : `${hour}:${String(mm).padStart(2, "0")} ${period}`;
+}
+
 /** Compute event duration in hours from raw dtstart / dtend line values. */
 function computeDuration(dtstartLine: string | undefined, dtendLine: string | undefined): number {
   if (!dtendLine) return 1; // default 1 hour if no DTEND
@@ -187,6 +198,7 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
 
       const type = inferType(summary, ev.categories ?? "");
       const durationHours = computeDuration(ev.dtstart, evDtend);
+      const startTime = ev.dtstart ? parseStartTime(extractDtValue(ev.dtstart)) : null;
 
       const pushEvent = (d: Date) => {
         collected.push({
@@ -198,6 +210,7 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
             type,
             icon: eventIcon(type, summary),
             durationHours,
+            startTime,
           },
         });
       };

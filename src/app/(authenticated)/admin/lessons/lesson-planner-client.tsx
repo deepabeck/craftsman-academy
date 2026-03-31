@@ -570,21 +570,23 @@ export function LessonPlannerClient({
                 {dayEvents.map((ev) => (
                   <div
                     key={ev.label}
-                    title={`${ev.label} (${ev.durationHours < 2 ? `${ev.durationHours}h` : `${ev.durationHours}h — long event`})`}
                     style={{
                       fontSize: 10,
                       marginTop: 3,
-                      padding: "2px 5px",
+                      padding: "3px 5px",
                       borderRadius: 3,
                       background: ev.durationHours >= 2 ? "rgba(200,80,80,0.18)" : "rgba(74,144,208,0.18)",
                       color: ev.durationHours >= 2 ? "#F08080" : "#7AB4E0",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      textAlign: "left",
                       maxWidth: "100%",
                     }}
                   >
-                    {ev.icon} {ev.label}
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {ev.icon} {ev.label}
+                    </div>
+                    <div style={{ opacity: 0.75, marginTop: 1 }}>
+                      {ev.startTime ? `${ev.startTime} · ` : ""}{ev.durationHours >= 8 ? "all day" : `${ev.durationHours}h`}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -744,7 +746,11 @@ export function LessonPlannerClient({
                 📅 CALENDAR ADJUSTMENTS — TODAY
               </div>
               <div style={{ fontSize: 12, color: "#506070", marginTop: 2 }}>
-                {todayEvents.map((e) => `${e.icon} ${e.label} (${e.durationHours}h)`).join(" · ")}
+                {todayEvents.map((e) => {
+                  const time = e.startTime ? `${e.startTime} · ` : "";
+                  const dur = e.durationHours >= 8 ? "all day" : `${e.durationHours}h`;
+                  return `${e.icon} ${e.label} (${time}${dur})`;
+                }).join("  ·  ")}
               </div>
             </div>
             <button

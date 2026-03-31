@@ -92,6 +92,7 @@ export interface CalendarEvent {
   type: "holiday" | "activity" | "trip" | "birthday";
   icon: string;
   durationHours: number; // event length in hours (all-day = 8)
+  startTime: string | null; // e.g. "9:00 AM", null for all-day events
 }
 
 export type TaskStatus = "pending" | "done" | "review" | "missed" | "approved" | "cancelled";

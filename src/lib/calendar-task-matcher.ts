@@ -27,6 +27,27 @@ export const KEYWORD_FULFILLMENTS: { keywords: string[]; subjectId: string | nul
   { keywords: ["coding class", "coding camp"], subjectId: "coding" },
 ];
 
+// ── Events to ignore entirely ─────────────────────────────────────────────────
+// Household / personal events that have no bearing on the school day.
+export const IGNORE_EVENT_KEYWORDS: string[] = [
+  "house cleaning",
+  "cleaning",
+  "chores",
+  "grocery",
+  "shopping",
+  "appointment",
+  "dentist",
+  "doctor",
+  "haircut",
+  "errands",
+];
+
+/** Returns true if the event should be completely skipped by the matcher. */
+export function shouldIgnoreEvent(eventLabel: string): boolean {
+  const lower = eventLabel.toLowerCase();
+  return IGNORE_EVENT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 // ── Protection rules ─────────────────────────────────────────────────────────
 /** Always protected — never auto-cancelled regardless of event duration. */
 export const ALWAYS_PROTECTED_SUBJECTS = new Set(["math"]);
@@ -129,6 +150,9 @@ export function proposeAdjustments(
   const pendingTasks = tasks.filter((t) => t.status === "pending");
 
   for (const event of events) {
+    // Skip household/personal events that have no effect on the school day
+    if (shouldIgnoreEvent(event.label)) continue;
+
     // ── 1. Fulfillment ──────────────────────────────────────────────────────
     const match = matchFulfillment(event.label);
     if (match) {

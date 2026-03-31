@@ -41,8 +41,10 @@ function computeStreak(tasks: any[], today: string): number {
 
     if (byDate[ds] === true) {
       streak++;
+    } else if (ds === today) {
+      // Today is incomplete — skip it, don't break. Streak reflects last fully completed day.
     } else {
-      break; // incomplete school day — streak ends
+      break; // incomplete past school day — streak ends
     }
 
     cursor.setDate(cursor.getDate() - 1);

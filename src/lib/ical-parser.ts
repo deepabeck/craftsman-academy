@@ -133,12 +133,41 @@ function parseHour(value: string): number | null {
   return Number(value.slice(tIdx + 1, tIdx + 3));
 }
 
-/** Parse HH and MM from a dtvalue string → "9:00 AM" style, or null for all-day. */
-function parseStartTime(value: string): string | null {
+const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+
+/** Parse start time from a dtvalue string → "9:00 AM" style, or null for all-day.
+ *  Handles both floating/TZID-local times and UTC (Z-suffix) times by converting
+ *  UTC to the app's local timezone. */
+function parseStartTime(value: string, dtstartLine?: string): string | null {
   const tIdx = value.indexOf("T");
-  if (tIdx === -1) return null;
+  if (tIdx === -1) return null; // all-day
+
+  const isUtc = value.endsWith("Z");
+  const hasTzid = dtstartLine ? /TZID=/i.test(dtstartLine) : false;
+
+  if (isUtc) {
+    // Parse as a real UTC Date and convert to app timezone
+    const y = Number(value.slice(0, 4));
+    const mo = Number(value.slice(4, 6)) - 1;
+    const d = Number(value.slice(6, 8));
+    const hh = Number(value.slice(tIdx + 1, tIdx + 3));
+    const mm = Number(value.slice(tIdx + 3, tIdx + 5));
+    const utcDate = new Date(Date.UTC(y, mo, d, hh, mm));
+    const localStr = utcDate.toLocaleTimeString("en-US", {
+      timeZone: APP_TZ,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    // Strip leading zero and trailing ":00" for clean display
+    return localStr.replace(/:00\s/, " ").trim();
+  }
+
+  // Floating or TZID-local — treat hours as-is
   const hh = Number(value.slice(tIdx + 1, tIdx + 3));
   const mm = Number(value.slice(tIdx + 3, tIdx + 5));
+  // suppress unused warning
+  void hasTzid;
   const period = hh >= 12 ? "PM" : "AM";
   const hour = hh % 12 === 0 ? 12 : hh % 12;
   return mm === 0 ? `${hour} ${period}` : `${hour}:${String(mm).padStart(2, "0")} ${period}`;
@@ -198,7 +227,7 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
 
       const type = inferType(summary, ev.categories ?? "");
       const durationHours = computeDuration(ev.dtstart, evDtend);
-      const startTime = ev.dtstart ? parseStartTime(extractDtValue(ev.dtstart)) : null;
+      const startTime = ev.dtstart ? parseStartTime(extractDtValue(ev.dtstart), ev.dtstart) : null;
 
       const pushEvent = (d: Date) => {
         collected.push({
@@ -258,7 +287,7 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
  */
 export async function fetchCalendarEvents(url: string, daysAhead = 60): Promise<CalendarEvent[]> {
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 300 } }); // 5-minute cache
     if (!res.ok) return [];
     const text = await res.text();
     return parseIcal(text, daysAhead);

@@ -158,6 +158,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
     icon: "\uD83C\uDF40",
     isoDate: "2025-03-17",
     durationHours: 0,
+    startTime: null,
   },
   {
     date: "Tue Mar 18",
@@ -166,6 +167,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
     icon: "\uD83C\uDF92",
     isoDate: "2025-03-18",
     durationHours: 1,
+    startTime: "9 AM",
   },
   {
     date: "Thu Mar 20",
@@ -174,6 +176,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
     icon: "\uD83D\uDD2C",
     isoDate: "2025-03-20",
     durationHours: 3,
+    startTime: null,
   },
   {
     date: "Fri Mar 21",
@@ -182,6 +185,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
     icon: "\uD83C\uDF82",
     isoDate: "2025-03-21",
     durationHours: 0,
+    startTime: null,
   },
   {
     date: "Mon Mar 24",
@@ -190,6 +194,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
     icon: "\uD83C\uDFB9",
     isoDate: "2025-03-24",
     durationHours: 1,
+    startTime: null,
   },
 ];
 

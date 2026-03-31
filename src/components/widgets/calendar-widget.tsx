@@ -59,6 +59,13 @@ export function CalendarWidget({ color, events }: CalendarWidgetProps) {
                 >
                   {e.label}
                 </div>
+                {(e.startTime || e.durationHours > 0) && (
+                  <div style={{ fontSize: 11, color: "#506070", marginTop: 2 }}>
+                    {e.startTime ? `${e.startTime}` : ""}
+                    {e.startTime && e.durationHours > 0 && e.durationHours < 8 ? " · " : ""}
+                    {e.durationHours >= 8 ? "all day" : e.durationHours > 0 ? `${e.durationHours}h` : ""}
+                  </div>
+                )}
               </div>
             </div>
           ))}

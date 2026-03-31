@@ -13,12 +13,14 @@ import {
   skipTaskAndApprove,
   upsertMarketplaceItem,
 } from "@/app/actions/marketplace";
+import type { LedgerEntry } from "@/app/actions/points";
 import { PageHeader } from "@/components/ui";
 
 interface Props {
   pending: MarketplacePurchase[];
   history: MarketplacePurchase[];
   items: (MarketplaceItem & { isActive: boolean })[];
+  ledger: LedgerEntry[];
 }
 
 function formatDate(iso: string) {
@@ -793,10 +795,57 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
 
 // ── Main client ──────────────────────────────────────────────────────────────
 
-export function ShopAdminClient({ pending: initialPending, history, items: initialItems }: Props) {
+const LEDGER_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
+  task_submit: { label: "Task Submitted", icon: "⚙️" },
+  task_approve: { label: "Approved", icon: "✅" },
+  daily_submit_bonus: { label: "Daily Submit Bonus", icon: "🌟" },
+  daily_approve_bonus: { label: "Daily Approve Bonus", icon: "🏆" },
+  weekly_complete: { label: "Week Complete", icon: "📅" },
+  weekly_grade_a: { label: "A Average Bonus", icon: "🎓" },
+  weekly_grade_b: { label: "B Average Bonus", icon: "📚" },
+  weekly_perfect: { label: "Perfect Week", icon: "💎" },
+  streak_milestone: { label: "Streak Milestone", icon: "🔥" },
+  marketplace_purchase: { label: "Shop Purchase", icon: "🛒" },
+};
+
+function formatLedgerTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
+function formatLedgerDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+export function ShopAdminClient({ pending: initialPending, history, items: initialItems, ledger }: Props) {
   const [pending, setPending] = useState(initialPending);
   const [items, setItems] = useState(initialItems);
-  const [tab, setTab] = useState<"pending" | "history" | "items">("items");
+  const [tab, setTab] = useState<"pending" | "history" | "items" | "ledger">("items");
+
+  // Ledger: student filter
+  const studentNames = Array.from(new Set(ledger.map((e) => e.studentName))).sort();
+  const [ledgerFilter, setLedgerFilter] = useState<string>("All");
+
+  // Compute running balance per student (ascending order)
+  const sortedAsc = [...ledger].sort((a, b) => a.earned_at.localeCompare(b.earned_at));
+  const perStudentRunning: Record<string, Record<string, number>> = {};
+  const perStudentCumulative: Record<string, number> = {};
+  for (const entry of sortedAsc) {
+    if (!perStudentRunning[entry.student_id]) perStudentRunning[entry.student_id] = {};
+    if (perStudentCumulative[entry.student_id] === undefined) perStudentCumulative[entry.student_id] = 0;
+    perStudentCumulative[entry.student_id] += entry.points;
+    perStudentRunning[entry.student_id][entry.id] = perStudentCumulative[entry.student_id];
+  }
+
+  const filteredLedger = ledgerFilter === "All" ? ledger : ledger.filter((e) => e.studentName === ledgerFilter);
+
+  // Group filtered ledger by day (newest first, already sorted desc)
+  const ledgerByDay: Record<string, LedgerEntry[]> = {};
+  for (const e of filteredLedger) {
+    const day = new Date(e.earned_at).toLocaleDateString("en-CA");
+    if (!ledgerByDay[day]) ledgerByDay[day] = [];
+    ledgerByDay[day].push(e);
+  }
+  const ledgerDays = Object.keys(ledgerByDay).sort((a, b) => b.localeCompare(a));
 
   const handleAction = (id: string) => setPending((prev) => prev.filter((p) => p.id !== id));
   const handleGroupAction = (ids: string[]) => setPending((prev) => prev.filter((p) => !ids.includes(p.id)));
@@ -826,8 +875,8 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
         title="Shop"
         sub={pending.length > 0 ? `${pending.length} pending approval` : "Manage items & approve requests"}
       />
-      <div style={{ display: "flex", gap: 6 }}>
-        {(["items", "pending", "history"] as const).map((t) => (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {(["items", "pending", "history", "ledger"] as const).map((t) => (
           <button
             key={t}
             type="button"
@@ -839,7 +888,9 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
               ? "Manage Items"
               : t === "pending"
                 ? `Pending${pending.length > 0 ? ` (${pending.length})` : ""}`
-                : "History"}
+                : t === "history"
+                  ? "History"
+                  : "Ledger"}
           </button>
         ))}
       </div>
@@ -868,6 +919,116 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
             <ItemRow key={item.id} item={item} onSaved={handleSaved} onDeleted={handleDeleted} />
           ))}
           <AddItemForm onAdded={handleAdded} />
+        </div>
+      )}
+
+      {/* ── Ledger tab ── */}
+      {tab === "ledger" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Student filter */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div className="cinzel" style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em" }}>
+              FILTER:
+            </div>
+            {(["All", ...studentNames] as string[]).map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={ledgerFilter === name ? "btn-brass" : "btn-ghost"}
+                style={{ fontSize: 11, padding: "4px 12px" }}
+                onClick={() => setLedgerFilter(name)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+
+          {filteredLedger.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>No ledger entries yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {ledgerDays.map((day) => (
+                <div key={day}>
+                  <div
+                    className="cinzel"
+                    style={{ fontSize: 11, color: "#506070", letterSpacing: "0.1em", marginBottom: 6 }}
+                  >
+                    {formatLedgerDate(`${day}T12:00:00`)}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {ledgerByDay[day].map((e) => {
+                      const meta = LEDGER_CATEGORY_LABELS[e.category] ?? { label: e.category, icon: "⚙️" };
+                      const runningBal = perStudentRunning[e.student_id]?.[e.id];
+                      return (
+                        <div
+                          key={e.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "7px 12px",
+                            borderRadius: 7,
+                            background: "rgba(0,0,0,0.2)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          {/* Student color dot */}
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              background: e.studentColor,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ fontSize: 14, flexShrink: 0 }}>{meta.icon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 13, color: "#EEE4CC" }}>{meta.label}</span>
+                              <span style={{ fontSize: 11, color: e.studentColor, fontWeight: 600 }}>
+                                {e.studentName}
+                              </span>
+                              {e.note && (
+                                <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>{e.note}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: 1,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <span
+                              className="cinzel"
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: e.points > 0 ? "#E8A820" : "#F08080",
+                              }}
+                            >
+                              {e.points > 0 ? "+" : ""}
+                              {e.points}
+                            </span>
+                            {runningBal !== undefined && (
+                              <span style={{ fontSize: 10, color: "#506070" }}>bal: {runningBal.toLocaleString()}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 10, color: "#404858", flexShrink: 0, marginLeft: 4 }}>
+                            {formatLedgerTime(e.earned_at)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

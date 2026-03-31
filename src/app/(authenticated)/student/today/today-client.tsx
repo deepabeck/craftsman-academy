@@ -56,7 +56,7 @@ export function TodayClient({
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
-  const { refreshBalance } = usePoints();
+  const { refreshBalance, celebrate } = usePoints();
   const [isEvening, setIsEvening] = useState(() => new Date().getHours() >= TECH_TIME_HOUR);
 
   // Re-check the clock every minute so the banner flips automatically at unlock time
@@ -490,7 +490,17 @@ export function TodayClient({
       </div>
 
       {modal && (
-        <SubmitModal task={modal} student={student} onClose={() => setModal(null)} onSubmit={submit} onCheck={check} />
+        <SubmitModal
+          task={modal}
+          student={student}
+          onClose={() => setModal(null)}
+          onSubmit={submit}
+          onCheck={check}
+          onSuccess={(pts) => {
+            celebrate(pts);
+            refreshBalance(2500);
+          }}
+        />
       )}
     </div>
   );

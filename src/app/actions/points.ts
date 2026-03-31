@@ -10,7 +10,7 @@ const PTS_WEEKLY_COMPLETE = 50;
 const PTS_WEEKLY_GRADE_B = 25;
 const PTS_WEEKLY_GRADE_A = 50;
 const PTS_WEEKLY_PERFECT = 100;
-const PTS_STREAK_FIRST = 500;  // 30-day milestone
+const PTS_STREAK_FIRST = 500; // 30-day milestone
 const PTS_STREAK_REPEAT = 300; // 60, 90, 120… day milestones
 
 const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
@@ -173,10 +173,19 @@ async function checkAndAwardStreakMilestone(studentId: string) {
     const dow = cursor.getDay();
     const ds = cursor.toLocaleDateString("en-CA", { timeZone: APP_TZ });
 
-    if (dow === 0 || dow === 6) { cursor.setDate(cursor.getDate() - 1); continue; }
-    if (byDate[ds] === undefined) { cursor.setDate(cursor.getDate() - 1); continue; }
-    if (byDate[ds] === true) { streak++; }
-    else if (ds !== today) { break; }
+    if (dow === 0 || dow === 6) {
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    if (byDate[ds] === undefined) {
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    if (byDate[ds] === true) {
+      streak++;
+    } else if (ds !== today) {
+      break;
+    }
 
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -278,4 +287,88 @@ export async function getStudentBalance(studentId: string): Promise<number> {
   const service = createServiceClient();
   const { data } = await service.from("points_log").select("points").eq("student_id", studentId);
   return (data ?? []).reduce((sum, r) => sum + r.points, 0);
+}
+
+// ── Unseen points ────────────────────────────────────────────────────────────────
+
+export interface UnseenEntry {
+  id: string;
+  category: string;
+  points: number;
+  note: string;
+  earned_at: string;
+}
+
+/** Returns all points_log entries earned after the student's last seen timestamp. */
+export async function getUnseenPoints(studentId: string): Promise<UnseenEntry[]> {
+  const service = createServiceClient();
+  const { data: profile } = await service.from("profiles").select("points_last_seen_at").eq("id", studentId).single();
+
+  const since = profile?.points_last_seen_at ?? null;
+  let query = service
+    .from("points_log")
+    .select("id, category, points, note, earned_at")
+    .eq("student_id", studentId)
+    .order("earned_at", { ascending: true });
+
+  if (since) query = query.gt("earned_at", since);
+
+  const { data } = await query;
+  return (data ?? []) as UnseenEntry[];
+}
+
+/** Updates points_last_seen_at to now for the student. */
+export async function markPointsSeen(studentId: string): Promise<void> {
+  const service = createServiceClient();
+  await service.from("profiles").update({ points_last_seen_at: new Date().toISOString() }).eq("id", studentId);
+}
+
+// ── Admin ledger ─────────────────────────────────────────────────────────────────
+
+export interface LedgerEntry {
+  id: string;
+  student_id: string;
+  studentName: string;
+  studentColor: string;
+  category: string;
+  points: number;
+  note: string;
+  source_date: string | null;
+  earned_at: string;
+}
+
+/** Returns full points ledger for all students (admin only), newest first. */
+export async function getPointsLedger(): Promise<LedgerEntry[]> {
+  const service = createServiceClient();
+  const { data: logs } = await service
+    .from("points_log")
+    .select("id, student_id, category, points, note, source_date, earned_at")
+    .order("earned_at", { ascending: false });
+
+  const { data: profiles } = await service.from("profiles").select("id, display_name, color").eq("role", "student");
+
+  const profileMap: Record<string, { name: string; color: string }> = {};
+  for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name, color: p.color ?? "#4A90D0" };
+
+  return (logs ?? []).map(
+    (l: {
+      id: string;
+      student_id: string;
+      category: string;
+      points: number;
+      note: string | null;
+      source_date: string | null;
+      earned_at: string;
+    }) => ({
+      id: l.id,
+      student_id: l.student_id,
+      studentName: profileMap[l.student_id]?.name ?? "Unknown",
+      studentColor: profileMap[l.student_id]?.color ?? "#4A90D0",
+      category: l.category,
+      points: l.points,
+      note: l.note ?? "",
+      source_date: l.source_date,
+      earned_at: l.earned_at,
+    }),
+  );
 }

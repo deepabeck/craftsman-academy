@@ -24,7 +24,7 @@ interface StudentSidebarProps {
 export function StudentSidebar({ student }: StudentSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
-  const { balance: pointsBalance } = usePoints();
+  const { balance: pointsBalance, unseenCount } = usePoints();
 
   return (
     <div className="sidebar">
@@ -73,16 +73,40 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
                 zIndex: 4,
               }}
             >
-              <Image
-                src="/assets/icon_coin.png"
-                alt="cogs"
-                width={56}
-                height={56}
-                style={{
-                  display: "block",
-                  filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(232,168,32,0.55))",
-                }}
-              />
+              <div style={{ position: "relative" }}>
+                <Image
+                  src="/assets/icon_coin.png"
+                  alt="cogs"
+                  width={56}
+                  height={56}
+                  style={{
+                    display: "block",
+                    filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(232,168,32,0.55))",
+                  }}
+                />
+                {unseenCount > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 2,
+                      background: "#F08080",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "1px solid rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    {unseenCount > 9 ? "9+" : unseenCount}
+                  </div>
+                )}
+              </div>
             </Link>
             <div
               style={{

@@ -23,9 +23,10 @@ interface SubmitModalProps {
   onClose: () => void;
   onSubmit: (taskId: string, data: { storagePaths: StoragePath[]; text: string; timer: number }) => void;
   onCheck: (taskId: string) => void;
+  onSuccess?: (points: number) => void;
 }
 
-export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: SubmitModalProps) {
+export function SubmitModal({ task, student, onClose, onSubmit, onCheck, onSuccess }: SubmitModalProps) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [text, setText] = useState("");
   const [sec, setSec] = useState(0);
@@ -184,6 +185,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
     localStorage.removeItem(timerKey);
     localStorage.removeItem(draftKey);
     onSubmit(task.id, { storagePaths, text, timer: sec });
+    onSuccess?.(5); // task_submit = +5 Cogs
   };
 
   const fileExt = (name: string) => name.split(".").pop()?.toUpperCase() ?? "FILE";
@@ -474,6 +476,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck }: Submi
               className="btn-brass"
               style={{ flex: 1, padding: "11px" }}
               onClick={() => {
+                onSuccess?.(5); // task_submit = +5 Cogs
                 onCheck(task.id);
                 onClose();
               }}

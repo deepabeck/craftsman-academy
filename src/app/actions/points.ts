@@ -10,6 +10,10 @@ const PTS_WEEKLY_COMPLETE = 50;
 const PTS_WEEKLY_GRADE_B = 25;
 const PTS_WEEKLY_GRADE_A = 50;
 const PTS_WEEKLY_PERFECT = 100;
+const PTS_STREAK_FIRST = 500;  // 30-day milestone
+const PTS_STREAK_REPEAT = 300; // 60, 90, 120… day milestones
+
+const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
 
 function scoreToApprovalPoints(score: number): number {
   if (score >= 90) return 15;
@@ -76,6 +80,8 @@ export async function awardSubmissionPoints(taskId: string, studentId: string) {
       points: PTS_DAILY_SUBMIT_BONUS,
       note: "All tasks submitted today",
     });
+    // Check if this completed day hit a 30-day streak milestone
+    await checkAndAwardStreakMilestone(studentId);
   }
 }
 
@@ -121,6 +127,74 @@ export async function awardApprovalPoints(taskId: string, score: number) {
       note: "All tasks approved today",
     });
   }
+}
+
+// ── Streak milestone bonus ───────────────────────────────────────────────────────
+
+/**
+ * Computes the current school-day streak for a student and awards a bonus if
+ * the streak just hit a multiple of 30.
+ *   First milestone (30 days):  +500 Cogs
+ *   Each repeat (60, 90, …):    +300 Cogs
+ *
+ * Idempotent — source_id = 'streak_30' / 'streak_60' etc. prevents double-awarding.
+ * Called after a student completes all tasks for the day.
+ */
+async function checkAndAwardStreakMilestone(studentId: string) {
+  const service = createServiceClient();
+
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
+  const sixtyDaysAgo = new Date(`${today}T00:00:00`);
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 62);
+  const sixtyDaysAgoStr = sixtyDaysAgo.toLocaleDateString("en-CA", { timeZone: APP_TZ });
+
+  const { data: tasks } = await service
+    .from("tasks")
+    .select("task_date, status")
+    .eq("student_id", studentId)
+    .gte("task_date", sixtyDaysAgoStr)
+    .lte("task_date", today);
+
+  if (!tasks) return;
+
+  // Build map: date → true (all done) | false (some incomplete) — skip cancelled tasks
+  const byDate: Record<string, boolean> = {};
+  for (const t of tasks) {
+    if (t.status === "cancelled") continue;
+    const done = ["done", "approved", "review"].includes(t.status);
+    if (byDate[t.task_date] === undefined) byDate[t.task_date] = done;
+    else byDate[t.task_date] = byDate[t.task_date] && done;
+  }
+
+  // Walk back day by day, skipping weekends and empty days
+  let streak = 0;
+  const cursor = new Date(`${today}T00:00:00`);
+  for (let i = 0; i < 90; i++) {
+    const dow = cursor.getDay();
+    const ds = cursor.toLocaleDateString("en-CA", { timeZone: APP_TZ });
+
+    if (dow === 0 || dow === 6) { cursor.setDate(cursor.getDate() - 1); continue; }
+    if (byDate[ds] === undefined) { cursor.setDate(cursor.getDate() - 1); continue; }
+    if (byDate[ds] === true) { streak++; }
+    else if (ds !== today) { break; }
+
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  if (streak === 0 || streak % 30 !== 0) return;
+
+  const milestone = streak; // e.g. 30, 60, 90
+  const pts = milestone === 30 ? PTS_STREAK_FIRST : PTS_STREAK_REPEAT;
+  const sourceId = `streak_${milestone}`;
+
+  await logPoints({
+    student_id: studentId,
+    category: "streak_milestone",
+    source_id: sourceId,
+    source_date: today,
+    points: pts,
+    note: `${milestone}-day streak bonus! 🔥`,
+  });
 }
 
 // ── Weekly bonus ────────────────────────────────────────────────────────────────

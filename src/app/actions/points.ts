@@ -299,21 +299,31 @@ export interface UnseenEntry {
   earned_at: string;
 }
 
-/** Returns all points_log entries earned after the student's last seen timestamp. */
+/** Returns all points_log entries earned after the student's last seen timestamp.
+ *  If points_last_seen_at is NULL (first ever visit), silently initializes it to now
+ *  and returns empty — prevents dumping the full historical ledger on first load. */
 export async function getUnseenPoints(studentId: string): Promise<UnseenEntry[]> {
   const service = createServiceClient();
   const { data: profile } = await service.from("profiles").select("points_last_seen_at").eq("id", studentId).single();
 
   const since = profile?.points_last_seen_at ?? null;
-  let query = service
+
+  // First-ever visit — initialize timestamp silently, show nothing
+  if (!since) {
+    await service
+      .from("profiles")
+      .update({ points_last_seen_at: new Date().toISOString() })
+      .eq("id", studentId);
+    return [];
+  }
+
+  const { data } = await service
     .from("points_log")
     .select("id, category, points, note, earned_at")
     .eq("student_id", studentId)
+    .gt("earned_at", since)
     .order("earned_at", { ascending: true });
 
-  if (since) query = query.gt("earned_at", since);
-
-  const { data } = await query;
   return (data ?? []) as UnseenEntry[];
 }
 

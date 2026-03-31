@@ -229,9 +229,18 @@ export function parseIcal(text: string, daysAhead = 60): CalendarEvent[] {
       const durationHours = computeDuration(ev.dtstart, evDtend);
       const startTime = ev.dtstart ? parseStartTime(extractDtValue(ev.dtstart), ev.dtstart) : null;
 
+      // Build a sort key that includes the actual start time (not just midnight)
+      const dtValue = ev.dtstart ? extractDtValue(ev.dtstart) : null;
+      const tIdx = dtValue ? dtValue.indexOf("T") : -1;
+      const startHH = tIdx !== -1 ? Number(dtValue!.slice(tIdx + 1, tIdx + 3)) : 0;
+      const startMM = tIdx !== -1 ? Number(dtValue!.slice(tIdx + 3, tIdx + 5)) : 0;
+
       const pushEvent = (d: Date) => {
+        // Clone date and set actual start time for accurate chronological sorting
+        const sortDate = new Date(d);
+        sortDate.setHours(startHH, startMM, 0, 0);
         collected.push({
-          date: d,
+          date: sortDate,
           event: {
             date: formatDisplayDate(d),
             isoDate: toIsoDate(d),

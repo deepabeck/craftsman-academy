@@ -175,17 +175,32 @@ export default function LoginPage() {
             </div>
           ) : (
             <>
+              {/* Back button — top-left of the placard */}
               <button
                 type="button"
-                className="btn-ghost"
                 onClick={() => {
                   setWho(null);
                   setPassword("");
                   setErr("");
                 }}
-                style={{ marginBottom: 16, fontSize: 13, padding: "5px 12px" }}
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  background: "rgba(10,16,28,0.72)",
+                  border: "1px solid rgba(232,168,32,0.4)",
+                  borderRadius: 7,
+                  color: "#D4A830",
+                  fontSize: 13,
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  letterSpacing: "0.06em",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
               >
-                &larr; Back
+                ← Back
               </button>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
                 <div
@@ -198,7 +213,10 @@ export default function LoginPage() {
                     textShadow: "0 1px 0 rgba(255,200,80,0.18), 0 -1px 2px rgba(0,0,0,0.8)",
                   }}
                 >
-                  {who === "admin" ? "PARENT ACCESS" : `${who.toUpperCase()} — ENTER PASSWORD`}
+                  {(() => {
+                    const profile = PROFILES.find((p) => p.id === who);
+                    return profile?.id === "admin" ? "PARENT ACCESS" : `${profile?.label.toUpperCase() ?? ""} — ENTER PASSWORD`;
+                  })()}
                 </div>
               </div>
               <input

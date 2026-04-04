@@ -167,3 +167,66 @@ Husky runs `pnpm biome check --staged --write` before every commit.
 - Always use `key={student.id}` when rendering per-student stateful components to prevent state bleed between students
 - All admin pages that read live data use `export const dynamic = "force-dynamic"` to prevent Next.js caching stale results
 - `pnpm` only — never `npm`
+
+---
+
+# Evolution Plan: Craftsman Academy → Homeschool SaaS App
+
+## ⚠️ CRITICAL: Data Preservation
+
+**This app is in active daily use by the family.** All existing data — profiles, tasks, submissions, scores, points, lesson plans, progress notes — must be preserved throughout the evolution. No destructive migrations. No breaking changes to the production branch.
+
+- All database migrations must be **additive only** (no DROP TABLE, no DROP COLUMN on populated tables)
+- Schema evolution via ALTER TABLE ADD COLUMN with safe defaults
+- Existing RLS policies remain until explicitly replaced
+- Feature branches for all development; main/production stays stable
+- Deven and Shaan's data is sacrosanct
+
+## Evolution Direction
+
+This codebase is evolving from a single-family homeschool app into a multi-household SaaS product. The key changes:
+
+1. **Multi-household support** — new `households` table; `profiles`, `subjects`, `marketplace_items` get `household_id`; RLS evolves from global-admin to household-scoped
+2. **Student theme system** — new `theme_library` table + `user_settings.theme` column; themes are CSS variable swaps only, no per-theme custom assets
+3. **AI philosophy: TA, not teacher** — AI assists with first-pass scoring, lesson plan scaffolding, and progress note drafts. Parent reviews and approves everything. AI score is visible to admin only (students see qualitative feedback, not the number).
+4. **Freemium pricing** — `households.plan_tier` controls feature access (free = 1 student, no AI; standard/family = multi-student + AI)
+5. **Simplified theming** — Steampunk becomes one theme in a library of 6. The gold frames, gear overlays, composited portraits, and per-component art direction are NOT replicated across themes. Each theme = CSS variables + one background image.
+6. **Community-shared lesson plans** — parents can share plans; other parents browse and import. New `shared_lesson_plan_templates` table.
+
+## Key Decisions (from product planning session)
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Codebase strategy | Evolve in place (not fork) | Live data must be preserved; Craftsman Academy is the production app |
+| Pricing model | Freemium + paid tiers | Free (1 student, no AI) → Standard (~$6-8/mo, 5 students, full AI) → Family (~$10-12/mo, 10 students) |
+| AI cost management | Smart limits | AI scores review-required submissions only; checkbox/timer tasks skip AI entirely |
+| Homeschool philosophy | Structured-first, flex-friendly | Core UX = daily assigned tasks. Non-traditional styles can use it loosely. No separate modes. |
+| Community features | Household-focused only | No social feed, no messaging. Community-shared lesson plans are the only cross-household feature. |
+| Co-op / multi-teacher | Phase 3 / future | Not designing for it now. |
+| Publisher lesson plans | Out of scope | AI generation + community sharing replaces the need for publisher partnerships |
+| Student themes | CSS variable swap only | No per-theme custom assets. One background image + color palette + font pairing + card style. That's the budget. |
+| AI boundaries | 3 places only | AI in: (1) submission scoring, (2) lesson plan scaffolding, (3) progress note drafts. That's it. No AI encouragement, no AI journal prompts, no AI batch grading. |
+
+## Schema Evolution (Migrations 017–025)
+
+See `schema-evolution-plan.md` for full SQL. Summary:
+
+| # | Migration | Purpose |
+|---|-----------|---------|
+| 017 | Households | New `households` table, `profiles.household_id`, backfill existing data |
+| 018 | Household-scoped subjects | `subjects.household_id`, backfill |
+| 019 | Household-scoped marketplace | `marketplace_items.household_id`, backfill |
+| 020 | Student themes | `user_settings.theme`, new `theme_library` table with 7 seed themes |
+| 021 | AI progress notes | `ai_notes.ai_draft`, `ai_draft_generated_at`, `is_approved` |
+| 022 | Community shared plans | New `shared_lesson_plan_templates` table |
+| 023 | Onboarding tracking | `households.onboarding_complete/step/philosophy/state_code` |
+| 024 | Grade book enhancement | `subjects.grade_weights/grading_scale/transcript_group/is_core/credit_hours`, `tasks.grade_category` |
+| 025 | Attendance tracking | New `attendance` table |
+
+## Reference Documents
+
+These files contain the full product requirements and competitive research:
+
+- `homeschool-app-requirements.md` — Product spec with all functional requirements, AI philosophy, pricing, phasing
+- `homeschool-app-research-annotated.md` — Competitive research with requirement callouts
+- `schema-evolution-plan.md` — Full SQL for migrations 017–025

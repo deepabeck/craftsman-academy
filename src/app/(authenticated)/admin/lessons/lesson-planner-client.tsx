@@ -585,7 +585,8 @@ export function LessonPlannerClient({
                       {ev.icon} {ev.label}
                     </div>
                     <div style={{ opacity: 0.75, marginTop: 1 }}>
-                      {ev.startTime ? `${ev.startTime} · ` : ""}{ev.durationHours >= 8 ? "all day" : `${ev.durationHours}h`}
+                      {ev.startTime ? `${ev.startTime} · ` : ""}
+                      {ev.durationHours >= 8 ? "all day" : `${ev.durationHours}h`}
                     </div>
                   </div>
                 ))}
@@ -746,11 +747,13 @@ export function LessonPlannerClient({
                 📅 CALENDAR ADJUSTMENTS — TODAY
               </div>
               <div style={{ fontSize: 12, color: "#506070", marginTop: 2 }}>
-                {todayEvents.map((e) => {
-                  const time = e.startTime ? `${e.startTime} · ` : "";
-                  const dur = e.durationHours >= 8 ? "all day" : `${e.durationHours}h`;
-                  return `${e.icon} ${e.label} (${time}${dur})`;
-                }).join("  ·  ")}
+                {todayEvents
+                  .map((e) => {
+                    const time = e.startTime ? `${e.startTime} · ` : "";
+                    const dur = e.durationHours >= 8 ? "all day" : `${e.durationHours}h`;
+                    return `${e.icon} ${e.label} (${time}${dur})`;
+                  })
+                  .join("  ·  ")}
               </div>
             </div>
             <button

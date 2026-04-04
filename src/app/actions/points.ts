@@ -310,10 +310,7 @@ export async function getUnseenPoints(studentId: string): Promise<UnseenEntry[]>
 
   // First-ever visit — initialize timestamp silently, show nothing
   if (!since) {
-    await service
-      .from("profiles")
-      .update({ points_last_seen_at: new Date().toISOString() })
-      .eq("id", studentId);
+    await service.from("profiles").update({ points_last_seen_at: new Date().toISOString() }).eq("id", studentId);
     return [];
   }
 

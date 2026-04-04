@@ -924,7 +924,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
 
       {/* ── Ledger tab ── */}
       {tab === "ledger" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingRight: 300 }}>
           {/* Student filter */}
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <div className="cinzel" style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em" }}>
@@ -968,8 +968,8 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                             gap: 10,
                             padding: "7px 12px",
                             borderRadius: 7,
-                            background: "rgba(0,0,0,0.2)",
-                            border: "1px solid rgba(255,255,255,0.05)",
+                            background: "rgba(0,0,0,0.45)",
+                            border: "1px solid rgba(255,255,255,0.08)",
                           }}
                         >
                           {/* Student color dot */}

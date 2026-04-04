@@ -215,7 +215,9 @@ export default function LoginPage() {
                 >
                   {(() => {
                     const profile = PROFILES.find((p) => p.id === who);
-                    return profile?.id === "admin" ? "PARENT ACCESS" : `${profile?.label.toUpperCase() ?? ""} — ENTER PASSWORD`;
+                    return profile?.id === "admin"
+                      ? "PARENT ACCESS"
+                      : `${profile?.label.toUpperCase() ?? ""} — ENTER PASSWORD`;
                   })()}
                 </div>
               </div>

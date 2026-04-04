@@ -417,7 +417,9 @@ export function SubmissionsClient({ items, students }: Props) {
                                     style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 4 }}
                                     className="cinzel"
                                   >
-                                    {idx === 0 ? "LATEST RESPONSE" : `ATTEMPT ${item.submissions.filter((x) => x.content && x.type !== "revision_request").length - idx}`}
+                                    {idx === 0
+                                      ? "LATEST RESPONSE"
+                                      : `ATTEMPT ${item.submissions.filter((x) => x.content && x.type !== "revision_request").length - idx}`}
                                   </div>
                                   <div
                                     style={{

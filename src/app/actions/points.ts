@@ -355,7 +355,7 @@ export async function getPointsLedger(): Promise<LedgerEntry[]> {
   const { data: profiles } = await service.from("profiles").select("id, display_name, color").eq("role", "student");
 
   const profileMap: Record<string, { name: string; color: string }> = {};
-  for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name, color: p.color ?? "#4A90D0" };
+  for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name, color: p.color || "#4A90D0" };
 
   return (logs ?? []).map(
     (l: {

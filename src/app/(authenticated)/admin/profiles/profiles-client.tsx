@@ -2,7 +2,14 @@
 
 import { useRef, useState, useTransition } from "react";
 import { saveBgColor } from "@/app/actions/customize";
-import { changeOwnPassword, saveHouseholdIcalUrl, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
+import {
+  changeOwnPassword,
+  saveHouseholdIcalUrl,
+  setStudentEmail,
+  setStudentPassword,
+  updateProfile,
+  uploadAvatar,
+} from "@/app/actions/profiles";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
 import { gradeLabel, rgba } from "@/lib/utils";
 import { useTheme } from "@/providers/theme-provider";
@@ -30,6 +37,12 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   const [uploading, setUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Student email state
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isEmailPending, startEmailTransition] = useTransition();
 
   // Student password reset state
   const [newPassword, setNewPassword] = useState("");
@@ -81,6 +94,21 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   if (!profile) {
     return <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>No student profiles found.</div>;
   }
+
+  const handleSetEmail = () => {
+    setEmailError(null);
+    setEmailSaved(false);
+    startEmailTransition(async () => {
+      const result = await setStudentEmail(profile.id, newEmail);
+      if (result.error) {
+        setEmailError(result.error);
+      } else {
+        setEmailSaved(true);
+        setNewEmail("");
+        setTimeout(() => setEmailSaved(false), 3000);
+      }
+    });
+  };
 
   const handleSetPassword = () => {
     setPwError(null);
@@ -470,8 +498,8 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
             {icalError && <span style={{ fontSize: 12, color: "#F08080" }}>{icalError}</span>}
           </div>
           <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
-            Paste a webcal:// or https:// iCal URL to show your family calendar in the Schedule and Today views.
-            Apple Calendar: share any calendar → copy the webcal link.
+            Paste a webcal:// or https:// iCal URL to show your family calendar in the Schedule and Today views. Apple
+            Calendar: share any calendar → copy the webcal link.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -673,20 +701,31 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <div style={labelStyle}>Email</div>
-                <div
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    fontSize: 12,
-                    color: "#6A7A8A",
-                    fontFamily: "monospace",
-                    wordBreak: "break-all",
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#506070", fontFamily: "monospace", marginBottom: 6 }}>
                   {profile.email || "—"}
                 </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    className="inp"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="New email address…"
+                    style={{ flex: 1, fontSize: 13 }}
+                    onKeyDown={(e) => e.key === "Enter" && newEmail.includes("@") && handleSetEmail()}
+                  />
+                  <button
+                    type="button"
+                    className="btn-brass"
+                    style={{ padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap" }}
+                    onClick={handleSetEmail}
+                    disabled={isEmailPending || !newEmail.includes("@")}
+                  >
+                    {isEmailPending ? "…" : "Set"}
+                  </button>
+                </div>
+                {emailError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{emailError}</div>}
+                {emailSaved && <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Email updated</div>}
               </div>
               <div>
                 <div style={labelStyle}>Set New Password</div>

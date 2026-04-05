@@ -50,6 +50,15 @@ export async function saveHouseholdIcalUrl(url: string): Promise<{ error?: strin
   return {};
 }
 
+/** Update a student's login email via the Supabase admin API (service role only). */
+export async function setStudentEmail(userId: string, email: string): Promise<{ error?: string }> {
+  if (!email.includes("@")) return { error: "Invalid email address." };
+  const service = createServiceClient();
+  const { error } = await service.auth.admin.updateUserById(userId, { email });
+  if (error) return { error: error.message };
+  return {};
+}
+
 /**
  * Set a student's password via the Supabase admin API (service role only).
  */

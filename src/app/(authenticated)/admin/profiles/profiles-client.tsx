@@ -7,6 +7,7 @@ import {
   saveHouseholdIcalUrl,
   setStudentEmail,
   setStudentPassword,
+  updateAvatarUrl,
   updateProfile,
   uploadAvatar,
 } from "@/app/actions/profiles";
@@ -189,12 +190,15 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
         setAdminError(uploadErr ?? "Upload failed");
         setAdmin((prev) => ({ ...prev, avatarUrl: initialAdmin.avatarUrl }));
       } else {
-        setAdmin((prev) => ({ ...prev, avatarUrl: url }));
-        startAdminTransition(async () => {
-          await updateProfile({ id: admin.id, displayName: admin.displayName, tagline: admin.tagline, avatarUrl: url });
-        });
-        setAdminSaved(true);
-        setTimeout(() => setAdminSaved(false), 3000);
+        const { error: saveErr } = await updateAvatarUrl(admin.id, url);
+        if (saveErr) {
+          setAdminError(saveErr);
+          setAdmin((prev) => ({ ...prev, avatarUrl: initialAdmin.avatarUrl }));
+        } else {
+          setAdmin((prev) => ({ ...prev, avatarUrl: url }));
+          setAdminSaved(true);
+          setTimeout(() => setAdminSaved(false), 3000);
+        }
       }
     } finally {
       setAdminUploading(false);
@@ -254,19 +258,21 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
           ),
         );
       } else {
-        // Update to the real Supabase URL and save to DB
-        setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: url } : p)));
-        // Auto-save avatar_url to DB
-        startTransition(async () => {
-          await updateProfile({
-            id: profile.id,
-            displayName: profile.displayName,
-            tagline: profile.tagline,
-            avatarUrl: url,
-          });
-        });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        const { error: saveErr } = await updateAvatarUrl(profile.id, url);
+        if (saveErr) {
+          setError(saveErr);
+          setProfiles((prev) =>
+            prev.map((p) =>
+              p.id === profile.id
+                ? { ...p, avatarUrl: initialProfiles.find((ip) => ip.id === p.id)?.avatarUrl ?? null }
+                : p,
+            ),
+          );
+        } else {
+          setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: url } : p)));
+          setSaved(true);
+          setTimeout(() => setSaved(false), 3000);
+        }
       }
     } finally {
       setUploading(false);
@@ -278,7 +284,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   const fallbackAvatar = `/assets/profile-${profile.studentKey || "deven"}.png`;
   const avatarSrc = profile.avatarUrl ?? fallbackAvatar;
 
-  const adminAvatarSrc = admin.avatarUrl ?? "/assets/profile-admin.png";
+  const adminAvatarSrc = admin.avatarUrl ?? "/assets/icon-profile.png";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -322,11 +328,11 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 src={adminAvatarSrc}
                 alt={admin.displayName}
                 onError={(e) => {
-                  e.currentTarget.src = "/assets/profile-admin.png";
+                  e.currentTarget.src = "/assets/icon-profile.png";
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "1",
+                  aspectRatio: "2/3",
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -531,22 +537,9 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
 
       {/* ── Student Profiles ──────────────────────────────────────────────── */}
       <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ marginBottom: 10 }}>
           <div className="cinzel brass" style={{ fontSize: 11, letterSpacing: "0.12em", paddingLeft: 2 }}>
             STUDENT PROFILES
-          </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {saved && <span style={{ fontSize: 13, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
-            {error && <span style={{ fontSize: 13, color: "#F08080" }}>{error}</span>}
-            <button
-              type="button"
-              className="btn-brass"
-              style={{ padding: "8px 18px", fontSize: 13 }}
-              onClick={handleSave}
-              disabled={isPending}
-            >
-              {isPending ? "Saving…" : "Save Changes"}
-            </button>
           </div>
         </div>
 
@@ -615,7 +608,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "1",
+                  aspectRatio: "2/3",
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -664,8 +657,23 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
 
           {/* Identity */}
           <div className="glass-warm" style={{ padding: 18, borderColor: rgba(profile.color, 0.32) }}>
-            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", marginBottom: 14 }}>
-              IDENTITY
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
+                IDENTITY
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {saved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+                {error && <span style={{ fontSize: 12, color: "#F08080" }}>{error}</span>}
+                <button
+                  type="button"
+                  className="btn-brass"
+                  style={{ padding: "7px 16px", fontSize: 13 }}
+                  onClick={handleSave}
+                  disabled={isPending}
+                >
+                  {isPending ? "Saving…" : "Save Name & Tagline"}
+                </button>
+              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>

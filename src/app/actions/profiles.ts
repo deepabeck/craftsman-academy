@@ -82,6 +82,18 @@ export async function changeOwnPassword(password: string): Promise<{ error?: str
 }
 
 /**
+ * Save a new avatar URL to the profiles table using the service role client (bypasses RLS).
+ */
+export async function updateAvatarUrl(userId: string, url: string): Promise<{ error?: string }> {
+  const service = createServiceClient();
+  const { error } = await service.from("profiles").update({ avatar_url: url }).eq("id", userId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/profiles");
+  revalidatePath("/admin/dashboard");
+  return {};
+}
+
+/**
  * Upload an avatar image server-side using the service role client (bypasses RLS).
  * Returns the public URL of the uploaded file.
  */

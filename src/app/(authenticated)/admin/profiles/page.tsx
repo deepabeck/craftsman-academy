@@ -36,7 +36,9 @@ export default async function ProfilesPage() {
   const householdId = await getAdminHouseholdId();
 
   const [{ data: adminRow }, { data: adminSettings }, { data: householdRow }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, tagline, avatar_url").eq("role", "admin").maybeSingle(),
+    authUser
+      ? supabase.from("profiles").select("id, display_name, tagline, avatar_url").eq("id", authUser.id).maybeSingle()
+      : Promise.resolve({ data: null }),
     authUser
       ? supabase.from("user_settings").select("bg_color").eq("user_id", authUser.id).maybeSingle()
       : Promise.resolve({ data: null }),

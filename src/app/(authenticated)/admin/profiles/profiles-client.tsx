@@ -183,7 +183,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("studentKey", "admin");
+      formData.append("studentKey", `admin-${admin.id}`);
       const { url, error: uploadErr } = await uploadAvatar(formData);
       if (uploadErr || !url) {
         setAdminError(uploadErr ?? "Upload failed");
@@ -324,7 +324,14 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 onError={(e) => {
                   e.currentTarget.src = "/assets/profile-admin.png";
                 }}
-                style={{ width: "100%", display: "block", borderRadius: 6 }}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  objectFit: "cover",
+                  objectPosition: "top",
+                  display: "block",
+                  borderRadius: 6,
+                }}
               />
               <div
                 style={{
@@ -382,7 +389,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                   onClick={handleAdminSave}
                   disabled={isAdminPending}
                 >
-                  {isAdminPending ? "Saving…" : "Save"}
+                  {isAdminPending ? "Saving…" : "Save Name & Tagline"}
                 </button>
               </div>
             </div>
@@ -606,7 +613,14 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 onError={(e) => {
                   e.currentTarget.src = fallbackAvatar;
                 }}
-                style={{ width: "100%", display: "block", borderRadius: 6 }}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  objectFit: "cover",
+                  objectPosition: "top",
+                  display: "block",
+                  borderRadius: 6,
+                }}
               />
               <div
                 style={{
@@ -725,7 +739,9 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                   </button>
                 </div>
                 {emailError && <div style={{ fontSize: 12, color: "#F08080", marginTop: 4 }}>{emailError}</div>}
-                {emailSaved && <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Email updated</div>}
+                {emailSaved && (
+                  <div style={{ fontSize: 12, color: "#70E090", marginTop: 4, fontWeight: 600 }}>✓ Email updated</div>
+                )}
               </div>
               <div>
                 <div style={labelStyle}>Set New Password</div>

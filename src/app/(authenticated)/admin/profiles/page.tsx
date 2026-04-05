@@ -51,7 +51,7 @@ export default async function ProfilesPage() {
     tagline: adminRow?.tagline ?? "",
     avatarUrl: adminRow?.avatar_url ?? null,
     bgColor: adminSettings?.bg_color ?? "#08111E",
-    icalUrl: householdRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "",
+    icalUrl: householdRow?.ical_url ?? "",
   };
 
   // ── Fetch auth emails for students (service role) ─────────────────────────

@@ -1,5 +1,6 @@
 "use server";
 
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 
 export interface LessonPlanRow {
@@ -16,10 +17,15 @@ export interface LessonPlanRow {
   scoringApproach: string;
 }
 
-/** Fetch all lesson plans for a given Monday week-start date. */
+/** Fetch all lesson plans for a given Monday week-start date, scoped to the caller's household. */
 export async function getLessonPlansForWeek(weekStart: string): Promise<LessonPlanRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("lesson_plans").select("*").eq("week_start", weekStart);
+  const householdId = await getAdminHouseholdId();
+  const { data, error } = await supabase
+    .from("lesson_plans")
+    .select("*")
+    .eq("week_start", weekStart)
+    .eq("household_id", householdId ?? "");
   if (error) {
     console.error("getLessonPlansForWeek:", error.message);
     return [];
@@ -60,6 +66,8 @@ export async function upsertLessonPlan(plan: UpsertLessonPlanInput) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
+  const householdId = await getAdminHouseholdId();
+  if (!householdId) return { success: false, error: "No household found" };
 
   // Check for existing plan in this slot (handles NULL student_id correctly)
   let query = supabase
@@ -100,6 +108,7 @@ export async function upsertLessonPlan(plan: UpsertLessonPlanInput) {
         week_start: plan.weekStart,
         day_of_week: plan.dayOfWeek,
         student_id: plan.studentId,
+        household_id: householdId,
         ...payload,
       })
       .select("id")
@@ -150,6 +159,8 @@ export async function copyWeekPlans(fromWeek: string, toWeek: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
+  const householdId = await getAdminHouseholdId();
+  if (!householdId) return { success: false, error: "No household found" };
 
   const plans = await getLessonPlansForWeek(fromWeek);
   if (plans.length === 0) return { success: true, copied: 0 };
@@ -160,6 +171,7 @@ export async function copyWeekPlans(fromWeek: string, toWeek: string) {
     week_start: toWeek,
     day_of_week: p.dayOfWeek,
     student_id: p.studentId,
+    household_id: householdId,
     assignment_detail: p.assignmentDetail,
     admin_notes: p.adminNotes,
     proof_types: p.proofTypes,

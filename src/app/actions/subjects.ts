@@ -107,8 +107,12 @@ export async function saveSubject(subject: Subject): Promise<{ error?: string }>
         .lte("task_date", weekDates[weekDates.length - 1].dateStr);
     }
 
-    // Get all students this subject applies to
-    const { data: students } = await service.from("profiles").select("id, student_key").eq("role", "student");
+    // Get all students in this household that this subject applies to
+    const { data: students } = await service
+      .from("profiles")
+      .select("id, student_key")
+      .eq("role", "student")
+      .eq("household_id", householdId ?? "");
 
     const applicableStudents = (students ?? []).filter(
       // biome-ignore lint/suspicious/noExplicitAny: student row

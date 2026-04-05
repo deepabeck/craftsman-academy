@@ -11,6 +11,7 @@ export interface AuthUser {
   color: string;
   name: string;
   tagline: string;
+  avatarUrl: string | null;
 }
 
 interface AuthContextType {
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) return;
       const { data } = await supabase
         .from("profiles")
-        .select("role, student_key, color, display_name, tagline")
+        .select("role, student_key, color, display_name, tagline, avatar_url")
         .eq("id", userId)
         .single();
       if (data) {
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           color: data.color ?? "#4A90D0",
           name: data.display_name ?? "",
           tagline: data.tagline ?? "",
+          avatarUrl: data.avatar_url ?? null,
         });
       } else {
         setUser(null);

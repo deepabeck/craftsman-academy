@@ -359,13 +359,14 @@ export async function getPointsLedger(): Promise<LedgerEntry[]> {
 
   const studentIds = (profiles ?? []).map((p) => p.id);
 
-  const { data: logs } = studentIds.length > 0
-    ? await service
-        .from("points_log")
-        .select("id, student_id, category, points, note, source_date, earned_at")
-        .in("student_id", studentIds)
-        .order("earned_at", { ascending: false })
-    : { data: [] };
+  const { data: logs } =
+    studentIds.length > 0
+      ? await service
+          .from("points_log")
+          .select("id, student_id, category, points, note, source_date, earned_at")
+          .in("student_id", studentIds)
+          .order("earned_at", { ascending: false })
+      : { data: [] };
 
   const profileMap: Record<string, { name: string; color: string }> = {};
   for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name, color: p.color || "#4A90D0" };

@@ -20,20 +20,21 @@ export default async function SubmissionsPage() {
   const householdStudentIds = (profiles ?? []).map((p) => p.id);
 
   // ── Fetch all submitted tasks (done, approved, review) for household students
-  const { data: tasks } = householdStudentIds.length > 0
-    ? await supabase
-        .from("tasks")
-        .select(
-          `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
+  const { data: tasks } =
+    householdStudentIds.length > 0
+      ? await supabase
+          .from("tasks")
+          .select(
+            `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
            final_score, overall_score, student_id,
            subjects!inner (id, name, icon, color),
            submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
-        )
-        .in("status", ["done", "approved", "review"])
-        .in("student_id", householdStudentIds)
-        .order("task_date", { ascending: false })
-        .limit(1000)
-    : { data: [] };
+          )
+          .in("status", ["done", "approved", "review"])
+          .in("student_id", householdStudentIds)
+          .order("task_date", { ascending: false })
+          .limit(1000)
+      : { data: [] };
 
   const profileMap: Record<string, { name: string; color: string; avatarUrl: string | null; studentKey: string }> = {};
   for (const p of profiles ?? []) {

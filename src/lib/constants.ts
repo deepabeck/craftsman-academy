@@ -119,7 +119,7 @@ export const BASE_STUDENTS: Record<string, Omit<Student, "subjects">> = {
     id: "deven",
     name: "Deven",
     color: "#4A90D0",
-    avatar: "/assets/profile-deven-framed.png",
+    avatar: "/assets/profile-deven.png",
     currentGrade: null, // Derived at runtime from school_years table
     tagline: "Explorer of Systems",
   },
@@ -127,7 +127,7 @@ export const BASE_STUDENTS: Record<string, Omit<Student, "subjects">> = {
     id: "shaan",
     name: "Shaan",
     color: "#5BAA60",
-    avatar: "/assets/profile-shaan-framed.png",
+    avatar: "/assets/profile-shaan.png",
     currentGrade: null, // Derived at runtime from school_years table
     tagline: "Architect of Sound",
   },

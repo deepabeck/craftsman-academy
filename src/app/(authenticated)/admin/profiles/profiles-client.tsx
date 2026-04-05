@@ -281,7 +281,11 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     }
   };
 
-  const fallbackAvatar = `/assets/profile-${profile.studentKey || "deven"}.png`;
+  const knownAvatars: Record<string, string> = {
+    deven: "/assets/profile-deven.png",
+    shaan: "/assets/profile-shaan.png",
+  };
+  const fallbackAvatar = knownAvatars[profile.studentKey] ?? "/assets/icon-profile.png";
   const avatarSrc = profile.avatarUrl ?? fallbackAvatar;
 
   const adminAvatarSrc = admin.avatarUrl ?? "/assets/icon-profile.png";
@@ -562,10 +566,10 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
             >
               {/* biome-ignore lint/performance/noImgElement: dynamic Supabase URL */}
               <img
-                src={p.avatarUrl ?? `/assets/profile-${p.studentKey || "deven"}.png`}
+                src={p.avatarUrl ?? "/assets/icon-profile.png"}
                 alt={p.displayName}
                 onError={(e) => {
-                  e.currentTarget.src = `/assets/profile-${p.studentKey || "deven"}.png`;
+                  e.currentTarget.src = "/assets/icon-profile.png";
                 }}
                 style={{ width: 24, height: 24, borderRadius: 3, objectFit: "cover", objectPosition: "top" }}
               />

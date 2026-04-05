@@ -13,8 +13,37 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
 
   return (
     <div style={{ position: "relative", flexShrink: 0, lineHeight: 0, width: "78%", margin: "0 auto" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={name} style={{ width: "100%", display: "block" }} />
+      {/* Raw photo — cropped to 2:3 portrait to match the gold frame interior */}
+      {/* biome-ignore lint/performance/noImgElement: dynamic URL */}
+      <img
+        src={src}
+        alt={name}
+        style={{
+          width: "100%",
+          aspectRatio: "2/3",
+          objectFit: "cover",
+          objectPosition: "top center",
+          display: "block",
+        }}
+        onError={(e) => {
+          e.currentTarget.src = "/assets/icon-profile.png";
+        }}
+      />
+      {/* Gold frame overlay — RGBA PNG with transparent center sits on top of the photo */}
+      {/* biome-ignore lint/performance/noImgElement: static overlay asset */}
+      <img
+        src="/assets/goldframe_profile.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          display: "block",
+        }}
+      />
       {onUpload && (
         <>
           <input

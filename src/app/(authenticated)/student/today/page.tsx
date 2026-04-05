@@ -203,7 +203,7 @@ export default async function TodayPage() {
     name: profile.display_name,
     color: profile.color ?? "#4A90D0",
     currentGrade,
-    avatar: profile.avatar_url ?? `/assets/avatar-${profile.student_key ?? "deven"}.png`,
+    avatar: profile.avatar_url ?? `/assets/profile-${profile.student_key ?? "deven"}.png`,
     tagline: "",
     subjects: [],
   };

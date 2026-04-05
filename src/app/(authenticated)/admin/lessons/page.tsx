@@ -54,7 +54,11 @@ export default async function LessonsPage() {
 
   // ── Household iCal URL + student profiles ─────────────────────────────────
   const householdId = await getAdminHouseholdId();
-  const { data: hhRow } = await supabase.from("households").select("ical_url").eq("id", householdId ?? "").maybeSingle();
+  const { data: hhRow } = await supabase
+    .from("households")
+    .select("ical_url")
+    .eq("id", householdId ?? "")
+    .maybeSingle();
   const icalUrl = hhRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "";
   const calendarEvents: CalendarEvent[] = icalUrl ? await fetchCalendarEvents(icalUrl, 14).catch(() => []) : [];
 

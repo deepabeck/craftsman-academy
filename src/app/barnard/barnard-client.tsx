@@ -3,40 +3,46 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Rivet } from "@/components/ui";
-import { BASE_STUDENTS } from "@/lib/constants";
 import { rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
-// Email addresses must match what you created in Supabase Auth.
-// Set these in your .env.local (or Vercel environment variables).
-const PROFILES = [
+interface ProfileDef {
+  id: string;
+  email: string;
+  color: string;
+  label: string;
+  sub: string;
+}
+
+const PROFILE_DEFS: ProfileDef[] = [
   {
     id: "admin",
-    email: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "",
+    email: process.env.NEXT_PUBLIC_BARNARD_ADMIN_EMAIL ?? "",
     color: "#C8860A",
-    label: process.env.NEXT_PUBLIC_ADMIN_NAME ?? "Admin",
-    sub: process.env.NEXT_PUBLIC_ADMIN_TAGLINE ?? "",
-    img: "/assets/profile-admin.png",
+    label: process.env.NEXT_PUBLIC_BARNARD_ADMIN_NAME ?? "Admin",
+    sub: process.env.NEXT_PUBLIC_BARNARD_ADMIN_TAGLINE ?? "",
   },
   {
     id: "student1",
-    email: process.env.NEXT_PUBLIC_STUDENT1_EMAIL ?? "",
-    color: BASE_STUDENTS.deven.color,
-    label: process.env.NEXT_PUBLIC_STUDENT1_NAME ?? "Student 1",
-    sub: process.env.NEXT_PUBLIC_STUDENT1_TAGLINE ?? "",
-    img: BASE_STUDENTS.deven.avatar,
+    email: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_EMAIL ?? "",
+    color: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_COLOR ?? "#4A90D0",
+    label: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_NAME ?? "",
+    sub: "",
   },
   {
     id: "student2",
-    email: process.env.NEXT_PUBLIC_STUDENT2_EMAIL ?? "",
-    color: BASE_STUDENTS.shaan.color,
-    label: process.env.NEXT_PUBLIC_STUDENT2_NAME ?? "Student 2",
-    sub: process.env.NEXT_PUBLIC_STUDENT2_TAGLINE ?? "",
-    img: BASE_STUDENTS.shaan.avatar,
+    email: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_EMAIL ?? "",
+    color: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_COLOR ?? "#5BAA60",
+    label: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_NAME ?? "",
+    sub: "",
   },
 ].filter((p) => p.email !== "");
 
-export default function LoginPage() {
+interface Props {
+  avatarMap: Record<string, string | null>;
+}
+
+export function BarnardLoginClient({ avatarMap }: Props) {
   const [who, setWho] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -44,7 +50,6 @@ export default function LoginPage() {
   const { user, signIn } = useAuth();
   const router = useRouter();
 
-  // Redirect once Supabase session is loaded and user profile is set
   useEffect(() => {
     if (user) {
       router.push(user.role === "admin" ? "/admin/dashboard" : "/student/today");
@@ -53,7 +58,7 @@ export default function LoginPage() {
 
   const attempt = async () => {
     if (!who) return;
-    const profile = PROFILES.find((p) => p.id === who);
+    const profile = PROFILE_DEFS.find((p) => p.id === who);
     if (!profile) return;
 
     setLoading(true);
@@ -65,7 +70,6 @@ export default function LoginPage() {
       setErr(result.error || "Incorrect password.");
       setPassword("");
     }
-    // On success: onAuthStateChange in auth-provider sets user, useEffect above redirects
   };
 
   return (
@@ -121,80 +125,92 @@ export default function LoginPage() {
           </div>
 
           {!who ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, width: "100%" }}>
-              {PROFILES.map((o) => (
-                <div
-                  key={o.id}
-                  onClick={() => setWho(o.id)}
-                  onKeyDown={(e) => e.key === "Enter" && setWho(o.id)}
-                  role="button"
-                  tabIndex={0}
-                  style={{
-                    cursor: "pointer",
-                    textAlign: "center",
-                    padding: "0 0 12px",
-                    borderRadius: 10,
-                    border: `1px solid ${rgba(o.color, 0.5)}`,
-                    background: "rgba(10,16,28,0.72)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
-                    transition: "all 0.2s",
-                    overflow: "hidden",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(20,30,50,0.85)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(10,16,28,0.72)";
-                  }}
-                >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${PROFILE_DEFS.length}, 1fr)`,
+                gap: 12,
+                width: "100%",
+              }}
+            >
+              {PROFILE_DEFS.map((o) => {
+                const avatarSrc = avatarMap[o.email] ?? "/assets/icon-profile.png";
+                return (
                   <div
-                    style={{ position: "relative", width: "100%", height: 170, overflow: "hidden", marginBottom: 6 }}
+                    key={o.id}
+                    onClick={() => setWho(o.id)}
+                    onKeyDown={(e) => e.key === "Enter" && setWho(o.id)}
+                    role="button"
+                    tabIndex={0}
+                    style={{
+                      cursor: "pointer",
+                      textAlign: "center",
+                      padding: "0 0 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${rgba(o.color, 0.5)}`,
+                      background: "rgba(10,16,28,0.72)",
+                      backdropFilter: "blur(8px)",
+                      WebkitBackdropFilter: "blur(8px)",
+                      transition: "all 0.2s",
+                      overflow: "hidden",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(20,30,50,0.85)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(10,16,28,0.72)";
+                    }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={o.img}
-                      alt={o.label}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "top",
-                        display: "block",
-                      }}
-                    />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/assets/goldframe_profile.png"
-                      alt=""
-                      aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "top",
-                        pointerEvents: "none",
-                        display: "block",
-                      }}
-                    />
+                    <div
+                      style={{ position: "relative", width: "100%", height: 170, overflow: "hidden", marginBottom: 6 }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={avatarSrc}
+                        alt={o.label}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "top",
+                          display: "block",
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = "/assets/icon-profile.png";
+                        }}
+                      />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/assets/goldframe_profile.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "top",
+                          pointerEvents: "none",
+                          display: "block",
+                        }}
+                      />
+                    </div>
+                    <div
+                      className="cinzel"
+                      style={{ fontSize: 13, color: o.color, letterSpacing: "0.1em", padding: "0 10px" }}
+                    >
+                      {o.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3, padding: "0 10px" }}>
+                      {o.sub}
+                    </div>
                   </div>
-                  <div
-                    className="cinzel"
-                    style={{ fontSize: 13, color: o.color, letterSpacing: "0.1em", padding: "0 10px" }}
-                  >
-                    {o.label}
-                  </div>
-                  <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3, padding: "0 10px" }}>
-                    {o.sub}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <>
-              {/* Back button — top-left of the placard */}
               <button
                 type="button"
                 onClick={() => {
@@ -233,7 +249,7 @@ export default function LoginPage() {
                   }}
                 >
                   {(() => {
-                    const profile = PROFILES.find((p) => p.id === who);
+                    const profile = PROFILE_DEFS.find((p) => p.id === who);
                     return profile?.id === "admin"
                       ? "PARENT ACCESS"
                       : `${profile?.label.toUpperCase() ?? ""} — ENTER PASSWORD`;
@@ -266,7 +282,7 @@ export default function LoginPage() {
           )}
         </div>
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#3A4858", letterSpacing: "0.12em" }}>
-          {(process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "CRAFTSMAN ACADEMY").toUpperCase()} &middot; HOMESCHOOL PORTAL
+          CRAFTSMAN ACADEMY &middot; HOMESCHOOL PORTAL
         </div>
       </div>
     </div>

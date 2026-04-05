@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -29,6 +30,23 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: 
 
   revalidatePath("/admin/profiles");
   revalidatePath("/admin/dashboard");
+  return {};
+}
+
+/** Save the household's iCal calendar feed URL. */
+export async function saveHouseholdIcalUrl(url: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const householdId = await getAdminHouseholdId();
+  if (!householdId) return { error: "No household found" };
+
+  const { error } = await supabase
+    .from("households")
+    .update({ ical_url: url || null })
+    .eq("id", householdId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/lessons");
+  revalidatePath("/student/today");
   return {};
 }
 

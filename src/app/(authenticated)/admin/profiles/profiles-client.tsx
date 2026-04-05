@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { saveBgColor } from "@/app/actions/customize";
-import { changeOwnPassword, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
+import { changeOwnPassword, saveHouseholdIcalUrl, setStudentPassword, updateProfile, uploadAvatar } from "@/app/actions/profiles";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
 import { gradeLabel, rgba } from "@/lib/utils";
 import { useTheme } from "@/providers/theme-provider";
@@ -53,6 +53,12 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   const [adminPwError, setAdminPwError] = useState<string | null>(null);
   const [isAdminPwPending, startAdminPwTransition] = useTransition();
 
+  // iCal state
+  const [icalUrl, setIcalUrl] = useState(initialAdmin.icalUrl);
+  const [icalSaved, setIcalSaved] = useState(false);
+  const [icalError, setIcalError] = useState<string | null>(null);
+  const [isIcalPending, startIcalTransition] = useTransition();
+
   // Admin bg color state
   const [adminBgColor, setAdminBgColor] = useState(initialAdmin.bgColor);
   const [bgSaved, setBgSaved] = useState(false);
@@ -87,6 +93,20 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
         setPwSaved(true);
         setNewPassword("");
         setTimeout(() => setPwSaved(false), 3000);
+      }
+    });
+  };
+
+  const handleIcalSave = () => {
+    setIcalError(null);
+    setIcalSaved(false);
+    startIcalTransition(async () => {
+      const result = await saveHouseholdIcalUrl(icalUrl);
+      if (result.error) {
+        setIcalError(result.error);
+      } else {
+        setIcalSaved(true);
+        setTimeout(() => setIcalSaved(false), 3000);
       }
     });
   };
@@ -435,6 +455,41 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
             <div style={{ marginTop: 10, fontSize: 12, color: "#404858", lineHeight: 1.6 }}>
               Try deep blues (#1A3A5C), forest greens (#1A3A28), or warm ambers (#3A2010).
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Calendar Feed ─────────────────────────────────────────────────── */}
+      <div>
+        <div className="glass-warm" style={{ padding: 18, borderColor: "rgba(232,168,32,0.32)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
+              CALENDAR FEED (iCal)
+            </div>
+            {icalSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
+            {icalError && <span style={{ fontSize: 12, color: "#F08080" }}>{icalError}</span>}
+          </div>
+          <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
+            Paste a webcal:// or https:// iCal URL to show your family calendar in the Schedule and Today views.
+            Apple Calendar: share any calendar → copy the webcal link.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              className="inp"
+              value={icalUrl}
+              onChange={(e) => setIcalUrl(e.target.value)}
+              placeholder="https://p00-caldav.icloud.com/published/2/..."
+              style={{ flex: 1, fontSize: 12, fontFamily: "monospace" }}
+            />
+            <button
+              type="button"
+              className="btn-brass"
+              style={{ padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap" }}
+              onClick={handleIcalSave}
+              disabled={isIcalPending}
+            >
+              {isIcalPending ? "Saving…" : "Save"}
+            </button>
           </div>
         </div>
       </div>

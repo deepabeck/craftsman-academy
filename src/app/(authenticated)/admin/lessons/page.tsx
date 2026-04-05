@@ -52,8 +52,10 @@ export default async function LessonsPage() {
   const weekStart = getCurrentWeekStart();
   const initialPlans = await getLessonPlansForWeek(weekStart);
 
-  // ── Calendar events for this week ──────────────────────────────────────────
-  const icalUrl = process.env.CALENDAR_ICAL_URL ?? "";
+  // ── Household iCal URL + student profiles ─────────────────────────────────
+  const householdId = await getAdminHouseholdId();
+  const { data: hhRow } = await supabase.from("households").select("ical_url").eq("id", householdId ?? "").maybeSingle();
+  const icalUrl = hhRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "";
   const calendarEvents: CalendarEvent[] = icalUrl ? await fetchCalendarEvents(icalUrl, 14).catch(() => []) : [];
 
   // Filter to only events within this Mon–Fri (offsets 0–4 from Monday weekStart)
@@ -65,7 +67,6 @@ export default async function LessonsPage() {
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
 
   // Fetch student profiles (scoped to this household)
-  const householdId = await getAdminHouseholdId();
   const { data: profiles } = await service
     .from("profiles")
     .select("id, student_key")

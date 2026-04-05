@@ -22,6 +22,7 @@ export interface AdminProfileData {
   tagline: string;
   avatarUrl: string | null;
   bgColor: string;
+  icalUrl: string;
 }
 
 export default async function ProfilesPage() {
@@ -32,10 +33,15 @@ export default async function ProfilesPage() {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  const [{ data: adminRow }, { data: adminSettings }] = await Promise.all([
+  const householdId = await getAdminHouseholdId();
+
+  const [{ data: adminRow }, { data: adminSettings }, { data: householdRow }] = await Promise.all([
     supabase.from("profiles").select("id, display_name, tagline, avatar_url").eq("role", "admin").maybeSingle(),
     authUser
       ? supabase.from("user_settings").select("bg_color").eq("user_id", authUser.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    householdId
+      ? supabase.from("households").select("ical_url").eq("id", householdId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -45,6 +51,7 @@ export default async function ProfilesPage() {
     tagline: adminRow?.tagline ?? "",
     avatarUrl: adminRow?.avatar_url ?? null,
     bgColor: adminSettings?.bg_color ?? "#08111E",
+    icalUrl: householdRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "",
   };
 
   // ── Fetch auth emails for students (service role) ─────────────────────────
@@ -56,7 +63,6 @@ export default async function ProfilesPage() {
   }
 
   // ── Fetch student profiles (scoped to this household) ────────────────────
-  const householdId = await getAdminHouseholdId();
   const { data: profileRows, error } = await supabase
     .from("profiles")
     .select("id, display_name, tagline, color, avatar_url, student_key, role")

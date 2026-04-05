@@ -44,7 +44,7 @@ export default async function TodayPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, color, avatar_url, student_key")
+    .select("id, display_name, color, avatar_url, student_key, household_id")
     .eq("id", user.id)
     .single();
 
@@ -66,9 +66,15 @@ export default async function TodayPage() {
     .maybeSingle();
   const currentGrade: number | null = schoolYear?.grade ?? null;
 
+  // Fetch household iCal URL
+  const householdId = profile?.household_id ?? null;
+  const { data: hhRow } = householdId
+    ? await supabase.from("households").select("ical_url").eq("id", householdId).maybeSingle()
+    : { data: null };
+  const icalUrl = hhRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "";
+
   // Mark yesterday's missed tasks, generate today's tasks, and fetch
   // weather + calendar data — all in parallel.
-  const icalUrl = process.env.CALENDAR_ICAL_URL ?? "";
   const [, weatherData, calendarEvents] = await Promise.all([
     ensureDailyTasks(today).catch((e) => {
       console.error("ensureDailyTasks threw:", e);

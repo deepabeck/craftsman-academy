@@ -1,3 +1,4 @@
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { StudentDashData, SubjectMonth } from "./dashboard-client";
@@ -37,11 +38,13 @@ export default async function DashboardPage() {
   thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30);
   const thirtyDaysAgoStr = localDateStr(thirtyDaysAgoDate);
 
-  // ── Step 1: Student profiles ─────────────────────────────────────────────
+  // ── Step 1: Student profiles (scoped to this household) ─────────────────
+  const householdId = await getAdminHouseholdId();
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, display_name, color, avatar_url, tagline, student_key")
     .eq("role", "student")
+    .eq("household_id", householdId ?? "")
     .order("display_name");
 
   const students = profiles ?? [];

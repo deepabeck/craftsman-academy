@@ -1,5 +1,6 @@
 "use server";
 
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // ── Point values ────────────────────────────────────────────────────────────────
@@ -347,12 +348,24 @@ export interface LedgerEntry {
 /** Returns full points ledger for all students (admin only), newest first. */
 export async function getPointsLedger(): Promise<LedgerEntry[]> {
   const service = createServiceClient();
-  const { data: logs } = await service
-    .from("points_log")
-    .select("id, student_id, category, points, note, source_date, earned_at")
-    .order("earned_at", { ascending: false });
 
-  const { data: profiles } = await service.from("profiles").select("id, display_name, color").eq("role", "student");
+  // Scope to the calling admin's household
+  const householdId = await getAdminHouseholdId();
+  const { data: profiles } = await service
+    .from("profiles")
+    .select("id, display_name, color")
+    .eq("role", "student")
+    .eq("household_id", householdId ?? "");
+
+  const studentIds = (profiles ?? []).map((p) => p.id);
+
+  const { data: logs } = studentIds.length > 0
+    ? await service
+        .from("points_log")
+        .select("id, student_id, category, points, note, source_date, earned_at")
+        .in("student_id", studentIds)
+        .order("earned_at", { ascending: false })
+    : { data: [] };
 
   const profileMap: Record<string, { name: string; color: string }> = {};
   for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name, color: p.color || "#4A90D0" };

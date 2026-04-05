@@ -1,3 +1,4 @@
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ReviewClient, type ReviewItem } from "./review-client";
@@ -7,34 +8,49 @@ export const dynamic = "force-dynamic";
 export default async function ReviewPage() {
   const supabase = await createClient();
 
+  // ── Step 0: scope to this household's students ────────────────────────────
+  const householdId = await getAdminHouseholdId();
+  const { data: householdProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "student")
+    .eq("household_id", householdId ?? "");
+  const householdStudentIds = (householdProfiles ?? []).map((p) => p.id);
+
   // ── Step 1: fetch all pending review tasks (no date limit) ────────────────
-  const { data: reviewTasks, error: reviewError } = await supabase
-    .from("tasks")
-    .select(
-      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
-       ai_score, ai_feedback,
-       subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
-    )
-    .eq("status", "review")
-    .order("task_date", { ascending: false });
+  const { data: reviewTasks, error: reviewError } = householdStudentIds.length > 0
+    ? await supabase
+        .from("tasks")
+        .select(
+          `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
+           ai_score, ai_feedback,
+           subjects!inner (id, name, icon, color),
+           submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
+        )
+        .eq("status", "review")
+        .in("student_id", householdStudentIds)
+        .order("task_date", { ascending: false })
+    : { data: [], error: null };
 
   if (reviewError) console.error("Review tasks fetch error:", reviewError.message);
 
   // ── Step 2: fetch recently completed tasks (last 30 days for week nav) ────
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const { data: completedTasks } = await supabase
-    .from("tasks")
-    .select(
-      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
-       ai_score, ai_feedback, parent_score, final_score,
-       subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
-    )
-    .in("status", ["approved"])
-    .gte("task_date", thirtyDaysAgo)
-    .order("task_date", { ascending: false })
-    .limit(100);
+  const { data: completedTasks } = householdStudentIds.length > 0
+    ? await supabase
+        .from("tasks")
+        .select(
+          `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note, student_id,
+           ai_score, ai_feedback, parent_score, final_score,
+           subjects!inner (id, name, icon, color),
+           submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
+        )
+        .in("status", ["approved"])
+        .in("student_id", householdStudentIds)
+        .gte("task_date", thirtyDaysAgo)
+        .order("task_date", { ascending: false })
+        .limit(100)
+    : { data: [] };
 
   // ── Step 3: fetch profiles for all unique student_ids ─────────────────────
   const allTasks = [...(reviewTasks ?? []), ...(completedTasks ?? [])];

@@ -1,3 +1,4 @@
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ProfilesClient } from "./profiles-client";
@@ -54,11 +55,13 @@ export default async function ProfilesPage() {
     emailMap[u.id] = u.email ?? "";
   }
 
-  // ── Fetch student profiles (exclude admin) ────────────────────────────────
+  // ── Fetch student profiles (scoped to this household) ────────────────────
+  const householdId = await getAdminHouseholdId();
   const { data: profileRows, error } = await supabase
     .from("profiles")
     .select("id, display_name, tagline, color, avatar_url, student_key, role")
-    .neq("role", "admin")
+    .eq("role", "student")
+    .eq("household_id", householdId ?? "")
     .order("display_name");
 
   if (error) console.error("Profiles fetch error:", error.message);

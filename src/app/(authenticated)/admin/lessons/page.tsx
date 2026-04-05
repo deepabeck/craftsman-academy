@@ -1,4 +1,5 @@
 import { getLessonPlansForWeek } from "@/app/actions/lesson-plans";
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -63,11 +64,13 @@ export default async function LessonsPage() {
   const _d = new Date();
   const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
 
-  // Fetch all student profiles
+  // Fetch student profiles (scoped to this household)
+  const householdId = await getAdminHouseholdId();
   const { data: profiles } = await service
     .from("profiles")
     .select("id, student_key")
-    .neq("student_key", "admin")
+    .eq("role", "student")
+    .eq("household_id", householdId ?? "")
     .not("student_key", "is", null);
 
   // Fetch today's tasks for each student

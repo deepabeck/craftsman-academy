@@ -1,3 +1,4 @@
+import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { type SubmissionItem, SubmissionsClient } from "./submissions-client";
@@ -8,24 +9,31 @@ export default async function SubmissionsPage() {
   const supabase = await createClient();
   const service = createServiceClient();
 
-  // ── Fetch all submitted tasks (done, approved, review) for all students ───
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select(
-      `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
-       final_score, overall_score, student_id,
-       subjects!inner (id, name, icon, color),
-       submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
-    )
-    .in("status", ["done", "approved", "review"])
-    .order("task_date", { ascending: false })
-    .limit(1000);
-
-  // ── Fetch student profiles ─────────────────────────────────────────────────
+  // ── Fetch student profiles (scoped to this household) ────────────────────
+  const householdId = await getAdminHouseholdId();
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, display_name, color, avatar_url, student_key")
-    .neq("role", "admin");
+    .eq("role", "student")
+    .eq("household_id", householdId ?? "");
+
+  const householdStudentIds = (profiles ?? []).map((p) => p.id);
+
+  // ── Fetch all submitted tasks (done, approved, review) for household students
+  const { data: tasks } = householdStudentIds.length > 0
+    ? await supabase
+        .from("tasks")
+        .select(
+          `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
+           final_score, overall_score, student_id,
+           subjects!inner (id, name, icon, color),
+           submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
+        )
+        .in("status", ["done", "approved", "review"])
+        .in("student_id", householdStudentIds)
+        .order("task_date", { ascending: false })
+        .limit(1000)
+    : { data: [] };
 
   const profileMap: Record<string, { name: string; color: string; avatarUrl: string | null; studentKey: string }> = {};
   for (const p of profiles ?? []) {

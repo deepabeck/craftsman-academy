@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 import { Rivet } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import type { BarnardProfileData } from "./page";
 
 interface ProfileDef {
   id: string;
   email: string;
   color: string;
   label: string;
-  sub: string;
 }
 
 const PROFILE_DEFS: ProfileDef[] = [
@@ -20,35 +20,39 @@ const PROFILE_DEFS: ProfileDef[] = [
     email: process.env.NEXT_PUBLIC_BARNARD_ADMIN_EMAIL ?? "",
     color: "#C8860A",
     label: process.env.NEXT_PUBLIC_BARNARD_ADMIN_NAME ?? "Admin",
-    sub: process.env.NEXT_PUBLIC_BARNARD_ADMIN_TAGLINE ?? "",
   },
   {
     id: "student1",
     email: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_EMAIL ?? "",
     color: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_COLOR ?? "#4A90D0",
     label: process.env.NEXT_PUBLIC_BARNARD_STUDENT1_NAME ?? "",
-    sub: "",
   },
   {
     id: "student2",
     email: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_EMAIL ?? "",
     color: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_COLOR ?? "#5BAA60",
     label: process.env.NEXT_PUBLIC_BARNARD_STUDENT2_NAME ?? "",
-    sub: "",
   },
 ].filter((p) => p.email !== "");
 
 interface Props {
-  avatarMap: Record<string, string | null>;
+  profileMap: Record<string, BarnardProfileData>;
 }
 
-export function BarnardLoginClient({ avatarMap }: Props) {
+export function BarnardLoginClient({ profileMap }: Props) {
   const [who, setWho] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, signIn } = useAuth();
   const router = useRouter();
+
+  // Stamp the return path so logout knows where to send Barnard users back.
+  // This runs on every mount — even if the user is already logged in and
+  // gets redirected away, the stamp is written before the navigation fires.
+  useEffect(() => {
+    localStorage.setItem("loginPath", "/barnard");
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -61,6 +65,7 @@ export function BarnardLoginClient({ avatarMap }: Props) {
     const profile = PROFILE_DEFS.find((p) => p.id === who);
     if (!profile) return;
 
+    localStorage.setItem("loginPath", "/barnard");
     setLoading(true);
     setErr("");
     const result = await signIn(profile.email, password);
@@ -134,7 +139,9 @@ export function BarnardLoginClient({ avatarMap }: Props) {
               }}
             >
               {PROFILE_DEFS.map((o) => {
-                const avatarSrc = avatarMap[o.email] ?? "/assets/icon-profile.png";
+                const profile = profileMap[o.email];
+                const avatarSrc = profile?.avatarUrl ?? "/assets/icon-profile.png";
+                const tagline = profile?.tagline ?? "";
                 return (
                   <div
                     key={o.id}
@@ -162,39 +169,58 @@ export function BarnardLoginClient({ avatarMap }: Props) {
                     }}
                   >
                     <div
-                      style={{ position: "relative", width: "100%", height: 170, overflow: "hidden", marginBottom: 6 }}
+                      style={{ width: "100%", height: 170, marginBottom: 6, display: "flex", justifyContent: "center" }}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={avatarSrc}
-                        alt={o.label}
+                      <div
                         style={{
-                          width: "100%",
+                          position: "relative",
+                          width: "calc(170px * 1024 / 1536)",
                           height: "100%",
-                          objectFit: "cover",
-                          objectPosition: "top",
-                          display: "block",
+                          flexShrink: 0,
                         }}
-                        onError={(e) => {
-                          e.currentTarget.src = "/assets/icon-profile.png";
-                        }}
-                      />
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/assets/goldframe_profile.png"
-                        alt=""
-                        aria-hidden="true"
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          objectPosition: "top",
-                          pointerEvents: "none",
-                          display: "block",
-                        }}
-                      />
+                      >
+                        {/* Photo clipped to frame window: top=18.2%, left=11.7%, w=74.2%, h=64.5% */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "18.2%",
+                            left: "11.7%",
+                            width: "74.2%",
+                            height: "64.5%",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={avatarSrc}
+                            alt={o.label}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              objectPosition: "top center",
+                              display: "block",
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.src = "/assets/icon-profile.png";
+                            }}
+                          />
+                        </div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/assets/goldframe_profile.png"
+                          alt=""
+                          aria-hidden="true"
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            display: "block",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      </div>
                     </div>
                     <div
                       className="cinzel"
@@ -203,7 +229,7 @@ export function BarnardLoginClient({ avatarMap }: Props) {
                       {o.label}
                     </div>
                     <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3, padding: "0 10px" }}>
-                      {o.sub}
+                      {tagline}
                     </div>
                   </div>
                 );

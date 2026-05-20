@@ -59,7 +59,7 @@ export default async function LessonsPage() {
     .select("ical_url")
     .eq("id", householdId ?? "")
     .maybeSingle();
-  const icalUrl = hhRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "";
+  const icalUrl = hhRow?.ical_url ?? "";
   const calendarEvents: CalendarEvent[] = icalUrl ? await fetchCalendarEvents(icalUrl, 14).catch(() => []) : [];
 
   // Filter to only events within this Mon–Fri (offsets 0–4 from Monday weekStart)

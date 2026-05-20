@@ -234,7 +234,11 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
 
   const missed = weekTasks.filter((t) => t.status === "missed").length;
   const allDone = weekTasks.every((t) => ["done", "approved"].includes(t.status));
-  const approved = weekTasks.filter((t) => t.status === "approved" && t.final_score != null);
+  // Only include tasks with a real score (> 0) in the grade average.
+  // Tasks auto-fulfilled as checkbox/completion credit have final_score = 0
+  // and should not drag down the weekly grade average — only genuinely graded
+  // work (parent-reviewed or AI-scored) counts toward the grade bonus.
+  const approved = weekTasks.filter((t) => t.status === "approved" && t.final_score != null && t.final_score > 0);
   const avgScore =
     approved.length > 0 ? approved.reduce((sum, t) => sum + (t.final_score ?? 0), 0) / approved.length : 0;
 

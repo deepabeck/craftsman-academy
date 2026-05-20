@@ -12,7 +12,8 @@ import {
   uploadAvatar,
 } from "@/app/actions/profiles";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
-import { gradeLabel, rgba } from "@/lib/utils";
+import { gradeLabel, resizeImage, rgba } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 import type { AdminProfileData, ProfileData } from "./page";
 
@@ -31,6 +32,7 @@ const labelStyle = {
 
 export function ProfilesClient({ profiles: initialProfiles, adminProfile: initialAdmin }: Props) {
   const { setBgColor } = useTheme();
+  const { setUserAvatarUrl } = useAuth();
   const [profiles, setProfiles] = useState(initialProfiles);
   const [activeId, setActiveId] = useState(initialProfiles[0]?.id ?? "");
   const [saved, setSaved] = useState(false);
@@ -100,13 +102,17 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setEmailError(null);
     setEmailSaved(false);
     startEmailTransition(async () => {
-      const result = await setStudentEmail(profile.id, newEmail);
-      if (result.error) {
-        setEmailError(result.error);
-      } else {
-        setEmailSaved(true);
-        setNewEmail("");
-        setTimeout(() => setEmailSaved(false), 3000);
+      try {
+        const result = await setStudentEmail(profile.id, newEmail);
+        if (result.error) {
+          setEmailError(result.error);
+        } else {
+          setEmailSaved(true);
+          setNewEmail("");
+          setTimeout(() => setEmailSaved(false), 3000);
+        }
+      } catch (err) {
+        setEmailError(err instanceof Error ? err.message : "Failed to update email");
       }
     });
   };
@@ -115,13 +121,17 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setPwError(null);
     setPwSaved(false);
     startPwTransition(async () => {
-      const result = await setStudentPassword(profile.id, newPassword);
-      if (result.error) {
-        setPwError(result.error);
-      } else {
-        setPwSaved(true);
-        setNewPassword("");
-        setTimeout(() => setPwSaved(false), 3000);
+      try {
+        const result = await setStudentPassword(profile.id, newPassword);
+        if (result.error) {
+          setPwError(result.error);
+        } else {
+          setPwSaved(true);
+          setNewPassword("");
+          setTimeout(() => setPwSaved(false), 3000);
+        }
+      } catch (err) {
+        setPwError(err instanceof Error ? err.message : "Failed to set password");
       }
     });
   };
@@ -130,12 +140,16 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setIcalError(null);
     setIcalSaved(false);
     startIcalTransition(async () => {
-      const result = await saveHouseholdIcalUrl(icalUrl);
-      if (result.error) {
-        setIcalError(result.error);
-      } else {
-        setIcalSaved(true);
-        setTimeout(() => setIcalSaved(false), 3000);
+      try {
+        const result = await saveHouseholdIcalUrl(icalUrl);
+        if (result.error) {
+          setIcalError(result.error);
+        } else {
+          setIcalSaved(true);
+          setTimeout(() => setIcalSaved(false), 3000);
+        }
+      } catch (err) {
+        setIcalError(err instanceof Error ? err.message : "Failed to save calendar URL");
       }
     });
   };
@@ -144,13 +158,17 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setAdminPwError(null);
     setAdminPwSaved(false);
     startAdminPwTransition(async () => {
-      const result = await changeOwnPassword(adminPassword);
-      if (result.error) {
-        setAdminPwError(result.error);
-      } else {
-        setAdminPwSaved(true);
-        setAdminPassword("");
-        setTimeout(() => setAdminPwSaved(false), 3000);
+      try {
+        const result = await changeOwnPassword(adminPassword);
+        if (result.error) {
+          setAdminPwError(result.error);
+        } else {
+          setAdminPwSaved(true);
+          setAdminPassword("");
+          setTimeout(() => setAdminPwSaved(false), 3000);
+        }
+      } catch (err) {
+        setAdminPwError(err instanceof Error ? err.message : "Failed to update password");
       }
     });
   };
@@ -159,17 +177,21 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setAdminError(null);
     setAdminSaved(false);
     startAdminTransition(async () => {
-      const result = await updateProfile({
-        id: admin.id,
-        displayName: admin.displayName,
-        tagline: admin.tagline,
-        avatarUrl: admin.avatarUrl,
-      });
-      if (result.error) {
-        setAdminError(result.error);
-      } else {
-        setAdminSaved(true);
-        setTimeout(() => setAdminSaved(false), 3000);
+      try {
+        // Note: avatarUrl intentionally excluded — photos auto-save via handleAdminAvatarChange.
+        const result = await updateProfile({
+          id: admin.id,
+          displayName: admin.displayName,
+          tagline: admin.tagline,
+        });
+        if (result.error) {
+          setAdminError(result.error);
+        } else {
+          setAdminSaved(true);
+          setTimeout(() => setAdminSaved(false), 3000);
+        }
+      } catch (err) {
+        setAdminError(err instanceof Error ? err.message : "Failed to save profile");
       }
     });
   };
@@ -182,8 +204,10 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setAdminUploading(true);
     setAdminError(null);
     try {
+      // Resize before upload: constrains to 1200px longest edge, ~100–250 KB output
+      const resized = await resizeImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", resized);
       formData.append("studentKey", `admin-${admin.id}`);
       const { url, error: uploadErr } = await uploadAvatar(formData);
       if (uploadErr || !url) {
@@ -195,11 +219,16 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
           setAdminError(saveErr);
           setAdmin((prev) => ({ ...prev, avatarUrl: initialAdmin.avatarUrl }));
         } else {
+          // Replace blob preview with real persisted URL
           setAdmin((prev) => ({ ...prev, avatarUrl: url }));
+          setUserAvatarUrl(url); // update sidebar immediately without re-login
           setAdminSaved(true);
           setTimeout(() => setAdminSaved(false), 3000);
         }
       }
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Upload failed — please try again");
+      setAdmin((prev) => ({ ...prev, avatarUrl: initialAdmin.avatarUrl }));
     } finally {
       setAdminUploading(false);
       if (adminFileRef.current) adminFileRef.current.value = "";
@@ -215,17 +244,22 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await updateProfile({
-        id: profile.id,
-        displayName: profile.displayName,
-        tagline: profile.tagline,
-        avatarUrl: profile.avatarUrl,
-      });
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+      try {
+        // Note: avatarUrl intentionally excluded — photos auto-save via handleAvatarChange.
+        // Including avatarUrl here caused blob: preview URLs to be persisted to the DB.
+        const result = await updateProfile({
+          id: profile.id,
+          displayName: profile.displayName,
+          tagline: profile.tagline,
+        });
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 3000);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save profile");
       }
     });
   };
@@ -241,39 +275,43 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     setUploading(true);
     setError(null);
 
+    const revertAvatar = () => {
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === profile.id
+            ? { ...p, avatarUrl: initialProfiles.find((ip) => ip.id === p.id)?.avatarUrl ?? null }
+            : p,
+        ),
+      );
+    };
+
     try {
+      // Resize before upload: constrains to 1200px longest edge, ~100–250 KB output
+      const resized = await resizeImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", resized);
       formData.append("studentKey", profile.studentKey);
       const { url, error: uploadErr } = await uploadAvatar(formData);
 
       if (uploadErr || !url) {
         setError(uploadErr ?? "Upload failed");
-        // Revert to original
-        setProfiles((prev) =>
-          prev.map((p) =>
-            p.id === profile.id
-              ? { ...p, avatarUrl: initialProfiles.find((ip) => ip.id === p.id)?.avatarUrl ?? null }
-              : p,
-          ),
-        );
+        revertAvatar();
       } else {
         const { error: saveErr } = await updateAvatarUrl(profile.id, url);
         if (saveErr) {
           setError(saveErr);
-          setProfiles((prev) =>
-            prev.map((p) =>
-              p.id === profile.id
-                ? { ...p, avatarUrl: initialProfiles.find((ip) => ip.id === p.id)?.avatarUrl ?? null }
-                : p,
-            ),
-          );
+          revertAvatar();
         } else {
+          // Replace blob preview with real persisted URL
           setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: url } : p)));
           setSaved(true);
           setTimeout(() => setSaved(false), 3000);
         }
       }
+    } catch (err) {
+      // Catch unhandled exceptions (network errors, SDK throws, etc.)
+      setError(err instanceof Error ? err.message : "Upload failed — please try again");
+      revertAvatar();
     } finally {
       setUploading(false);
       // Reset file input so same file can be re-selected

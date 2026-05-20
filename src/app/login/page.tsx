@@ -44,6 +44,10 @@ export default function LoginPage() {
   const { user, signIn } = useAuth();
   const router = useRouter();
 
+  useEffect(() => {
+    localStorage.setItem("loginPath", "/login");
+  }, []);
+
   // Redirect once Supabase session is loaded and user profile is set
   useEffect(() => {
     if (user) {
@@ -56,6 +60,7 @@ export default function LoginPage() {
     const profile = PROFILES.find((p) => p.id === who);
     if (!profile) return;
 
+    localStorage.setItem("loginPath", "/login");
     setLoading(true);
     setErr("");
     const result = await signIn(profile.email, password);
@@ -148,37 +153,71 @@ export default function LoginPage() {
                     e.currentTarget.style.background = "rgba(10,16,28,0.72)";
                   }}
                 >
+                  {/*
+                    Photo frame — fixed 170px tall.
+                    The inner wrapper is sized to the frame's exact native aspect ratio
+                    (1024×1536) so the frame image fills it with zero distortion and
+                    no objectFit scaling is needed.  The photo is clipped to the
+                    transparent window area so it never bleeds into the corner/edge
+                    transparent pixels of the frame PNG.
+                  */}
                   <div
-                    style={{ position: "relative", width: "100%", height: 170, overflow: "hidden", marginBottom: 6 }}
+                    style={{
+                      width: "100%",
+                      height: 170,
+                      marginBottom: 6,
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={o.img}
-                      alt={o.label}
+                    <div
                       style={{
-                        width: "100%",
+                        position: "relative",
+                        width: "calc(170px * 1024 / 1536)",
                         height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "top",
-                        display: "block",
+                        flexShrink: 0,
                       }}
-                    />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/assets/goldframe_profile.png"
-                      alt=""
-                      aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "top",
-                        pointerEvents: "none",
-                        display: "block",
-                      }}
-                    />
+                    >
+                      {/* Photo clipped to frame window: top=18.2%, left=11.7%, w=74.2%, h=64.5% */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "18.2%",
+                          left: "11.7%",
+                          width: "74.2%",
+                          height: "64.5%",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={o.img}
+                          alt={o.label}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            objectPosition: "top center",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                      {/* Frame fills the inner container exactly — no distortion */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/assets/goldframe_profile.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          display: "block",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
                   </div>
                   <div
                     className="cinzel"

@@ -10,7 +10,8 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace("/login");
+      const loginPath = localStorage.getItem("loginPath") ?? "/login";
+      router.replace(loginPath);
     }
   }, [user, isLoading, router]);
 

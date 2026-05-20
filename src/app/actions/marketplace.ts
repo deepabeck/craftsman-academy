@@ -451,6 +451,10 @@ export async function upsertMarketplaceItem(item: {
   isActive: boolean;
   shared: boolean;
 }): Promise<{ success: boolean; error?: string }> {
+  const { getAdminHouseholdId } = await import("@/lib/get-admin-household");
+  const householdId = await getAdminHouseholdId();
+  if (!householdId) return { success: false, error: "No household found — are you logged in as admin?" };
+
   const service = createServiceClient();
   const id =
     item.id ??
@@ -460,6 +464,7 @@ export async function upsertMarketplaceItem(item: {
       .replace(/(^-|-$)/g, "");
   const { error } = await service.from("marketplace_items").upsert({
     id,
+    household_id: householdId,
     name: item.name,
     description: item.description,
     price: item.price,

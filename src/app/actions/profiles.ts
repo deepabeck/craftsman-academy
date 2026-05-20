@@ -9,28 +9,34 @@ export interface ProfileUpdateData {
   id: string;
   displayName: string;
   tagline: string;
-  avatarUrl?: string | null;
+  // avatarUrl intentionally omitted — use updateAvatarUrl() for photo saves.
+  // Passing avatarUrl through updateProfile risks persisting blob: preview URLs to the DB.
   // Note: color is intentionally omitted — students manage their own accent color via Customize
   // Note: grade is intentionally omitted — grade is derived from school_years table, not stored on profiles
 }
 
 export async function updateProfile(data: ProfileUpdateData): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  try {
+    // Use service client so admins can update student profiles regardless of RLS edge cases
+    const service = createServiceClient();
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: data.displayName,
-      tagline: data.tagline,
-      ...(data.avatarUrl !== undefined ? { avatar_url: data.avatarUrl } : {}),
-    })
-    .eq("id", data.id);
+    const { error } = await service
+      .from("profiles")
+      .update({
+        display_name: data.displayName,
+        tagline: data.tagline,
+        // avatar_url deliberately excluded — use updateAvatarUrl() instead
+      })
+      .eq("id", data.id);
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  revalidatePath("/admin/profiles");
-  revalidatePath("/admin/dashboard");
-  return {};
+    revalidatePath("/admin/profiles");
+    revalidatePath("/admin/dashboard");
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save profile" };
+  }
 }
 
 /** Save the household's iCal calendar feed URL. */
@@ -98,30 +104,52 @@ export async function updateAvatarUrl(userId: string, url: string): Promise<{ er
  * Returns the public URL of the uploaded file.
  */
 export async function uploadAvatar(formData: FormData): Promise<{ url?: string; error?: string }> {
-  const file = formData.get("file") as File | null;
-  const studentKey = formData.get("studentKey") as string | null;
+  try {
+    const file = formData.get("file") as File | null;
+    const studentKey = formData.get("studentKey") as string | null;
 
-  if (!file || !studentKey) return { error: "Missing file or student key" };
+    if (!file || !studentKey) return { error: "Missing file or student key" };
+    if (file.size === 0) return { error: "File is empty" };
+    if (file.size > 5 * 1024 * 1024) return { error: "File too large — max 5 MB" };
 
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `${studentKey}.${ext}`;
+    // Determine content type — fall back to extension-based detection if browser doesn't set it
+    const rawType = file.type;
+    const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
+    const mimeMap: Record<string, string> = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      gif: "image/gif",
+      heic: "image/jpeg", // re-encode HEIC as jpeg on upload
+    };
+    const contentType = rawType && rawType !== "application/octet-stream" ? rawType : (mimeMap[ext] ?? "image/jpeg");
+    const storageExt = ext === "heic" ? "jpg" : ext;
+    const path = `${studentKey}.${storageExt}`;
 
-  // Convert File to ArrayBuffer → Uint8Array for Node.js upload
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = new Uint8Array(arrayBuffer);
+    // Convert File to ArrayBuffer for Node.js server action environment
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
 
-  const service = createServiceClient();
+    if (buffer.length === 0) return { error: "Could not read file contents" };
 
-  // Upsert: upload and overwrite if file already exists
-  const { error: uploadError } = await service.storage.from("avatars").upload(path, buffer, {
-    contentType: file.type,
-    upsert: true,
-  });
+    const service = createServiceClient();
 
-  if (uploadError) return { error: uploadError.message };
+    // Upsert: upload and overwrite if file already exists
+    const { error: uploadError } = await service.storage.from("avatars").upload(path, buffer, {
+      contentType,
+      upsert: true,
+    });
 
-  // Get the public URL (bucket is public so no signing needed)
-  const { data } = service.storage.from("avatars").getPublicUrl(path);
+    if (uploadError) return { error: uploadError.message };
 
-  return { url: data.publicUrl };
+    // Get the public URL (bucket is public so no signing needed)
+    // Append cache-bust so browsers don't serve a stale version after re-upload
+    const { data } = service.storage.from("avatars").getPublicUrl(path);
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+
+    return { url };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unexpected upload error" };
+  }
 }

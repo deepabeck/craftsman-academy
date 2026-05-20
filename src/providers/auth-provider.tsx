@@ -20,6 +20,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   setUserColor: (color: string) => void;
+  setUserAvatarUrl: (url: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -100,17 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (supabase) await supabase.auth.signOut();
+    const loginPath = typeof window !== "undefined" ? (localStorage.getItem("loginPath") ?? "/login") : "/login";
     setUser(null);
-    router.push("/login");
+    router.push(loginPath);
   }, [supabase, router]);
 
   const setUserColor = useCallback((color: string) => {
     setUser((prev) => (prev ? { ...prev, color } : prev));
   }, []);
 
+  const setUserAvatarUrl = useCallback((url: string) => {
+    setUser((prev) => (prev ? { ...prev, avatarUrl: url } : prev));
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, signIn, signOut, setUserColor }),
-    [user, isLoading, signIn, signOut, setUserColor],
+    () => ({ user, isLoading, signIn, signOut, setUserColor, setUserAvatarUrl }),
+    [user, isLoading, signIn, signOut, setUserColor, setUserAvatarUrl],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

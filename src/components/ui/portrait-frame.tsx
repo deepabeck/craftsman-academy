@@ -12,38 +12,64 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
+    /*
+     * Strategy: the frame <img> sits in NORMAL FLOW so it establishes the
+     * container height from its intrinsic 1024×1536 aspect ratio.  The photo
+     * is then position:absolute behind the frame, clipped to the transparent
+     * window area.  This is more reliable than CSS `aspect-ratio` for
+     * percentage-based absolute children.
+     *
+     * Frame window bounds (measured from goldframe_profile.png alpha channel):
+     *   top  = 18.2%   left  = 11.7%
+     *   width = 74.2%  height = 64.5%
+     */
     <div style={{ position: "relative", flexShrink: 0, lineHeight: 0, width: "78%", margin: "0 auto" }}>
-      {/* Raw photo — cropped to 2:3 portrait to match the gold frame interior */}
-      {/* biome-ignore lint/performance/noImgElement: dynamic URL */}
-      <img
-        src={src}
-        alt={name}
+      {/* Photo clipped to the frame window — rendered BEFORE the frame so it
+          sits behind the opaque frame borders */}
+      <div
         style={{
-          width: "100%",
-          aspectRatio: "2/3",
-          objectFit: "cover",
-          objectPosition: "top center",
-          display: "block",
+          position: "absolute",
+          top: "18.2%",
+          left: "11.7%",
+          width: "74.2%",
+          height: "64.5%",
+          overflow: "hidden",
         }}
-        onError={(e) => {
-          e.currentTarget.src = "/assets/icon-profile.png";
-        }}
-      />
-      {/* Gold frame overlay — RGBA PNG with transparent center sits on top of the photo */}
-      {/* biome-ignore lint/performance/noImgElement: static overlay asset */}
+      >
+        {/* biome-ignore lint/performance/noImgElement: dynamic avatar URL */}
+        <img
+          src={src}
+          alt={name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "top center",
+            display: "block",
+          }}
+          onError={(e) => {
+            e.currentTarget.src = "/assets/icon-profile.png";
+          }}
+        />
+      </div>
+
+      {/* Frame in normal flow — sets container height and renders on top of
+          the photo.  Transparent window reveals the photo; opaque borders
+          cover the edges, chain, and ornaments. */}
+      {/* biome-ignore lint/performance/noImgElement: static frame asset */}
       <img
         src="/assets/goldframe_profile.png"
         alt=""
         aria-hidden="true"
         style={{
-          position: "absolute",
-          inset: 0,
+          position: "relative",
           width: "100%",
-          height: "100%",
-          pointerEvents: "none",
           display: "block",
+          pointerEvents: "none",
+          zIndex: 1,
         }}
       />
+
       {onUpload && (
         <>
           <input
@@ -56,6 +82,7 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
               if (f) onUpload(URL.createObjectURL(f));
             }}
           />
+          {/* Hover target over the photo window only */}
           <div
             onClick={() => fileRef.current?.click()}
             onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
@@ -63,8 +90,11 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
             tabIndex={0}
             style={{
               position: "absolute",
-              inset: 0,
-              zIndex: 10,
+              top: "18.2%",
+              left: "11.7%",
+              width: "74.2%",
+              height: "64.5%",
+              zIndex: 2,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

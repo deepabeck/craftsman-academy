@@ -40,6 +40,41 @@ export function getTodayLabel(): string {
 }
 
 /**
+ * Resize an image file client-side using a canvas before upload.
+ * Constrains to maxPx on the longest edge and encodes as JPEG at the given quality.
+ * Typical phone photo (4–8 MB) → ~100–250 KB output.
+ *
+ * Must only be called in browser context (uses Canvas API).
+ */
+export function resizeImage(file: File, maxPx = 1200, quality = 0.82): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, maxPx / Math.max(w, h));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not available"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Canvas toBlob failed"));
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+    img.src = url;
+  });
+}
+
+/**
  * Convert a numeric grade (1–12) to an ordinal label like "4th Grade".
  * Returns "—" if grade is null.
  */

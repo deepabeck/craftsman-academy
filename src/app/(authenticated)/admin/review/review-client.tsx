@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { manualScoreTask } from "@/app/actions/manual-score";
+import { awardManualCogs } from "@/app/actions/points";
 import { approveTask, regradeTask, requestRevision } from "@/app/actions/tasks";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { formatTime, rgba } from "@/lib/utils";
@@ -449,14 +450,143 @@ function FileThumbs({ subs, onOpen }: { subs: ReviewItem["submissions"]; onOpen:
   );
 }
 
+// ── ManualCogsPanel ───────────────────────────────────────────────────────────
+
+function ManualCogsPanel({ students }: { students: { id: string; name: string; color: string }[] }) {
+  const [selectedId, setSelectedId] = useState(students[0]?.id ?? "");
+  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const handleSubmit = async () => {
+    const pts = Number.parseInt(amount, 10);
+    if (!note.trim() || Number.isNaN(pts) || pts === 0) return;
+    setSubmitting(true);
+    setFeedback(null);
+    const result = await awardManualCogs(selectedId, pts, note.trim());
+    setSubmitting(false);
+    if (result.success) {
+      const student = students.find((s) => s.id === selectedId);
+      setFeedback({ ok: true, msg: `${pts > 0 ? "+" : ""}${pts} Cogs awarded to ${student?.name}` });
+      setNote("");
+      setAmount("");
+      setTimeout(() => setFeedback(null), 4000);
+    } else {
+      setFeedback({ ok: false, msg: result.error ?? "Something went wrong" });
+    }
+  };
+
+  if (students.length === 0) return null;
+
+  return (
+    <div
+      className="glass"
+      style={{
+        borderRadius: 9,
+        border: "1px solid rgba(232,168,32,0.28)",
+        padding: "14px 16px",
+        marginTop: 8,
+      }}
+    >
+      <div className="cinzel" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#C8A860", marginBottom: 12 }}>
+        ⚙ AWARD COGS
+      </div>
+
+      {/* Student selector */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {students.map((st) => {
+          const active = selectedId === st.id;
+          return (
+            <button
+              key={st.id}
+              type="button"
+              onClick={() => setSelectedId(st.id)}
+              style={{
+                padding: "4px 16px",
+                borderRadius: 20,
+                fontSize: 13,
+                cursor: "pointer",
+                border: `1px solid ${active ? rgba(st.color, 0.8) : rgba(st.color, 0.28)}`,
+                background: active ? rgba(st.color, 0.18) : "rgba(8,17,30,0.65)",
+                color: active ? st.color : "#7A8B9C",
+                fontWeight: active ? 600 : 400,
+                transition: "all 0.15s",
+                outline: "none",
+              }}
+            >
+              {st.name}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Inputs row */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          className="inp"
+          type="text"
+          placeholder="Achievement or reason…"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          style={{ flex: 1, padding: "6px 10px", fontSize: 13 }}
+        />
+        <input
+          className="inp"
+          type="number"
+          placeholder="Cogs"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          style={{ width: 84, padding: "6px 10px", fontSize: 13 }}
+        />
+        <button
+          type="button"
+          className="btn-brass"
+          onClick={handleSubmit}
+          disabled={submitting || !note.trim() || !amount || amount === "0"}
+          style={{
+            padding: "6px 16px",
+            fontSize: 13,
+            whiteSpace: "nowrap",
+            opacity: submitting ? 0.6 : 1,
+          }}
+        >
+          {submitting ? "…" : "⚙ Award"}
+        </button>
+      </div>
+
+      {/* Inline feedback */}
+      {feedback && (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            padding: "6px 10px",
+            borderRadius: 6,
+            color: feedback.ok ? "#70E090" : "#F08080",
+            background: feedback.ok ? "rgba(112,224,144,0.08)" : "rgba(240,128,128,0.08)",
+            border: `1px solid ${feedback.ok ? "rgba(112,224,144,0.22)" : "rgba(240,128,128,0.22)"}`,
+          }}
+        >
+          {feedback.ok ? "✓ " : "✗ "}
+          {feedback.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ReviewClient ──────────────────────────────────────────────────────────────
 
 interface ReviewClientProps {
   initialItems: ReviewItem[];
   completedItems: ReviewItem[];
+  students: { id: string; name: string; color: string }[];
 }
 
-export function ReviewClient({ initialItems, completedItems }: ReviewClientProps) {
+export function ReviewClient({ initialItems, completedItems, students }: ReviewClientProps) {
   const [pending, setPending] = useState<ReviewItem[]>(initialItems);
   const [done, setDone] = useState<ReviewItem[]>(completedItems);
 
@@ -1393,6 +1523,9 @@ export function ReviewClient({ initialItems, completedItems }: ReviewClientProps
             </div>
           </div>
         )}
+
+        {/* Manual Cogs award */}
+        <ManualCogsPanel students={students} />
       </div>
     </>
   );

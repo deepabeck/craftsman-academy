@@ -12,7 +12,7 @@ export default async function ReviewPage() {
   const householdId = await getAdminHouseholdId();
   const { data: householdProfiles } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, display_name, color")
     .eq("role", "student")
     .eq("household_id", householdId ?? "");
   const householdStudentIds = (householdProfiles ?? []).map((p) => p.id);
@@ -156,5 +156,17 @@ export default async function ReviewPage() {
     };
   };
 
-  return <ReviewClient initialItems={resolvedReview.map(mapItem)} completedItems={resolvedCompleted.map(mapItem)} />;
+  const students = (householdProfiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.display_name,
+    color: p.color ?? "#4A90D0",
+  }));
+
+  return (
+    <ReviewClient
+      initialItems={resolvedReview.map(mapItem)}
+      completedItems={resolvedCompleted.map(mapItem)}
+      students={students}
+    />
+  );
 }

@@ -17,6 +17,7 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
   weekly_grade_b: { label: "B Average — Weekly Bonus", icon: "📚" },
   weekly_perfect: { label: "Perfect Week!", icon: "💎" },
   streak_milestone: { label: "Streak Milestone 🔥", icon: "🔥" },
+  manual_award: { label: "Special Award", icon: "🏅" },
 };
 
 function formatDate(iso: string) {

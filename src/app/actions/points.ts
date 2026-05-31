@@ -285,6 +285,40 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
   }
 }
 
+// ── Manual award ────────────────────────────────────────────────────────────────
+
+/**
+ * Award (or deduct) Cogs manually for a one-off achievement.
+ * Each call inserts a unique row (source_id = new UUID) so multiple awards
+ * on the same day are all recorded independently.
+ */
+export async function awardManualCogs(
+  studentId: string,
+  points: number,
+  note: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (points === 0) return { success: false, error: "Amount cannot be zero" };
+  if (!note.trim()) return { success: false, error: "Description is required" };
+
+  const service = createServiceClient();
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
+
+  const { error } = await service.from("points_log").insert({
+    student_id: studentId,
+    category: "manual_award",
+    source_id: crypto.randomUUID(),
+    source_date: today,
+    points,
+    note: note.trim(),
+  });
+
+  if (error) {
+    console.error("[points] awardManualCogs error:", error.message);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
 // ── Balance queries ─────────────────────────────────────────────────────────────
 
 /** Lifetime points balance for a student. */

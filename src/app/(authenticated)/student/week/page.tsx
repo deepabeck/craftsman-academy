@@ -35,8 +35,13 @@ export default async function WeekPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Compute Mon–Fri using LOCAL date so evening hours don't flip to next UTC day
-  const monday = getMondayOf(new Date());
+  // Compute Mon–Fri anchored to the user's local timezone (Mountain Time).
+  // Vercel servers run UTC — using new Date() directly would compute the wrong
+  // weekStart when the server clock has crossed midnight but the user hasn't yet
+  // (e.g., 8 PM MDT Monday = 2 AM UTC Tuesday → weekStart would jump a day).
+  const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+  const todayLocal = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
+  const monday = getMondayOf(new Date(`${todayLocal}T12:00:00`));
   const weekStart = localDateStr(monday);
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);

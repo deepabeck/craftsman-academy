@@ -117,9 +117,15 @@ export async function upsertLessonPlan(plan: UpsertLessonPlanInput) {
     planId = inserted.id;
   }
 
-  // Back-fill any already-generated pending tasks for this subject+day with
-  // the new lesson detail and plan settings (task generation snapshots the plan
-  // at creation time, so tasks made before the plan is saved need patching).
+  // Back-fill any already-generated tasks for this subject+day with the new
+  // lesson detail (task generation snapshots the plan at creation time, so
+  // tasks created before the plan is saved need patching here).
+  //
+  // lesson_detail is updated on ALL tasks regardless of status — students need
+  // to see the current note even mid-week and even after submitting for review.
+  // Settings that affect submission (proof_types, scoring, duration) are only
+  // patched on tasks still in "pending" since changing them after a submission
+  // would be confusing and incorrect.
   const service = (await import("@/lib/supabase/service")).createServiceClient();
   const taskDate = (() => {
     const d = new Date(`${plan.weekStart}T12:00:00`);
@@ -127,15 +133,27 @@ export async function upsertLessonPlan(plan: UpsertLessonPlanInput) {
     return d.toISOString().split("T")[0];
   })();
 
+  // 1) Update lesson_detail + lesson_plan_id on every task for this slot
+  if (plan.assignmentDetail) {
+    await service
+      .from("tasks")
+      .update({
+        lesson_plan_id: planId,
+        lesson_detail: plan.assignmentDetail,
+      })
+      .eq("subject_id", plan.subjectId)
+      .eq("task_date", taskDate);
+  }
+
+  // 2) Update submission settings only on tasks not yet submitted
   await service
     .from("tasks")
     .update({
       lesson_plan_id: planId,
-      lesson_detail: plan.assignmentDetail || undefined,
       requires_review: plan.requiresReview,
       proof_types: plan.proofTypes,
       scoring_approach: plan.scoringApproach,
-      duration: plan.durationMinutes ?? undefined,
+      ...(plan.durationMinutes != null ? { duration: plan.durationMinutes } : {}),
     })
     .eq("subject_id", plan.subjectId)
     .eq("task_date", taskDate)

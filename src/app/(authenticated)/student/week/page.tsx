@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { awardWeeklyBonus } from "@/app/actions/points";
+
+export const dynamic = "force-dynamic";
 import { ensureWeekTasks } from "@/app/actions/tasks";
 import { createClient } from "@/lib/supabase/server";
 import type { Student, Task } from "@/lib/types";

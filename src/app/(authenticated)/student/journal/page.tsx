@@ -32,15 +32,16 @@ export default async function JournalPage() {
   // Fetch current grade from school_years
   const { data: schoolYear } = await supabase
     .from("school_years")
-    .select("grade")
+    .select("grade, start_date")
     .eq("student_id", user.id)
     .lte("start_date", today)
     .gte("end_date", today)
     .maybeSingle();
   const currentGrade: number | null = schoolYear?.grade ?? null;
 
-  // Fetch all writing-journal tasks for this student, newest first
-  const { data: rawTasks } = await supabase
+  // Fetch writing-journal tasks scoped to the current grade's date range —
+  // older entries live in the Past Grades archive instead of mixing in here.
+  let journalQuery = supabase
     .from("tasks")
     .select(
       `id, task_date, lesson_detail, status, requires_review,
@@ -50,7 +51,13 @@ export default async function JournalPage() {
     .eq("subject_id", "writing-journal")
     .neq("status", "cancelled")
     .order("task_date", { ascending: false })
-    .limit(30);
+    .limit(60);
+
+  if (schoolYear) {
+    journalQuery = journalQuery.gte("task_date", schoolYear.start_date).lte("task_date", today);
+  }
+
+  const { data: rawTasks } = await journalQuery;
 
   const entries: JournalEntry[] = (rawTasks ?? []).map((t) => {
     // biome-ignore lint/suspicious/noExplicitAny: supabase join

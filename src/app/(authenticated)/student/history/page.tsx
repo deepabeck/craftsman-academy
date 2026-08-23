@@ -1,7 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
+import { getCurrentSchoolYear } from "@/lib/school-year";
 import { createClient } from "@/lib/supabase/server";
-import { rgba } from "@/lib/utils";
+import { gradeLabel, rgba } from "@/lib/utils";
+
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const STATUS_COLOR: Record<string, string> = {
   done: "#70E090",
@@ -31,8 +37,12 @@ export default async function HistoryPage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  // Fetch ALL completed tasks ever — no date cap so historical data is always accessible
-  const { data: tasks } = await supabase
+  // Scope to the current grade's date range — older entries live in the archive
+  // (Past Grades) instead, so this view doesn't mix school years together.
+  const today = localDateStr(new Date());
+  const currentYear = await getCurrentSchoolYear(supabase, user.id, today);
+
+  let query = supabase
     .from("tasks")
     .select(
       `id, task_date, status, lesson_detail, final_score, overall_score,
@@ -44,6 +54,12 @@ export default async function HistoryPage() {
     .neq("status", "pending")
     .order("task_date", { ascending: false })
     .limit(500);
+
+  if (currentYear) {
+    query = query.gte("task_date", currentYear.start_date).lte("task_date", currentYear.end_date);
+  }
+
+  const { data: tasks } = await query;
 
   const entries = tasks ?? [];
   const studentColor = profile.color ?? "#4A90D0";
@@ -58,12 +74,29 @@ export default async function HistoryPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <PageHeader
-        icon="history"
-        title="Mission Log"
-        sub={`${entries.length} completed missions · all time`}
-        color={studentColor}
-      />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <PageHeader
+          icon="history"
+          title="Mission Log"
+          sub={`${entries.length} completed missions${currentYear ? ` · ${gradeLabel(currentYear.grade)}` : ""}`}
+          color={studentColor}
+        />
+        <Link
+          href="/student/archive"
+          style={{
+            flexShrink: 0,
+            marginTop: 6,
+            fontSize: 13,
+            color: "#7A8B9C",
+            textDecoration: "none",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 7,
+            padding: "6px 12px",
+          }}
+        >
+          View Past Grades →
+        </Link>
+      </div>
 
       {entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 60, color: "#506070" }}>

@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { id: "journal", path: "/student/journal", label: "Writing Journal", icon: "reading-writing" },
   { id: "progress", path: "/student/progress", label: "Progress", icon: "progress" },
   { id: "history", path: "/student/history", label: "Mission Log", icon: "history" },
+  { id: "archive", path: "/student/archive", label: "Past Grades", icon: "completed" },
   { id: "customize", path: "/student/customize", label: "Customize", icon: "customize" },
 ];
 

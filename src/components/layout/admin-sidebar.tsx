@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { id: "review", path: "/admin/review", label: "Review Queue", icon: "review" },
   { id: "shop", path: "/admin/shop", label: "Shop", icon: "coin" },
   { id: "submissions", path: "/admin/submissions", label: "Submissions", icon: "history" },
+  { id: "archive", path: "/admin/archive", label: "Past Grades", icon: "completed" },
   { id: "profiles", path: "/admin/profiles", label: "Profiles", icon: "profile" },
 ];
 

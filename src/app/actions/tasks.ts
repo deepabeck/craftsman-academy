@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -32,6 +33,44 @@ export async function ensureWeekTasks(weekStart: string) {
     const { error } = await service.rpc("generate_daily_tasks", { p_date: date });
     if (error) console.error(`generate_daily_tasks error for ${date}:`, error.message);
   }
+}
+
+/**
+ * Admin "Sync Now" button — same generation logic as ensureWeekTasks, but
+ * surfaces results instead of only logging them, so a schedule change made
+ * mid-week (a new subject, a newly-active day, etc.) can be pushed live
+ * immediately instead of waiting for the Sunday auto-generation job.
+ * Idempotent: only ever adds tasks that don't already exist for that
+ * student+subject+day — never touches or duplicates existing ones.
+ */
+export async function syncWeekTasksNow(
+  weekStart: string,
+): Promise<{ success: boolean; created: number; error?: string }> {
+  const service = createServiceClient();
+  let created = 0;
+  const errors: string[] = [];
+
+  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  if (missedErr) errors.push(`mark_missed_tasks: ${missedErr.message}`);
+
+  for (let i = 0; i <= 4; i++) {
+    const d = new Date(`${weekStart}T00:00:00`);
+    d.setDate(d.getDate() + i);
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const { data, error } = await service.rpc("generate_daily_tasks", { p_date: date });
+    if (error) {
+      errors.push(`${date}: ${error.message}`);
+    } else {
+      created += Number(data ?? 0);
+    }
+  }
+
+  revalidatePath("/admin/lessons");
+  revalidatePath("/student/today");
+  revalidatePath("/student/week");
+
+  if (errors.length > 0) return { success: false, created, error: errors.join("; ") };
+  return { success: true, created };
 }
 
 /** Toggle a checkbox task between pending ↔ done. */

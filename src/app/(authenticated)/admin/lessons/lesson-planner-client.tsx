@@ -17,6 +17,7 @@ import {
   type LessonPlanRow,
   upsertLessonPlan,
 } from "@/app/actions/lesson-plans";
+import { syncWeekTasksNow } from "@/app/actions/tasks";
 import { generateWritingJournalPrompt } from "@/app/actions/writing-journal";
 import { Icon, PageHeader } from "@/components/ui";
 import { proposeAdjustments, type TaskSummary } from "@/lib/calendar-task-matcher";
@@ -151,6 +152,8 @@ export function LessonPlannerClient({
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptError, setPromptError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   // ── Calendar adjustments state ────────────────────────────────────────────
   const [studentTasks, setStudentTasks] = useState<StudentTaskGroup[]>(initialStudentTasks);
@@ -441,6 +444,28 @@ export function LessonPlannerClient({
     });
   };
 
+  // ── Sync this week's tasks now ───────────────────────────────────────────
+  const syncNow = async () => {
+    setIsSyncing(true);
+    setSyncMsg(null);
+    const result = await syncWeekTasksNow(weekStart);
+    if (result.success) {
+      setSyncMsg({
+        text:
+          result.created > 0
+            ? `✓ Synced — ${result.created} new task${result.created === 1 ? "" : "s"} added`
+            : "✓ Synced — already up to date",
+        ok: true,
+      });
+      // Refresh today's task list so the Cancel/Manage panel reflects new tasks too
+      if (dayMgmtOpen) loadDayTasks(dayMgmtDate);
+    } else {
+      setSyncMsg({ text: `Sync had issues: ${result.error}`, ok: false });
+    }
+    setIsSyncing(false);
+    setTimeout(() => setSyncMsg(null), 6000);
+  };
+
   // ── Toggle proof type ────────────────────────────────────────────────────
   const toggleProofType = (value: string) => {
     if (!editing) return;
@@ -527,7 +552,32 @@ export function LessonPlannerClient({
             Today
           </button>
         )}
+        <button
+          type="button"
+          className="btn-brass"
+          style={{ padding: "6px 14px", fontSize: 13 }}
+          onClick={syncNow}
+          disabled={isSyncing}
+          title="Push any schedule changes for this week live right now, instead of waiting for Sunday's auto-generation"
+        >
+          {isSyncing ? "Syncing…" : "⟳ Sync Now"}
+        </button>
       </div>
+
+      {syncMsg && (
+        <div
+          style={{
+            fontSize: 13,
+            color: syncMsg.ok ? "#70E090" : "#F08080",
+            padding: "8px 14px",
+            background: syncMsg.ok ? "rgba(80,200,100,0.08)" : "rgba(200,80,80,0.08)",
+            border: `1px solid ${syncMsg.ok ? "rgba(80,200,100,0.25)" : "rgba(200,80,80,0.25)"}`,
+            borderRadius: 7,
+          }}
+        >
+          {syncMsg.text}
+        </div>
+      )}
 
       {isLoading && <div style={{ textAlign: "center", fontSize: 13, color: "#506070", padding: 8 }}>Loading…</div>}
 

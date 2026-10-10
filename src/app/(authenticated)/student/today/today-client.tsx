@@ -38,6 +38,7 @@ interface TodayClientProps {
   streak: number;
   shopItems: MarketplaceItem[];
   shopPurchases: { itemId: string; status: string; note: string | null }[];
+  weeklyBonusEarned: number;
 }
 
 /** Hour (24h local time) at which tech time unlocks — change to taste */
@@ -60,6 +61,7 @@ export function TodayClient({
   streak,
   shopItems,
   shopPurchases,
+  weeklyBonusEarned,
 }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
@@ -322,6 +324,20 @@ export function TodayClient({
                             </div>
                           ))}
                         </div>
+                        <div
+                          style={{
+                            marginTop: 12,
+                            paddingTop: 10,
+                            borderTop: "1px solid rgba(240,128,128,0.15)",
+                            fontSize: 12,
+                            color: "#D4A830",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {lateTasks.length} mission{lateTasks.length === 1 ? "" : "s"} left unfinished this week — the
+                          weekly bonus Cogs only unlock when every mission for the week is checked off, so it wasn&apos;t
+                          earned this time.
+                        </div>
                       </div>
                     )}
                     {lateTasks.length === 0 && (
@@ -336,6 +352,31 @@ export function TodayClient({
                         <div style={{ fontSize: 12, color: "#9AABBC", marginTop: 4 }}>
                           All missions completed. Outstanding work, cadet!
                         </div>
+                        {weeklyBonusEarned > 0 && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 6,
+                              marginTop: 10,
+                              paddingTop: 10,
+                              borderTop: "1px solid rgba(232,168,32,0.2)",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: "#E8A820",
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {/* biome-ignore lint/performance/noImgElement: small inline icon, no next/image benefit here */}
+                            <img
+                              src="/assets/icon_coin.png"
+                              alt=""
+                              style={{ width: 16, height: 16, objectFit: "contain" }}
+                            />
+                            +{weeklyBonusEarned.toLocaleString()} Cogs weekly bonus earned!
+                          </div>
+                        )}
                       </div>
                     )}
                   </>

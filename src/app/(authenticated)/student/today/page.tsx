@@ -169,6 +169,7 @@ export default async function TodayPage() {
 
   // ── Saturday: fetch incomplete tasks from this week (Mon–Fri) ───────────────
   let lateTasks: LateTask[] = [];
+  let weeklyBonusEarned = 0;
   if (dayOfWeek === 6 || tasks.length === 0) {
     const range = dayOfWeek === 6 ? currentWeekMonFri(_d) : getPrecedingWeek(_d);
 
@@ -191,6 +192,18 @@ export default async function TodayPage() {
         status: t.status as "pending" | "missed",
       };
     });
+
+    // Actual Cogs earned from this week's bonus categories (set by awardWeeklyBonus),
+    // so the Saturday card can say a real number instead of a generic "great job."
+    if (dayOfWeek === 6) {
+      const { data: bonusRows } = await supabase
+        .from("points_log")
+        .select("points")
+        .eq("student_id", user.id)
+        .eq("source_date", range.start)
+        .in("category", ["weekly_complete", "weekly_grade_a", "weekly_grade_b", "weekly_perfect"]);
+      weeklyBonusEarned = (bonusRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
+    }
   }
 
   // ── Generic rest-day week summary (for non-Saturday no-task days) ───────────
@@ -234,6 +247,7 @@ export default async function TodayPage() {
       streak={streak}
       shopItems={shopItems}
       shopPurchases={shopPurchases}
+      weeklyBonusEarned={weeklyBonusEarned}
     />
   );
 }

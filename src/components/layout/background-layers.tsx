@@ -42,7 +42,6 @@ export function BackgroundLayers() {
           />
         ))}
       </div>
-      <div id="bg-gears" />
       <div id="bg-vign" />
     </>
   );

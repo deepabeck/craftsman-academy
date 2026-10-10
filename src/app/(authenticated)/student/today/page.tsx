@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { getMarketplaceItems, getMyWeeklyPurchases } from "@/app/actions/marketplace";
 import { ensureDailyTasks } from "@/app/actions/tasks";
 import { fetchCalendarEvents } from "@/lib/ical-parser";
+import { computeStreak, localDateStr } from "@/lib/streak";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { fetchWeather } from "@/lib/weather";
@@ -74,15 +76,27 @@ export default async function TodayPage() {
   const icalUrl = hhRow?.ical_url ?? process.env.CALENDAR_ICAL_URL ?? "";
 
   // Mark yesterday's missed tasks, generate today's tasks, and fetch
-  // weather + calendar data — all in parallel.
-  const [, weatherData, calendarEvents] = await Promise.all([
+  // weather + calendar data + shop items — all in parallel.
+  const thirtyDaysAgo = localDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const [, weatherData, calendarEvents, streakTasks, shopItems, shopPurchases] = await Promise.all([
     ensureDailyTasks(today).catch((e) => {
       console.error("ensureDailyTasks threw:", e);
       return null;
     }),
     fetchWeather(),
     icalUrl ? fetchCalendarEvents(icalUrl) : Promise.resolve([] as CalendarEvent[]),
+    supabase
+      .from("tasks")
+      .select("task_date, status")
+      .eq("student_id", user.id)
+      .gte("task_date", thirtyDaysAgo)
+      .lte("task_date", today)
+      .then(({ data }) => data ?? []),
+    getMarketplaceItems().catch(() => []),
+    getMyWeeklyPurchases().catch(() => []),
   ]);
+
+  const streak = computeStreak(streakTasks, today);
 
   // Fetch today's tasks joined with subjects (include cancelled — shown greyed out)
   const { data: rawTasks, error } = await supabase
@@ -217,6 +231,9 @@ export default async function TodayPage() {
       weekSummary={weekSummary}
       dayOfWeek={dayOfWeek}
       lateTasks={lateTasks}
+      streak={streak}
+      shopItems={shopItems}
+      shopPurchases={shopPurchases}
     />
   );
 }

@@ -65,13 +65,6 @@ body {
     hazeDrift 45s linear infinite,
     hazeBreathe 9s ease-in-out infinite;
 }
-#bg-gears {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: url("/assets/bg_gears.png") center / cover no-repeat;
-}
 #bg-steam {
   position: fixed;
   inset: 0;

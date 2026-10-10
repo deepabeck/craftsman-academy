@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import type { MarketplaceItem } from "@/app/actions/marketplace";
 import { markTaskDone, submitTaskProof } from "@/app/actions/tasks";
 import { type StoragePath, SubmitModal } from "@/components/modals/submit-modal";
 import { Icon, PageHeader, ProgBar, StatusBadge } from "@/components/ui";
@@ -10,6 +11,7 @@ import { usePoints } from "@/contexts/points-context";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { getTodayLabel, rgba } from "@/lib/utils";
 import type { WeatherData } from "@/lib/weather";
+import { QuickShopWidget } from "./quick-shop-widget";
 
 export interface WeekSummary {
   total: number;
@@ -33,6 +35,9 @@ interface TodayClientProps {
   weekSummary: WeekSummary | null;
   dayOfWeek: number; // 0=Sun 1=Mon … 6=Sat
   lateTasks: LateTask[];
+  streak: number;
+  shopItems: MarketplaceItem[];
+  shopPurchases: { itemId: string; status: string; note: string | null }[];
 }
 
 /** Hour (24h local time) at which tech time unlocks — change to taste */
@@ -52,6 +57,9 @@ export function TodayClient({
   weekSummary,
   dayOfWeek,
   lateTasks,
+  streak,
+  shopItems,
+  shopPurchases,
 }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
@@ -153,6 +161,35 @@ export function TodayClient({
         />
         <ProgBar value={tasks.length ? (done / tasks.length) * 100 : 0} color={student.color} style={{ height: 10 }} />
       </div>
+
+      {/* Streak + daily-bonus reminder — quick engagement nudge, always visible */}
+      {tasks.length > 0 && (
+        <div
+          className="glass"
+          style={{
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            borderColor: streak > 0 ? "rgba(232,168,32,0.35)" : undefined,
+          }}
+        >
+          {streak > 0 && (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#E8A820", whiteSpace: "nowrap" }}>
+              🔥 {streak} day streak
+            </span>
+          )}
+          {streak > 0 && !allDone && <span style={{ color: "#506070" }}>·</span>}
+          {!allDone && (
+            <span style={{ fontSize: 13, color: "#9AABBC" }}>
+              Finish today&apos;s missions to lock in your daily bonus Cogs!
+            </span>
+          )}
+          {allDone && streak === 0 && (
+            <span style={{ fontSize: 13, color: "#9AABBC" }}>Nice work finishing today&apos;s missions!</span>
+          )}
+        </div>
+      )}
 
       {/* Main row: missions (left) + widgets column (right) */}
       <div style={{ display: "grid", gridTemplateColumns: "1.25fr 1fr", gap: 14, alignItems: "start" }}>
@@ -482,8 +519,9 @@ export function TodayClient({
           )}
         </div>
 
-        {/* RIGHT — weather + calendar */}
+        {/* RIGHT — quick shop + weather + calendar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <QuickShopWidget items={shopItems} purchases={shopPurchases} color={student.color} />
           <WeatherWidget color={student.color} weather={weather} />
           <CalendarWidget color={student.color} events={calendarEvents} />
         </div>

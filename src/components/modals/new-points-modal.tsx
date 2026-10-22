@@ -20,6 +20,15 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
   manual_award: { label: "Special Award", icon: "🏅" },
 };
 
+/** manual_award covers both Award Cogs (positive) and Dock Cogs (negative) —
+ *  the static label map above doesn't know the sign, so resolve it here instead. */
+function resolveMeta(category: string, points: number): { label: string; icon: string } {
+  if (category === "manual_award" && points < 0) {
+    return { label: "Cogs Adjustment", icon: "⚠️" };
+  }
+  return CATEGORY_LABELS[category] ?? { label: category, icon: "⚙️" };
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
@@ -82,7 +91,7 @@ export function NewPointsModal({ entries, onDismiss }: NewPointsModalProps) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {byDay[day].map((e) => {
-                  const meta = CATEGORY_LABELS[e.category] ?? { label: e.category, icon: "⚙️" };
+                  const meta = resolveMeta(e.category, e.points);
                   return (
                     <div
                       key={e.id}
@@ -133,9 +142,10 @@ export function NewPointsModal({ entries, onDismiss }: NewPointsModalProps) {
           }}
         >
           <div>
-            <div style={{ fontSize: 11, color: "#506070" }}>Total earned</div>
-            <div className="cinzel" style={{ fontSize: 22, fontWeight: 700, color: "#E8A820" }}>
-              +{total} Cogs
+            <div style={{ fontSize: 11, color: "#506070" }}>{total < 0 ? "Net change" : "Total earned"}</div>
+            <div className="cinzel" style={{ fontSize: 22, fontWeight: 700, color: total < 0 ? "#F08080" : "#E8A820" }}>
+              {total > 0 ? "+" : ""}
+              {total} Cogs
             </div>
           </div>
           <button

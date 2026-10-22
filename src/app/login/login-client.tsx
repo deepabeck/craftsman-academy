@@ -188,14 +188,14 @@ export function LoginClient({ profileMap }: Props) {
                           flexShrink: 0,
                         }}
                       >
-                        {/* Photo clipped to frame window: top=18.2%, left=11.7%, w=74.2%, h=64.5% */}
+                        {/* Photo clipped to frame window: top=16.667%, left=13.184%, w=73.535%, h=65.43% (opening plus 10px tucked under the rim) */}
                         <div
                           style={{
                             position: "absolute",
-                            top: "18.2%",
-                            left: "11.7%",
-                            width: "74.2%",
-                            height: "64.5%",
+                            top: "16.667%",
+                            left: "13.184%",
+                            width: "73.535%",
+                            height: "65.43%",
                             overflow: "hidden",
                           }}
                         >

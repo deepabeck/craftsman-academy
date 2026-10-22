@@ -394,7 +394,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "760/991", // matches the portrait frame window
+                  aspectRatio: "753/1005", // matches the portrait frame window
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -672,7 +672,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "760/991", // matches the portrait frame window
+                  aspectRatio: "753/1005", // matches the portrait frame window
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",

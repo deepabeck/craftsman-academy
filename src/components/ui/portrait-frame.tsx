@@ -19,9 +19,12 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
      * window area.  This is more reliable than CSS `aspect-ratio` for
      * percentage-based absolute children.
      *
-     * Frame window bounds (measured from goldframe_profile.png alpha channel):
-     *   top  = 18.2%   left  = 11.7%
-     *   width = 74.2%  height = 64.5%
+     * Frame window (measured from goldframe_profile.png alpha channel): the
+     * transparent opening is x 145-878, y 266-1251 of the 1024x1536 image. The
+     * photo box is that opening grown by 10px per side so its edges tuck under
+     * the opaque rim (74px+ thick) and no background can show through a gap:
+     *   top  = 16.667%   left  = 13.184%
+     *   width = 73.535%  height = 65.43%
      */
     <div style={{ position: "relative", flexShrink: 0, lineHeight: 0, width: "78%", margin: "0 auto" }}>
       {/* Photo clipped to the frame window — rendered BEFORE the frame so it
@@ -29,10 +32,10 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
       <div
         style={{
           position: "absolute",
-          top: "18.2%",
-          left: "11.7%",
-          width: "74.2%",
-          height: "64.5%",
+          top: "16.667%",
+          left: "13.184%",
+          width: "73.535%",
+          height: "65.43%",
           overflow: "hidden",
         }}
       >
@@ -90,10 +93,10 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
             tabIndex={0}
             style={{
               position: "absolute",
-              top: "18.2%",
-              left: "11.7%",
-              width: "74.2%",
-              height: "64.5%",
+              top: "16.667%",
+              left: "13.184%",
+              width: "73.535%",
+              height: "65.43%",
               zIndex: 2,
               display: "flex",
               alignItems: "center",

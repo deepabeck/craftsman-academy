@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Crop window aspect ratio. Matches the transparent window in goldframe_profile.png
- * (74.2% × 1024 wide by 64.5% × 1536 tall ≈ 760 × 991), so what you crop here is
+ * Crop window aspect ratio. Matches the photo box behind goldframe_profile.png
+ * (73.535% × 1024 wide by 65.43% × 1536 tall ≈ 753 × 1005), so what you crop here is
  * what shows up inside the portrait frame.
  */
-export const AVATAR_ASPECT = 760 / 991;
+export const AVATAR_ASPECT = 753 / 1005;
 
 const VIEW_W = 300;
 const VIEW_H = Math.round(VIEW_W / AVATAR_ASPECT);

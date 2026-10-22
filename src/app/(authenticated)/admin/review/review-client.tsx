@@ -578,6 +578,198 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
   );
 }
 
+// ── DockCogsPanel ─────────────────────────────────────────────────────────────
+
+/** One-off Cogs deduction — separate from Award Cogs so a mis-type can't
+ *  accidentally hand out Cogs instead of taking them away (and vice versa).
+ *  Always sends a negative amount to awardManualCogs regardless of what's
+ *  typed, and requires an explicit confirm step before it submits. */
+function DockCogsPanel({ students }: { students: { id: string; name: string; color: string }[] }) {
+  const [selectedId, setSelectedId] = useState(students[0]?.id ?? "");
+  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const pts = Math.abs(Number.parseInt(amount, 10) || 0);
+  const canSubmit = note.trim().length > 0 && pts > 0;
+  const selectedStudent = students.find((s) => s.id === selectedId);
+
+  const handleConfirm = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setFeedback(null);
+    const result = await awardManualCogs(selectedId, -pts, note.trim());
+    setSubmitting(false);
+    setConfirming(false);
+    if (result.success) {
+      setFeedback({ ok: true, msg: `-${pts} Cogs removed from ${selectedStudent?.name}` });
+      setNote("");
+      setAmount("");
+      setTimeout(() => setFeedback(null), 4000);
+    } else {
+      setFeedback({ ok: false, msg: result.error ?? "Something went wrong" });
+    }
+  };
+
+  if (students.length === 0) return null;
+
+  return (
+    <div
+      className="glass"
+      style={{
+        borderRadius: 9,
+        border: "1px solid rgba(240,128,128,0.28)",
+        padding: "14px 16px",
+        marginTop: 8,
+      }}
+    >
+      <div className="cinzel" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#E09070", marginBottom: 12 }}>
+        ⚠ DOCK COGS
+      </div>
+
+      {/* Student selector */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {students.map((st) => {
+          const active = selectedId === st.id;
+          return (
+            <button
+              key={st.id}
+              type="button"
+              onClick={() => {
+                setSelectedId(st.id);
+                setConfirming(false);
+              }}
+              style={{
+                padding: "4px 16px",
+                borderRadius: 20,
+                fontSize: 13,
+                cursor: "pointer",
+                border: `1px solid ${active ? rgba(st.color, 0.8) : rgba(st.color, 0.28)}`,
+                background: active ? rgba(st.color, 0.18) : "rgba(8,17,30,0.65)",
+                color: active ? st.color : "#7A8B9C",
+                fontWeight: active ? 600 : 400,
+                transition: "all 0.15s",
+                outline: "none",
+              }}
+            >
+              {st.name}
+            </button>
+          );
+        })}
+      </div>
+
+      {confirming ? (
+        /* Confirm step — explicit before anything actually gets removed */
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 10px",
+            borderRadius: 6,
+            background: "rgba(240,128,128,0.08)",
+            border: "1px solid rgba(240,128,128,0.25)",
+          }}
+        >
+          <span style={{ fontSize: 13, color: "#F0B0A0", flex: 1 }}>
+            Remove <strong>{pts.toLocaleString()} Cogs</strong> from {selectedStudent?.name}
+            {note.trim() ? ` — "${note.trim()}"` : ""}?
+          </span>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ padding: "5px 12px", fontSize: 12 }}
+            onClick={() => setConfirming(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            style={{
+              padding: "5px 14px",
+              fontSize: 12,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              borderRadius: 7,
+              border: "none",
+              fontWeight: 700,
+              color: "#2A0A08",
+              background: "linear-gradient(145deg, #a84030 0%, #d4582c 45%, #e86838 60%, #b83820 100%)",
+              opacity: submitting ? 0.6 : 1,
+            }}
+            disabled={submitting}
+            onClick={handleConfirm}
+          >
+            {submitting ? "…" : "Confirm Dock"}
+          </button>
+        </div>
+      ) : (
+        /* Inputs row */
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            className="inp"
+            type="text"
+            placeholder="Reason…"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && canSubmit && setConfirming(true)}
+            style={{ flex: 1, padding: "6px 10px", fontSize: 13 }}
+          />
+          <input
+            className="inp"
+            type="number"
+            min={1}
+            placeholder="Cogs"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && canSubmit && setConfirming(true)}
+            style={{ width: 84, padding: "6px 10px", fontSize: 13 }}
+          />
+          <button
+            type="button"
+            style={{
+              padding: "6px 16px",
+              fontSize: 13,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              borderRadius: 7,
+              border: "1px solid rgba(240,128,128,0.4)",
+              fontWeight: 600,
+              color: "#F0B0A0",
+              background: "rgba(240,128,128,0.08)",
+              opacity: canSubmit ? 1 : 0.4,
+            }}
+            disabled={!canSubmit}
+            onClick={() => setConfirming(true)}
+          >
+            ⚠ Dock
+          </button>
+        </div>
+      )}
+
+      {/* Inline feedback */}
+      {feedback && (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            padding: "6px 10px",
+            borderRadius: 6,
+            color: feedback.ok ? "#F0B0A0" : "#F08080",
+            background: feedback.ok ? "rgba(240,128,128,0.08)" : "rgba(240,128,128,0.08)",
+            border: `1px solid ${feedback.ok ? "rgba(240,128,128,0.22)" : "rgba(240,128,128,0.22)"}`,
+          }}
+        >
+          {feedback.ok ? "✓ " : "✗ "}
+          {feedback.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ReviewClient ──────────────────────────────────────────────────────────────
 
 interface ReviewClientProps {
@@ -1526,6 +1718,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
 
         {/* Manual Cogs award */}
         <ManualCogsPanel students={students} />
+        <DockCogsPanel students={students} />
       </div>
     </>
   );

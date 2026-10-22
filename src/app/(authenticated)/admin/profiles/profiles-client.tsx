@@ -11,8 +11,9 @@ import {
   updateProfile,
   uploadAvatar,
 } from "@/app/actions/profiles";
+import { AvatarCropperModal } from "@/components/modals/avatar-cropper-modal";
 import { HexPicker, Icon, PageHeader } from "@/components/ui";
-import { gradeLabel, resizeImage, rgba } from "@/lib/utils";
+import { gradeLabel, rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
 import type { AdminProfileData, ProfileData } from "./page";
@@ -40,6 +41,8 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
   const [uploading, setUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  // File picked but not yet cropped/uploaded
+  const [cropTarget, setCropTarget] = useState<{ file: File; kind: "admin" | "student" } | null>(null);
 
   // Student email state
   const [newEmail, setNewEmail] = useState("");
@@ -196,18 +199,21 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     });
   };
 
-  const handleAdminAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdminAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) setCropTarget({ file, kind: "admin" });
+    e.target.value = ""; // allow re-picking the same file
+  };
+
+  const uploadAdminAvatar = async (file: File) => {
     const localUrl = URL.createObjectURL(file);
     setAdmin((prev) => ({ ...prev, avatarUrl: localUrl }));
     setAdminUploading(true);
     setAdminError(null);
     try {
-      // Resize before upload: constrains to 1200px longest edge, ~100–250 KB output
-      const resized = await resizeImage(file);
+      // File is already cropped and sized by AvatarCropperModal
       const formData = new FormData();
-      formData.append("file", resized);
+      formData.append("file", file);
       formData.append("studentKey", `admin-${admin.id}`);
       const { url, error: uploadErr } = await uploadAvatar(formData);
       if (uploadErr || !url) {
@@ -264,10 +270,13 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     });
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) setCropTarget({ file, kind: "student" });
+    e.target.value = ""; // allow re-picking the same file
+  };
 
+  const uploadStudentAvatar = async (file: File) => {
     // Show local preview immediately
     const localUrl = URL.createObjectURL(file);
     setProfiles((prev) => prev.map((p) => (p.id === profile.id ? { ...p, avatarUrl: localUrl } : p)));
@@ -286,10 +295,9 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
     };
 
     try {
-      // Resize before upload: constrains to 1200px longest edge, ~100–250 KB output
-      const resized = await resizeImage(file);
+      // File is already cropped and sized by AvatarCropperModal
       const formData = new FormData();
-      formData.append("file", resized);
+      formData.append("file", file);
       formData.append("studentKey", profile.studentKey);
       const { url, error: uploadErr } = await uploadAvatar(formData);
 
@@ -330,6 +338,18 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {cropTarget && (
+        <AvatarCropperModal
+          file={cropTarget.file}
+          onCancel={() => setCropTarget(null)}
+          onConfirm={(cropped) => {
+            const kind = cropTarget.kind;
+            setCropTarget(null);
+            if (kind === "admin") void uploadAdminAvatar(cropped);
+            else void uploadStudentAvatar(cropped);
+          }}
+        />
+      )}
       {/* Header */}
       <PageHeader icon="profile" title="Profiles" sub="Manage admin and student accounts" />
 
@@ -374,7 +394,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "2/3",
+                  aspectRatio: "760/991", // matches the portrait frame window
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -416,9 +436,11 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
               type="file"
               accept="image/*"
               style={{ display: "none" }}
-              onChange={handleAdminAvatarChange}
+              onChange={handleAdminAvatarPick}
             />
-            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
+            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>
+              Click photo to upload, then crop
+            </div>
           </div>
 
           {/* Identity */}
@@ -650,7 +672,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "2/3",
+                  aspectRatio: "760/991", // matches the portrait frame window
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -687,14 +709,10 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 {uploading ? "Uploading…" : "Change Photo"}
               </div>
             </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handleAvatarChange}
-            />
-            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>Click photo to upload</div>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarPick} />
+            <div style={{ fontSize: 11, color: "#404858", marginTop: 8, lineHeight: 1.5 }}>
+              Click photo to upload, then crop
+            </div>
           </div>
 
           {/* Identity */}

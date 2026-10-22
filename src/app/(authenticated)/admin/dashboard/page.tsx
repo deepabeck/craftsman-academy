@@ -88,21 +88,21 @@ export default async function DashboardPage() {
     .in("student_id", studentIds);
 
   // ── Step 6: Cogs balance per student ─────────────────────────────────────
-  const { data: pointsLogs } = await service
-    .from("points_log")
-    .select("student_id, points")
-    .in("student_id", studentIds);
+  // Aggregated in Postgres via get_cogs_balances() (migration 037) rather than
+  // fetching every points_log row and summing in JS: an unbounded .select()
+  // here gets silently capped at 1000 rows by PostgREST with no ORDER BY, which
+  // is exactly what caused the Command Center Cogs totals to read wrong once a
+  // household's combined ledger passed 1000 rows (the dropped rows skewed the
+  // sum, since whichever rows didn't fit in the scan happened to include a
+  // disproportionate share of negative entries).
+  const { data: cogsBalances } = await service.rpc("get_cogs_balances", {
+    p_student_ids: studentIds,
+  });
 
   const cogsMap: Record<string, number> = {};
-  for (const log of pointsLogs ?? []) {
-    cogsMap[log.student_id] = (cogsMap[log.student_id] ?? 0) + log.points;
+  for (const row of cogsBalances ?? []) {
+    cogsMap[row.student_id] = row.balance;
   }
-
-  // TEMP DEBUG — remove once Cogs-total mismatch is resolved
-  console.log('[DEBUG dashboard] householdId=', householdId);
-  console.log('[DEBUG dashboard] studentIds=', studentIds);
-  console.log('[DEBUG dashboard] pointsLogs fetched count=', (pointsLogs ?? []).length);
-  console.log('[DEBUG dashboard] cogsMap=', cogsMap);
 
   // ── Step 7: Parent notes for current week ────────────────────────────────
   const { data: aiNotesRaw } = await supabase
@@ -194,8 +194,6 @@ export default async function DashboardPage() {
         weekPct,
         monthSubjects,
         cogsBalance: cogsMap[profile.id] ?? 0,
-        debugRowCount: (pointsLogs ?? []).filter((l) => l.student_id === profile.id).length,
-        debugHouseholdId: householdId ?? '(none)',
         parentNote: aiNotesMap[profile.id] ?? "",
         weekStart,
       };

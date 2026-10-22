@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getStudentBalance } from "@/app/actions/points";
 
 export interface MarketplaceItem {
   id: string;
@@ -167,9 +168,7 @@ export async function requestPurchase(itemId: string, note?: string): Promise<{ 
   const contributionAmount = item.shared ? Math.ceil(item.price / 2) : item.price;
 
   // Check balance
-  const service = createServiceClient();
-  const { data: logs } = await service.from("points_log").select("points").eq("student_id", user.id);
-  const balance = (logs ?? []).reduce((s: number, r: { points: number }) => s + r.points, 0);
+  const balance = await getStudentBalance(user.id);
   if (balance < contributionAmount) return { success: false, error: "Not enough Cogs" };
 
   const { error } = await supabase.from("marketplace_purchases").insert({

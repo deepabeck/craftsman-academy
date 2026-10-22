@@ -324,8 +324,15 @@ export async function awardManualCogs(
 /** Lifetime points balance for a student. */
 export async function getStudentBalance(studentId: string): Promise<number> {
   const service = createServiceClient();
-  const { data } = await service.from("points_log").select("points").eq("student_id", studentId);
-  return (data ?? []).reduce((sum, r) => sum + r.points, 0);
+  // Aggregated in Postgres via get_cogs_balances() (migration 037) instead of
+  // fetching every points_log row and summing in JS — an unbounded select
+  // here gets silently capped at 1000 rows by PostgREST with no ORDER BY,
+  // which is exactly what caused the Command Center Cogs totals to read
+  // wrong once a household ledger passed 1000 rows. Each student's own
+  // ledger is approaching that same size, so this fixes it here too before
+  // it recurs per-student.
+  const { data } = await service.rpc("get_cogs_balances", { p_student_ids: [studentId] });
+  return data?.[0]?.balance ?? 0;
 }
 
 // ── Unseen points ────────────────────────────────────────────────────────────────

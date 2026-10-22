@@ -14,6 +14,10 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const student: Student = {
     ...base,
     color: user?.color ?? base.color,
+    // Prefer the real uploaded photo (profiles.avatar_url) over the static
+    // seed image baked into BASE_STUDENTS — otherwise a new photo uploaded
+    // in Admin → Profiles never shows up once a student actually logs in.
+    avatar: user?.avatarUrl ?? base.avatar,
     subjects: SUBJECTS_ALL.filter((s) => !s.only || s.only === studentId),
   };
 

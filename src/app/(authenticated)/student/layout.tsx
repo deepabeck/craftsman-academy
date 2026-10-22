@@ -14,6 +14,9 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const student: Student = {
     ...base,
     color: user?.color ?? base.color,
+    // Saved tagline (Admin → Profiles → profiles.tagline) wins over the
+    // hardcoded BASE_STUDENTS default, which is only used until the profile loads.
+    tagline: user ? user.tagline : base.tagline,
     // Prefer the real uploaded photo (profiles.avatar_url) over the static
     // seed image baked into BASE_STUDENTS — otherwise a new photo uploaded
     // in Admin → Profiles never shows up once a student actually logs in.

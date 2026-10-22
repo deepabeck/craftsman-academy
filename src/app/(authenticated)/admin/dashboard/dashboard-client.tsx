@@ -39,6 +39,8 @@ export interface StudentDashData {
   weekPct: number;
   monthSubjects: SubjectMonth[];
   cogsBalance: number;
+  debugRowCount?: number;
+  debugHouseholdId?: string;
   parentNote: string;
   weekStart: string;
 }
@@ -238,6 +240,9 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                   }}
                 >
                   {s.cogsBalance.toLocaleString()}
+                </span>
+                <span style={{ display: "block", fontSize: 9, color: "#888", fontFamily: "monospace" }}>
+                  DEBUG rows={s.debugRowCount} hh={s.debugHouseholdId}
                 </span>
                 <span
                   className="cinzel"

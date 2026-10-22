@@ -98,6 +98,12 @@ export default async function DashboardPage() {
     cogsMap[log.student_id] = (cogsMap[log.student_id] ?? 0) + log.points;
   }
 
+  // TEMP DEBUG — remove once Cogs-total mismatch is resolved
+  console.log('[DEBUG dashboard] householdId=', householdId);
+  console.log('[DEBUG dashboard] studentIds=', studentIds);
+  console.log('[DEBUG dashboard] pointsLogs fetched count=', (pointsLogs ?? []).length);
+  console.log('[DEBUG dashboard] cogsMap=', cogsMap);
+
   // ── Step 7: Parent notes for current week ────────────────────────────────
   const { data: aiNotesRaw } = await supabase
     .from("ai_notes")
@@ -188,6 +194,8 @@ export default async function DashboardPage() {
         weekPct,
         monthSubjects,
         cogsBalance: cogsMap[profile.id] ?? 0,
+        debugRowCount: (pointsLogs ?? []).filter((l) => l.student_id === profile.id).length,
+        debugHouseholdId: householdId ?? '(none)',
         parentNote: aiNotesMap[profile.id] ?? "",
         weekStart,
       };

@@ -239,7 +239,9 @@ export function LoginClient({ profileMap }: Props) {
                       {o.label}
                     </div>
                     <div style={{ fontSize: 13, color: "#506070", marginTop: 3, lineHeight: 1.3, padding: "0 10px" }}>
-                      {o.sub}
+                      {/* Saved tagline (Admin → Profiles) wins; the env value is only a
+                          fallback when the profile couldn't be loaded. */}
+                      {profileMap[o.email] ? profileMap[o.email].tagline : o.sub}
                     </div>
                   </div>
                 );

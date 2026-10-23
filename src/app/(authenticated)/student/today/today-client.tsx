@@ -567,7 +567,7 @@ export function TodayClient({
         {/* RIGHT — quick shop + weather + calendar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {weekTracker && <BackgroundTracker tracker={weekTracker} />}
-          <QuickShopWidget items={shopItems} purchases={shopPurchases} color={student.color} />
+          <QuickShopWidget items={shopItems} purchases={shopPurchases} />
           <WeatherWidget color={student.color} weather={weather} />
           <CalendarWidget color={student.color} events={calendarEvents} />
         </div>

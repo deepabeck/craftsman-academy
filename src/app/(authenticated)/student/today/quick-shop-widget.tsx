@@ -10,7 +10,6 @@ import { usePoints } from "@/contexts/points-context";
 interface Props {
   items: MarketplaceItem[];
   purchases: { itemId: string; status: string; note: string | null }[];
-  color: string;
 }
 
 /** Compact "quick buy" widget for the Today dashboard — shows balance + the
@@ -18,7 +17,7 @@ interface Props {
  *  spot where they're already watching their Cogs add up, instead of having
  *  to remember to click into the separate Shop page. Shared items and the
  *  full catalog still live on the full Shop page (linked below). */
-export function QuickShopWidget({ items, purchases: initialPurchases, color }: Props) {
+export function QuickShopWidget({ items, purchases: initialPurchases }: Props) {
   const { balance, refreshBalance } = usePoints();
   const [purchases, setPurchases] = useState(initialPurchases);
   const [, startTransition] = useTransition();
@@ -54,7 +53,7 @@ export function QuickShopWidget({ items, purchases: initialPurchases, color }: P
   return (
     <div className="glass" style={{ padding: "16px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div className="cinzel" style={{ fontSize: 13, fontWeight: 700, color }}>
+        <div className="cinzel brass" style={{ fontSize: 13, fontWeight: 700 }}>
           Quick Shop
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

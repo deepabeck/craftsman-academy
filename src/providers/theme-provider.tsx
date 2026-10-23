@@ -5,6 +5,9 @@ import { createContext, type ReactNode, useCallback, useContext, useMemo, useSta
 interface ThemeContextType {
   bgColor: string;
   setBgColor: (color: string) => void;
+  /** Id of the unlockable background art currently shown (null = none). */
+  background: string | null;
+  setBackground: (id: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -12,11 +15,20 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [bgColor, setBgColorState] = useState("#1A3A5C");
 
+  const [background, setBackgroundState] = useState<string | null>(null);
+
   const setBgColor = useCallback((color: string) => {
     setBgColorState(color);
   }, []);
 
-  const value = useMemo(() => ({ bgColor, setBgColor }), [bgColor, setBgColor]);
+  const setBackground = useCallback((id: string | null) => {
+    setBackgroundState(id);
+  }, []);
+
+  const value = useMemo(
+    () => ({ bgColor, setBgColor, background, setBackground }),
+    [bgColor, setBgColor, background, setBackground],
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -1,3 +1,4 @@
+import { getBackgroundState } from "@/app/actions/backgrounds";
 import { createClient } from "@/lib/supabase/server";
 import { CustomizeClient } from "./customize-client";
 
@@ -20,8 +21,12 @@ export default async function CustomizePage() {
       .single(),
   ]);
 
+  const backgrounds = await getBackgroundState();
+
   return (
     <CustomizeClient
+      ownedBackgroundIds={backgrounds?.ownedIds ?? []}
+      initialBackground={backgrounds?.selectedId ?? null}
       initialColor={profile?.color ?? "#4A90D0"}
       initialBgColor={settings?.bg_color ?? "#1A3A5C"}
       studentKey={profile?.student_key ?? "deven"}

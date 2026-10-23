@@ -8,35 +8,38 @@ interface PortraitFrameProps {
   onUpload?: (url: string) => void;
 }
 
+/** Thickness of the black frame around the photo, in px. */
+const FRAME_PX = 7;
+
+/**
+ * Profile photo in a simple black frame. The photo area is a fixed 3:4 box, which
+ * is also the shape the photo cropper produces, so uploads fit with no gaps.
+ */
 export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
-    /*
-     * Strategy: the frame <img> sits in NORMAL FLOW so it establishes the
-     * container height from its intrinsic 1024×1536 aspect ratio.  The photo
-     * is then position:absolute behind the frame, clipped to the transparent
-     * window area.  This is more reliable than CSS `aspect-ratio` for
-     * percentage-based absolute children.
-     *
-     * Frame window (measured from goldframe_profile.png alpha channel): the
-     * transparent opening is x 145-878, y 266-1251 of the 1024x1536 image. The
-     * photo box is that opening grown by 10px per side so its edges tuck under
-     * the opaque rim (74px+ thick) and no background can show through a gap:
-     *   top  = 16.667%   left  = 13.184%
-     *   width = 73.535%  height = 65.43%
-     */
-    <div style={{ position: "relative", flexShrink: 0, lineHeight: 0, width: "78%", margin: "0 auto" }}>
-      {/* Photo clipped to the frame window — rendered BEFORE the frame so it
-          sits behind the opaque frame borders */}
+    <div
+      style={{
+        position: "relative",
+        flexShrink: 0,
+        lineHeight: 0,
+        width: "78%",
+        margin: "0 auto",
+        boxSizing: "border-box",
+        padding: FRAME_PX,
+        background: "#0a0a0c",
+        borderRadius: 3,
+        boxShadow: "0 6px 20px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.1)",
+      }}
+    >
       <div
         style={{
-          position: "absolute",
-          top: "16.667%",
-          left: "13.184%",
-          width: "73.535%",
-          height: "65.43%",
+          position: "relative",
+          width: "100%",
+          aspectRatio: "3 / 4",
           overflow: "hidden",
+          boxShadow: "0 0 0 1px rgba(255,255,255,0.08)",
         }}
       >
         {/* biome-ignore lint/performance/noImgElement: dynamic avatar URL */}
@@ -56,23 +59,6 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
         />
       </div>
 
-      {/* Frame in normal flow — sets container height and renders on top of
-          the photo.  Transparent window reveals the photo; opaque borders
-          cover the edges, chain, and ornaments. */}
-      {/* biome-ignore lint/performance/noImgElement: static frame asset */}
-      <img
-        src="/assets/goldframe_profile.png"
-        alt=""
-        aria-hidden="true"
-        style={{
-          position: "relative",
-          width: "100%",
-          display: "block",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
-
       {onUpload && (
         <>
           <input
@@ -85,7 +71,7 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
               if (f) onUpload(URL.createObjectURL(f));
             }}
           />
-          {/* Hover target over the photo window only */}
+          {/* Hover target over the photo only */}
           <div
             onClick={() => fileRef.current?.click()}
             onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
@@ -93,10 +79,7 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
             tabIndex={0}
             style={{
               position: "absolute",
-              top: "16.667%",
-              left: "13.184%",
-              width: "73.535%",
-              height: "65.43%",
+              inset: FRAME_PX,
               zIndex: 2,
               display: "flex",
               alignItems: "center",

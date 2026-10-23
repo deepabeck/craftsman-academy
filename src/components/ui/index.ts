@@ -1,4 +1,5 @@
 export { AcademyLogo } from "./academy-logo";
+export { BackgroundPicker } from "./background-picker";
 export { Divider } from "./divider";
 export { HexPicker } from "./hex-picker";
 export { Icon } from "./icon";

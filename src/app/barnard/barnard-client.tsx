@@ -173,23 +173,16 @@ export function BarnardLoginClient({ profileMap }: Props) {
                     >
                       <div
                         style={{
-                          position: "relative",
-                          width: "calc(170px * 1024 / 1536)",
                           height: "100%",
-                          flexShrink: 0,
+                          boxSizing: "border-box",
+                          padding: 5,
+                          background: "#0a0a0c",
+                          borderRadius: 2,
+                          boxShadow: "0 4px 14px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.1)",
                         }}
                       >
-                        {/* Photo clipped to frame window: top=16.667%, left=13.184%, w=73.535%, h=65.43% (opening plus 10px tucked under the rim) */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "16.667%",
-                            left: "13.184%",
-                            width: "73.535%",
-                            height: "65.43%",
-                            overflow: "hidden",
-                          }}
-                        >
+                        {/* Simple black frame: photo area is a fixed 3:4 box, same shape the cropper outputs */}
+                        <div style={{ height: "100%", aspectRatio: "3 / 4", overflow: "hidden" }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={avatarSrc}
@@ -206,20 +199,6 @@ export function BarnardLoginClient({ profileMap }: Props) {
                             }}
                           />
                         </div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src="/assets/goldframe_profile.png"
-                          alt=""
-                          aria-hidden="true"
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            width: "100%",
-                            height: "100%",
-                            display: "block",
-                            pointerEvents: "none",
-                          }}
-                        />
                       </div>
                     </div>
                     <div

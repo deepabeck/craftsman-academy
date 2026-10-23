@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { selectBackground } from "@/app/actions/backgrounds";
 import { saveBgColor } from "@/app/actions/customize";
 import {
   changeOwnPassword,
@@ -12,7 +13,8 @@ import {
   uploadAvatar,
 } from "@/app/actions/profiles";
 import { AvatarCropperModal } from "@/components/modals/avatar-cropper-modal";
-import { HexPicker, Icon, PageHeader } from "@/components/ui";
+import { BackgroundPicker, HexPicker, Icon, PageHeader } from "@/components/ui";
+import { BACKGROUNDS } from "@/lib/backgrounds";
 import { gradeLabel, rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
@@ -32,7 +34,7 @@ const labelStyle = {
 };
 
 export function ProfilesClient({ profiles: initialProfiles, adminProfile: initialAdmin }: Props) {
-  const { setBgColor } = useTheme();
+  const { setBgColor, background, setBackground } = useTheme();
   const { setUserAvatarUrl } = useAuth();
   const [profiles, setProfiles] = useState(initialProfiles);
   const [activeId, setActiveId] = useState(initialProfiles[0]?.id ?? "");
@@ -394,7 +396,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "753/1005", // matches the portrait frame window
+                  aspectRatio: "3/4",
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",
@@ -554,12 +556,27 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
               {bgSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
             </div>
             <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
-              Tint the Academy&apos;s atmosphere. The steampunk details stay fixed — only the ambient color shifts.
+              Tint the Academy&apos;s atmosphere with any color you like.
             </div>
             <HexPicker value={adminBgColor} onChange={handleAdminBgColorChange} label="Hue Tint" />
             <div style={{ marginTop: 10, fontSize: 12, color: "#404858", lineHeight: 1.6 }}>
               Try deep blues (#1A3A5C), forest greens (#1A3A28), or warm ambers (#3A2010).
             </div>
+            <div className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em", margin: "18px 0 6px" }}>
+              BACKGROUND ART
+            </div>
+            <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 12, lineHeight: 1.6 }}>
+              All backgrounds are unlocked for you. Students earn theirs one at a time by finishing a full week.
+            </div>
+            <BackgroundPicker
+              ownedIds={BACKGROUNDS.map((b) => b.id)}
+              selectedId={background}
+              bgColor={adminBgColor}
+              onSelect={(id) => {
+                setBackground(id);
+                void selectBackground(id);
+              }}
+            />
           </div>
         </div>
       </div>
@@ -672,7 +689,7 @@ export function ProfilesClient({ profiles: initialProfiles, adminProfile: initia
                 }}
                 style={{
                   width: "100%",
-                  aspectRatio: "753/1005", // matches the portrait frame window
+                  aspectRatio: "3/4",
                   objectFit: "cover",
                   objectPosition: "top",
                   display: "block",

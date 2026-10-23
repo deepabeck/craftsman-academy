@@ -20,9 +20,11 @@ const NAV_ITEMS = [
 
 interface StudentSidebarProps {
   student: Student;
+  /** True once every unlockable background has been collected. */
+  collectionComplete?: boolean;
 }
 
-export function StudentSidebar({ student }: StudentSidebarProps) {
+export function StudentSidebar({ student, collectionComplete = false }: StudentSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const { balance: pointsBalance, unseenCount } = usePoints();
@@ -58,6 +60,26 @@ export function StudentSidebar({ student }: StudentSidebarProps) {
           >
             {student.tagline}
           </div>
+          {collectionComplete && (
+            <div
+              title="You've unlocked every background!"
+              style={{
+                display: "inline-block",
+                marginTop: 6,
+                padding: "2px 9px",
+                borderRadius: 999,
+                border: "1px solid rgba(232,168,32,0.6)",
+                background: "rgba(232,168,32,0.14)",
+                color: "#E8C870",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ★ COLLECTION COMPLETE
+            </div>
+          )}
         </div>
         {pointsBalance !== null && (
           <div style={{ margin: "4px 12px 4px 28px", position: "relative" }}>

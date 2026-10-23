@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { selectBackground } from "@/app/actions/backgrounds";
 import { saveBgColor, saveStudentColor } from "@/app/actions/customize";
-import { HexPicker, PageHeader } from "@/components/ui";
+import { BackgroundPicker, HexPicker, PageHeader } from "@/components/ui";
+import { BACKGROUNDS } from "@/lib/backgrounds";
 import { rgba } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/providers/theme-provider";
@@ -12,11 +14,22 @@ interface Props {
   initialBgColor: string;
   studentKey: string;
   displayName: string;
+  ownedBackgroundIds: string[];
+  initialBackground: string | null;
 }
 
-export function CustomizeClient({ initialColor, initialBgColor, studentKey, displayName }: Props) {
+export function CustomizeClient({
+  initialColor,
+  initialBgColor,
+  studentKey,
+  displayName,
+  ownedBackgroundIds,
+  initialBackground,
+}: Props) {
   const { setUserColor } = useAuth();
-  const { setBgColor } = useTheme();
+  const { setBgColor, setBackground } = useTheme();
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(initialBackground);
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
   const [color, setColor] = useState(initialColor);
   const [bgColor, setBgColorLocal] = useState(initialBgColor);
   const [colorSaved, setColorSaved] = useState(false);
@@ -28,7 +41,21 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
   // biome-ignore lint/correctness/useExhaustiveDependencies: only run on mount
   useEffect(() => {
     setBgColor(initialBgColor);
+    setBackground(initialBackground);
   }, []);
+
+  const handleBackgroundSelect = async (id: string | null) => {
+    const previous = selectedBackground;
+    setSelectedBackground(id);
+    setBackground(id); // live preview
+    setBackgroundError(null);
+    const result = await selectBackground(id);
+    if (result.error) {
+      setSelectedBackground(previous);
+      setBackground(previous);
+      setBackgroundError(result.error);
+    }
+  };
 
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
@@ -109,7 +136,7 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
           {bgSaved && <span style={{ fontSize: 12, color: "#70E090", fontWeight: 600 }}>✓ Saved</span>}
         </div>
         <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
-          Tint the Academy&apos;s atmosphere. The steampunk details stay fixed — only the ambient color shifts.
+          Tint the Academy&apos;s atmosphere with any color you like.
         </div>
         <HexPicker value={bgColor} onChange={handleBgColorChange} label="Hue Tint" />
         <div
@@ -125,6 +152,30 @@ export function CustomizeClient({ initialColor, initialBgColor, studentKey, disp
         >
           Try deep blues (#1A3A5C), forest greens (#1A3A28), or warm ambers (#3A2010) for different moods.
         </div>
+      </div>
+
+      {/* Background collection */}
+      <div className="glass-warm" style={{ padding: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div className="cinzel brass" style={{ fontSize: 13, letterSpacing: "0.1em" }}>
+            BACKGROUND COLLECTION
+          </div>
+          <div style={{ fontSize: 12, color: "#C8B080", fontWeight: 600 }}>
+            {ownedBackgroundIds.length} of {BACKGROUNDS.length} collected
+          </div>
+        </div>
+        <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
+          {ownedBackgroundIds.length >= BACKGROUNDS.length
+            ? "You've collected every background. Collection complete!"
+            : "Finish every task Monday through Friday and a mystery background unlocks at the end of the week. Tap one you've unlocked to use it."}
+        </div>
+        {backgroundError && <div style={{ fontSize: 12, color: "#F08080", marginBottom: 10 }}>{backgroundError}</div>}
+        <BackgroundPicker
+          ownedIds={ownedBackgroundIds}
+          selectedId={selectedBackground}
+          bgColor={bgColor}
+          onSelect={handleBackgroundSelect}
+        />
       </div>
     </div>
   );

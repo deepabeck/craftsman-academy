@@ -1,5 +1,6 @@
 "use server";
 
+import { maybeAwardWeeklyBackground } from "@/lib/background-unlocks";
 import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -269,6 +270,15 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
         points: PTS_WEEKLY_GRADE_B,
         note: `Weekly average ${Math.round(avgScore)}% — B`,
       });
+    }
+  }
+
+  // Closing out the whole week also earns a random background (once the week is over).
+  if (allDone) {
+    try {
+      await maybeAwardWeeklyBackground(studentId, weekStart);
+    } catch (e) {
+      console.error("[points] weekly background unlock failed:", e);
     }
   }
 

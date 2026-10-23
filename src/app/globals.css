@@ -117,32 +117,6 @@ body {
   position: relative;
   overflow: hidden;
 }
-.sidebar::before {
-  content: "⚙";
-  position: absolute;
-  right: -22px;
-  bottom: 32px;
-  font-size: 200px;
-  line-height: 1;
-  color: #c8a050;
-  opacity: 0.055;
-  pointer-events: none;
-  z-index: 1;
-  transform: rotate(-12deg);
-}
-.sidebar::after {
-  content: "⚙";
-  position: absolute;
-  right: 18px;
-  top: 40%;
-  font-size: 80px;
-  line-height: 1;
-  color: #c8a050;
-  opacity: 0.038;
-  pointer-events: none;
-  z-index: 1;
-  transform: rotate(22deg);
-}
 .sidebar-content {
   position: relative;
   z-index: 3;

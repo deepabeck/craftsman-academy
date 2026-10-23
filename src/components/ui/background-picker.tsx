@@ -35,6 +35,7 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
         type="button"
         onClick={() => onSelect(null)}
         aria-pressed={selectedId === null}
+        className="cinzel brass"
         style={{
           ...tileBase,
           alignSelf: "start",
@@ -43,9 +44,9 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#9AABBC",
-          fontSize: 13,
-          fontWeight: 600,
+          fontSize: 12,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
         }}
       >
         No background
@@ -64,46 +65,90 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
               aria-label={unlocked ? `Use ${b.name}` : "Locked background"}
               style={{
                 ...tileBase,
-                // Locked: a plain translucent gray panel (no image is loaded at all)
-                background: unlocked ? bgColor : "rgba(150, 155, 165, 0.3)",
+                background: bgColor,
                 cursor: unlocked ? "pointer" : "default",
                 border: selected ? "2px solid #E8A820" : "2px solid rgba(255,255,255,0.12)",
                 boxShadow: selected ? "0 0 12px rgba(232,168,32,0.45)" : "none",
               }}
             >
-              {unlocked ? (
-                // biome-ignore lint/performance/noImgElement: small local thumbnail
-                <img
-                  src={backgroundThumbUrl(b.id)}
-                  alt=""
-                  draggable={false}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 34,
-                    color: "#000",
-                    opacity: 0.75,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
-                >
-                  ?
-                </div>
+              {/* biome-ignore lint/performance/noImgElement: small local thumbnail */}
+              <img
+                src={backgroundThumbUrl(b.id)}
+                alt=""
+                draggable={false}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  // Locked: only a soft, blurred gray shape of the art shows through, never the details.
+                  ...(unlocked
+                    ? {}
+                    : { filter: "grayscale(1) blur(7px) brightness(0.75) contrast(0.8)", opacity: 0.6 }),
+                }}
+              />
+              {!unlocked && (
+                <>
+                  {/* translucent gray veil */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(150, 158, 170, 0.28)",
+                      backdropFilter: "blur(2px)",
+                      WebkitBackdropFilter: "blur(2px)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        border: "2px solid rgba(10, 14, 22, 0.55)",
+                        background: "rgba(255, 255, 255, 0.14)",
+                        backdropFilter: "blur(4px)",
+                        WebkitBackdropFilter: "blur(4px)",
+                        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span
+                        className="cinzel"
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 700,
+                          lineHeight: 1,
+                          color: "rgba(10, 14, 22, 0.8)",
+                          textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                        }}
+                      >
+                        ?
+                      </span>
+                    </div>
+                  </div>
+                </>
               )}
             </button>
             <div
+              className="cinzel"
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 textAlign: "center",
                 color: unlocked ? "#C8B080" : "#506070",
-                letterSpacing: "0.04em",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
               }}
             >
               {unlocked ? b.name : "???"}

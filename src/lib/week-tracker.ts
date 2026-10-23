@@ -1,6 +1,6 @@
 import { BACKGROUND_UNLOCK_START } from "@/lib/backgrounds";
 
-export type DayState = "closed" | "waiting" | "open" | "off" | "upcoming";
+export type DayState = "closed" | "open" | "off" | "upcoming";
 
 export interface TrackerDay {
   label: string; // M T W T F
@@ -23,8 +23,8 @@ function addDays(ymd: string, n: number): string {
 
 /**
  * Per-day progress for the Mon–Fri week containing `today` (on Sat/Sun, the week that just ended).
- * A day is "closed" when every non-cancelled task is done/approved — the same rule the weekly
- * unlock uses — and "waiting" when everything is in but some tasks still await parent review.
+ * A day is "closed" when every non-cancelled task has been submitted (done, in review, or approved)
+ * — the same rule the weekly unlock uses, so a parent who hasn't reviewed yet never holds it back.
  */
 export function buildWeekTracker(
   // biome-ignore lint/suspicious/noExplicitAny: supabase row type
@@ -49,10 +49,8 @@ export function buildWeekTracker(
     let state: DayState;
     if (!statuses || statuses.length === 0) {
       state = date < today ? "off" : date === today ? "off" : "upcoming";
-    } else if (statuses.every((s) => s === "done" || s === "approved")) {
-      state = "closed";
     } else if (statuses.every((s) => s === "done" || s === "approved" || s === "review")) {
-      state = "waiting";
+      state = "closed";
     } else {
       state = date > today ? "upcoming" : "open";
     }

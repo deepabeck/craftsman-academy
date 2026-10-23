@@ -168,9 +168,6 @@ export function TodayClient({
         <ProgBar value={tasks.length ? (done / tasks.length) * 100 : 0} color={student.color} style={{ height: 10 }} />
       </div>
 
-      {/* Weekly mystery-background tracker */}
-      {weekTracker && <BackgroundTracker tracker={weekTracker} />}
-
       {/* Streak + daily-bonus reminder — quick engagement nudge, always visible */}
       {tasks.length > 0 && (
         <div
@@ -569,6 +566,7 @@ export function TodayClient({
 
         {/* RIGHT — quick shop + weather + calendar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {weekTracker && <BackgroundTracker tracker={weekTracker} />}
           <QuickShopWidget items={shopItems} purchases={shopPurchases} color={student.color} />
           <WeatherWidget color={student.color} weather={weather} />
           <CalendarWidget color={student.color} events={calendarEvents} />

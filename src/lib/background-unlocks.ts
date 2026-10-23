@@ -28,7 +28,7 @@ export function lastFinishedWeekStart(today: string): string {
 
 /**
  * Award one random, not-yet-owned background if the student closed out the whole
- * Mon–Fri week starting `weekStart` (every non-cancelled task done/approved) and
+ * Mon–Fri week starting `weekStart` (every non-cancelled task submitted: done/review/approved) and
  * the week is over. Idempotent: one award per student per week, never a duplicate.
  * Returns the awarded background id, or null if nothing was awarded.
  */
@@ -47,7 +47,8 @@ export async function maybeAwardWeeklyBackground(studentId: string, weekStart: s
     .lte("task_date", weekEnd)
     .neq("status", "cancelled");
   if (!tasks || tasks.length === 0) return null;
-  if (!tasks.every((t) => t.status === "done" || t.status === "approved")) return null;
+  // Submitted counts: tasks still waiting on parent review (status "review") don't hold the unlock back.
+  if (!tasks.every((t) => t.status === "done" || t.status === "approved" || t.status === "review")) return null;
 
   const { data: owned } = await service
     .from("background_unlocks")

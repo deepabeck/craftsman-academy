@@ -11,6 +11,8 @@ import { usePoints } from "@/contexts/points-context";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { getTodayLabel, rgba } from "@/lib/utils";
 import type { WeatherData } from "@/lib/weather";
+import type { WeekTracker } from "@/lib/week-tracker";
+import { BackgroundTracker } from "./background-tracker";
 import { QuickShopWidget } from "./quick-shop-widget";
 
 export interface WeekSummary {
@@ -39,6 +41,7 @@ interface TodayClientProps {
   shopItems: MarketplaceItem[];
   shopPurchases: { itemId: string; status: string; note: string | null }[];
   weeklyBonusEarned: number;
+  weekTracker: WeekTracker | null;
 }
 
 /** Hour (24h local time) at which tech time unlocks — change to taste */
@@ -62,6 +65,7 @@ export function TodayClient({
   shopItems,
   shopPurchases,
   weeklyBonusEarned,
+  weekTracker,
 }: TodayClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [modal, setModal] = useState<Task | null>(null);
@@ -163,6 +167,9 @@ export function TodayClient({
         />
         <ProgBar value={tasks.length ? (done / tasks.length) * 100 : 0} color={student.color} style={{ height: 10 }} />
       </div>
+
+      {/* Weekly mystery-background tracker */}
+      {weekTracker && <BackgroundTracker tracker={weekTracker} />}
 
       {/* Streak + daily-bonus reminder — quick engagement nudge, always visible */}
       {tasks.length > 0 && (
@@ -335,8 +342,8 @@ export function TodayClient({
                           }}
                         >
                           {lateTasks.length} mission{lateTasks.length === 1 ? "" : "s"} left unfinished this week — the
-                          weekly bonus Cogs only unlock when every mission for the week is checked off, so it wasn&apos;t
-                          earned this time.
+                          weekly bonus Cogs only unlock when every mission for the week is checked off, so it
+                          wasn&apos;t earned this time.
                         </div>
                       </div>
                     )}

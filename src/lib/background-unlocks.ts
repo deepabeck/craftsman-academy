@@ -1,4 +1,4 @@
-import { BACKGROUND_UNLOCK_START, BACKGROUNDS, STARTER_BACKGROUND_ID } from "@/lib/backgrounds";
+import { BACKGROUND_UNLOCK_START, BACKGROUNDS } from "@/lib/backgrounds";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // Server-side helpers for background unlocks. Not a "use server" file on purpose:
@@ -26,21 +26,6 @@ export function lastFinishedWeekStart(today: string): string {
   return dow === 6 || dow === 0 ? addDays(today, -daysSinceMonday) : addDays(today, -daysSinceMonday - 7);
 }
 
-/** Make sure a student owns the starter background. Idempotent. */
-export async function ensureStarterBackground(studentId: string): Promise<void> {
-  const service = createServiceClient();
-  const { error } = await service.from("background_unlocks").upsert(
-    {
-      student_id: studentId,
-      background_id: STARTER_BACKGROUND_ID,
-      source: "starter",
-      revealed_at: new Date().toISOString(), // no reveal fanfare for the starter
-    },
-    { onConflict: "student_id,background_id", ignoreDuplicates: true },
-  );
-  if (error) console.error("[backgrounds] ensureStarterBackground:", error.message);
-}
-
 /**
  * Award one random, not-yet-owned background if the student closed out the whole
  * Mon–Fri week starting `weekStart` (every non-cancelled task done/approved) and
@@ -63,8 +48,6 @@ export async function maybeAwardWeeklyBackground(studentId: string, weekStart: s
     .neq("status", "cancelled");
   if (!tasks || tasks.length === 0) return null;
   if (!tasks.every((t) => t.status === "done" || t.status === "approved")) return null;
-
-  await ensureStarterBackground(studentId);
 
   const { data: owned } = await service
     .from("background_unlocks")

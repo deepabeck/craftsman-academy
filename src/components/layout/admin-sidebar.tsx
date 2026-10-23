@@ -25,7 +25,7 @@ export function AdminSidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-content">
-        <div style={{ marginBottom: -12 }}>
+        <div style={{ margin: "18px 0 10px" }}>
           <PortraitFrame src={user?.avatarUrl ?? "/assets/icon-profile.png"} name={user?.name ?? "Admin"} />
         </div>
         <div style={{ padding: "4px 14px 6px", flexShrink: 0 }}>

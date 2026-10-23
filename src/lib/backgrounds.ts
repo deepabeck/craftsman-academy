@@ -29,9 +29,6 @@ export const BACKGROUNDS: BackgroundDef[] = [
   { id: "golden-aspens", name: "Golden Aspens" },
 ];
 
-/** Every student starts out owning this one so they can see what the feature is. */
-export const STARTER_BACKGROUND_ID = "emerald-hillside";
-
 /**
  * First Monday that can earn a weekly unlock. Weeks starting before this date
  * never award a background (the weekly-bonus code re-runs for past weeks).

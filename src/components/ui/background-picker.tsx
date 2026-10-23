@@ -37,6 +37,7 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
         aria-pressed={selectedId === null}
         style={{
           ...tileBase,
+          alignSelf: "start",
           border: selectedId === null ? "2px solid #E8A820" : "2px solid rgba(255,255,255,0.12)",
           background: bgColor,
           display: "flex",
@@ -63,29 +64,22 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
               aria-label={unlocked ? `Use ${b.name}` : "Locked background"}
               style={{
                 ...tileBase,
-                background: bgColor,
+                // Locked: a plain translucent gray panel (no image is loaded at all)
+                background: unlocked ? bgColor : "rgba(150, 155, 165, 0.3)",
                 cursor: unlocked ? "pointer" : "default",
                 border: selected ? "2px solid #E8A820" : "2px solid rgba(255,255,255,0.12)",
                 boxShadow: selected ? "0 0 12px rgba(232,168,32,0.45)" : "none",
               }}
             >
-              {/* biome-ignore lint/performance/noImgElement: small local thumbnail */}
-              <img
-                src={backgroundThumbUrl(b.id)}
-                alt=""
-                draggable={false}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  // Locked art is flattened to a dark silhouette so it reads as "something's here".
-                  filter: unlocked ? "none" : "grayscale(1) brightness(0.18) contrast(1.2)",
-                  opacity: unlocked ? 1 : 0.9,
-                }}
-              />
-              {!unlocked && (
+              {unlocked ? (
+                // biome-ignore lint/performance/noImgElement: small local thumbnail
+                <img
+                  src={backgroundThumbUrl(b.id)}
+                  alt=""
+                  draggable={false}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
                 <div
                   style={{
                     position: "absolute",
@@ -93,9 +87,11 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 26,
-                    color: "rgba(255,255,255,0.55)",
+                    fontSize: 34,
+                    color: "#000",
+                    opacity: 0.75,
                     fontWeight: 700,
+                    lineHeight: 1,
                   }}
                 >
                   ?

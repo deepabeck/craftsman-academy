@@ -8,9 +8,6 @@ interface PortraitFrameProps {
   onUpload?: (url: string) => void;
 }
 
-/** Thickness of the black frame around the photo, in px. */
-const FRAME_PX = 7;
-
 /**
  * Profile photo in a simple black frame. The photo area is a fixed 3:4 box, which
  * is also the shape the photo cropper produces, so uploads fit with no gaps.
@@ -27,7 +24,8 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
         width: "78%",
         margin: "0 auto",
         boxSizing: "border-box",
-        padding: FRAME_PX,
+        // % padding scales with the sidebar width (~7px at 230px) and stays thin when the frame is small
+        padding: "3%",
         background: "#0a0a0c",
         borderRadius: 3,
         boxShadow: "0 6px 20px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.1)",
@@ -57,53 +55,53 @@ export function PortraitFrame({ src, name, onUpload }: PortraitFrameProps) {
             e.currentTarget.src = "/assets/icon-profile.png";
           }}
         />
-      </div>
 
-      {onUpload && (
-        <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onUpload(URL.createObjectURL(f));
-            }}
-          />
-          {/* Hover target over the photo only */}
-          <div
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            style={{
-              position: "absolute",
-              inset: FRAME_PX,
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(0,0,0,0)",
-              cursor: "pointer",
-              transition: "background 0.2s",
-              fontSize: 13,
-              color: "transparent",
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(0,0,0,0.55)";
-              e.currentTarget.style.color = "#E8C870";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(0,0,0,0)";
-              e.currentTarget.style.color = "transparent";
-            }}
-          >
-            Change Photo
-          </div>
-        </>
-      )}
+        {onUpload && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUpload(URL.createObjectURL(f));
+              }}
+            />
+            {/* Hover target over the photo only */}
+            <div
+              onClick={() => fileRef.current?.click()}
+              onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(0,0,0,0)",
+                cursor: "pointer",
+                transition: "background 0.2s",
+                fontSize: 13,
+                color: "transparent",
+                fontWeight: 600,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(0,0,0,0.55)";
+                e.currentTarget.style.color = "#E8C870";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(0,0,0,0)";
+                e.currentTarget.style.color = "transparent";
+              }}
+            >
+              Change Photo
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

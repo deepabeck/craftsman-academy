@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import { getMarketplaceItems, getMyWeeklyPurchases } from "@/app/actions/marketplace";
 import { ensureDailyTasks } from "@/app/actions/tasks";
+import { BACKGROUNDS } from "@/lib/backgrounds";
 import { fetchCalendarEvents } from "@/lib/ical-parser";
 import { computeStreak, localDateStr } from "@/lib/streak";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent, Student, Task } from "@/lib/types";
 import { fetchWeather } from "@/lib/weather";
+import { buildWeekTracker } from "@/lib/week-tracker";
 import type { LateTask, WeekSummary } from "./today-client";
 import { TodayClient } from "./today-client";
 
@@ -97,6 +99,14 @@ export default async function TodayPage() {
   ]);
 
   const streak = computeStreak(streakTasks, today);
+
+  // Weekly mystery-background tracker (hidden once the whole collection is unlocked)
+  const { data: ownedBackgrounds } = await supabase
+    .from("background_unlocks")
+    .select("background_id")
+    .eq("student_id", user.id);
+  const collectionComplete = new Set((ownedBackgrounds ?? []).map((r) => r.background_id)).size >= BACKGROUNDS.length;
+  const weekTracker = collectionComplete ? null : buildWeekTracker(streakTasks, today);
 
   // Fetch today's tasks joined with subjects (include cancelled — shown greyed out)
   const { data: rawTasks, error } = await supabase
@@ -248,6 +258,7 @@ export default async function TodayPage() {
       shopItems={shopItems}
       shopPurchases={shopPurchases}
       weeklyBonusEarned={weeklyBonusEarned}
+      weekTracker={weekTracker}
     />
   );
 }

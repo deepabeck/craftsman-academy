@@ -1,11 +1,6 @@
 "use server";
 
-import {
-  ensureStarterBackground,
-  lastFinishedWeekStart,
-  maybeAwardWeeklyBackground,
-  todayInAppTz,
-} from "@/lib/background-unlocks";
+import { lastFinishedWeekStart, maybeAwardWeeklyBackground, todayInAppTz } from "@/lib/background-unlocks";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -50,7 +45,6 @@ export async function getBackgroundState(): Promise<BackgroundState | null> {
     };
   }
 
-  await ensureStarterBackground(user.id);
   try {
     await maybeAwardWeeklyBackground(user.id, lastFinishedWeekStart(todayInAppTz()));
   } catch (e) {

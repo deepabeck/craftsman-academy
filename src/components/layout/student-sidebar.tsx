@@ -32,7 +32,7 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
   return (
     <div className="sidebar">
       <div className="sidebar-content">
-        <div style={{ marginBottom: -12 }}>
+        <div style={{ margin: "18px 0 10px" }}>
           <PortraitFrame src={student.avatar} name={student.name} />
         </div>
         <div style={{ padding: "4px 14px 6px", flexShrink: 0 }}>

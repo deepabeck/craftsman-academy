@@ -87,11 +87,11 @@ export default async function DashboardPage() {
     .neq("status", "cancelled")
     .in("student_id", studentIds);
 
-  // ── Step 6: Cogs balance per student ─────────────────────────────────────
+  // ── Step 6: Creds balance per student ─────────────────────────────────────
   // Aggregated in Postgres via get_cogs_balances() (migration 037) rather than
   // fetching every points_log row and summing in JS: an unbounded .select()
   // here gets silently capped at 1000 rows by PostgREST with no ORDER BY, which
-  // is exactly what caused the Command Center Cogs totals to read wrong once a
+  // is exactly what caused the Command Center Creds totals to read wrong once a
   // household's combined ledger passed 1000 rows (the dropped rows skewed the
   // sum, since whichever rows didn't fit in the scan happened to include a
   // disproportionate share of negative entries).

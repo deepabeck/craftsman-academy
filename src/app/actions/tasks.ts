@@ -226,7 +226,7 @@ export async function approveTask(taskId: string, score: number, reviewerNotes?:
 
 /**
  * Admin re-grades an already-approved task.
- * Updates the score on the task and adjusts the points_log so Cogs reflect the new score.
+ * Updates the score on the task and adjusts the points_log so Creds reflect the new score.
  */
 export async function regradeTask(
   taskId: string,

@@ -32,9 +32,9 @@ export const ICON_MAP: Record<string, string> = {
   techtime: "/assets/icon-techtime-unlocked.png",
   "sign-out": "/assets/icon-sign-out.png",
   add: "/assets/icon-add.png",
-  coin: "/assets/icon_coin.png",
+  coin: "/assets/icon_creds.png",
   "todays-tasks": "/assets/icon-todays-tasks.png",
-  logo: "/assets/icon_coin.png",
+  logo: "/assets/icon_creds.png",
 };
 
 /** All subjects in the curriculum. */

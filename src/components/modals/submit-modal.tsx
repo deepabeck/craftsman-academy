@@ -185,7 +185,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck, onSucce
     localStorage.removeItem(timerKey);
     localStorage.removeItem(draftKey);
     onSubmit(task.id, { storagePaths, text, timer: sec });
-    onSuccess?.(5); // task_submit = +5 Cogs
+    onSuccess?.(5); // task_submit = +5 Creds
   };
 
   const fileExt = (name: string) => name.split(".").pop()?.toUpperCase() ?? "FILE";
@@ -476,7 +476,7 @@ export function SubmitModal({ task, student, onClose, onSubmit, onCheck, onSucce
               className="btn-brass"
               style={{ flex: 1, padding: "11px" }}
               onClick={() => {
-                onSuccess?.(5); // task_submit = +5 Cogs
+                onSuccess?.(5); // task_submit = +5 Creds
                 onCheck(task.id);
                 onClose();
               }}

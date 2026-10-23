@@ -155,7 +155,7 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
             <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700 }}>
-              {(purchase.contributionAmount ?? purchase.item.price).toLocaleString()} Cogs
+              {(purchase.contributionAmount ?? purchase.item.price).toLocaleString()} Creds
             </span>
             <span style={{ fontSize: 11, color: "#506070" }}>Requested {formatDate(purchase.requestedAt)}</span>
           </div>
@@ -380,7 +380,7 @@ function SharedGroupCard({
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 13, color: p.student.color, fontWeight: 600 }}>{p.student.name}</span>
                 <span className="cinzel" style={{ fontSize: 12, color: "#E8A820" }}>
-                  {(p.contributionAmount ?? item.price).toLocaleString()} Cogs
+                  {(p.contributionAmount ?? item.price).toLocaleString()} Creds
                 </span>
                 <span style={{ fontSize: 12, color: "#70E090" }}>✓</span>
                 {p.note && (
@@ -408,7 +408,7 @@ function SharedGroupCard({
           {/* Total */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
             <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700 }}>
-              {totalContributed.toLocaleString()} / {item.price.toLocaleString()} Cogs
+              {totalContributed.toLocaleString()} / {item.price.toLocaleString()} Creds
             </span>
             <span style={{ fontSize: 11, fontWeight: 600, color: isComplete ? "#70E090" : "#D4A830" }}>
               {isComplete ? "● Ready to approve" : "● Waiting on co-contributor"}
@@ -551,7 +551,7 @@ function ItemRow({
             <div style={{ fontSize: 12, color: "#506070", marginTop: 1 }}>{item.description}</div>
           </div>
           <span className="cinzel" style={{ fontSize: 13, color: "#E8A820", fontWeight: 700, flexShrink: 0 }}>
-            {item.price.toLocaleString()} Cogs{item.shared ? " total" : ""}
+            {item.price.toLocaleString()} Creds{item.shared ? " total" : ""}
           </span>
           <button
             type="button"
@@ -593,7 +593,7 @@ function ItemRow({
               value={form.price}
               onChange={(e) => set("price", Number(e.target.value))}
               style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
-              placeholder="Cogs"
+              placeholder="Creds"
             />
           </div>
           <input
@@ -653,8 +653,8 @@ function ItemRow({
                 borderRadius: 6,
               }}
             >
-              Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's{" "}
-              {form.price.toLocaleString()} Cog total.
+              Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Creds toward this item's{" "}
+              {form.price.toLocaleString()} Cred total.
             </div>
           )}
           {err && <div style={{ fontSize: 11, color: "#F08080" }}>{err}</div>}
@@ -742,7 +742,7 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
             value={form.price}
             onChange={(e) => set("price", Number(e.target.value))}
             style={{ width: 90, fontSize: 13, padding: "5px 10px" }}
-            placeholder="Cogs"
+            placeholder="Creds"
           />
         </div>
         <input
@@ -770,8 +770,8 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
               borderRadius: 6,
             }}
           >
-            Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Cogs toward this item's{" "}
-            {form.price.toLocaleString()} Cog total.
+            Each student contributes {Math.ceil(form.price / 2).toLocaleString()} Creds toward this item's{" "}
+            {form.price.toLocaleString()} Cred total.
           </div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -796,7 +796,7 @@ function AddItemForm({ onAdded }: { onAdded: (item: MarketplaceItem & { isActive
 // ── Main client ──────────────────────────────────────────────────────────────
 
 const LEDGER_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
-  task_submit: { label: "Task Submitted", icon: "⚙️" },
+  task_submit: { label: "Task Submitted", icon: "✦" },
   task_approve: { label: "Approved", icon: "✅" },
   daily_submit_bonus: { label: "Daily Submit Bonus", icon: "🌟" },
   daily_approve_bonus: { label: "Daily Approve Bonus", icon: "🏆" },
@@ -957,7 +957,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                     {ledgerByDay[day].map((e) => {
-                      const meta = LEDGER_CATEGORY_LABELS[e.category] ?? { label: e.category, icon: "⚙️" };
+                      const meta = LEDGER_CATEGORY_LABELS[e.category] ?? { label: e.category, icon: "✦" };
                       const runningBal = perStudentRunning[e.student_id]?.[e.id];
                       return (
                         <div
@@ -1080,7 +1080,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}
                 >
                   <span className="cinzel" style={{ fontSize: 12, color: "#C8860A" }}>
-                    {(p.contributionAmount ?? p.item.price).toLocaleString()} Cogs
+                    {(p.contributionAmount ?? p.item.price).toLocaleString()} Creds
                   </span>
                   <span
                     style={{ fontSize: 11, fontWeight: 700, color: statusColor(p.status), textTransform: "capitalize" }}

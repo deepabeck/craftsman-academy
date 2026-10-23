@@ -48,7 +48,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
       >
-        <PageHeader icon="coin" title="Cogs Shop" sub="Spend your earned Cogs on rewards" />
+        <PageHeader icon="coin" title="Creds Shop" sub="Spend your earned Creds on rewards" />
         <div
           style={{
             display: "flex",
@@ -60,12 +60,12 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
             borderRadius: 8,
           }}
         >
-          <Image src="/assets/icon_coin.png" alt="cogs" width={22} height={22} />
+          <Image src="/assets/icon_creds.png" alt="creds" width={22} height={22} />
           <span className="cinzel" style={{ fontSize: 18, fontWeight: 700, color: "#E8A820" }}>
             {balance?.toLocaleString() ?? "—"}
           </span>
           <span className="cinzel" style={{ fontSize: 11, color: "#C8860A", letterSpacing: "0.15em" }}>
-            Cogs
+            Creds
           </span>
         </div>
       </div>
@@ -136,12 +136,12 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
 
               {/* Price */}
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                <Image src="/assets/icon_coin.png" alt="" width={14} height={14} />
+                <Image src="/assets/icon_creds.png" alt="" width={14} height={14} />
                 <span className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: "#E8A820" }}>
                   {item.shared ? myShare.toLocaleString() : item.price.toLocaleString()}
                 </span>
                 <span className="cinzel" style={{ fontSize: 10, color: "#C8860A", letterSpacing: "0.15em" }}>
-                  {item.shared ? `Cogs your share` : "Cogs"}
+                  {item.shared ? `Creds your share` : "Creds"}
                 </span>
                 {item.shared && (
                   <span style={{ fontSize: 10, color: "#506070", marginLeft: 2 }}>
@@ -230,7 +230,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
                         style={{ fontSize: 12, padding: "5px 16px", flex: 1 }}
                         onClick={() => handleRequest(item.id)}
                       >
-                        {item.shared ? `Contribute ${myShare.toLocaleString()} Cogs` : `Confirm Request`}
+                        {item.shared ? `Contribute ${myShare.toLocaleString()} Creds` : `Confirm Request`}
                       </button>
                     </div>
                   </div>
@@ -244,9 +244,9 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
                   >
                     {canAfford
                       ? item.shared
-                        ? `Contribute ${myShare.toLocaleString()} Cogs`
+                        ? `Contribute ${myShare.toLocaleString()} Creds`
                         : "Request"
-                      : "Not enough Cogs"}
+                      : "Not enough Creds"}
                   </button>
                 )}
                 {msg && !isPending && !isApproved && !isConfirming && (

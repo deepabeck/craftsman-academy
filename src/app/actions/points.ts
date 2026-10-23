@@ -136,8 +136,8 @@ export async function awardApprovalPoints(taskId: string, score: number) {
 /**
  * Computes the current school-day streak for a student and awards a bonus if
  * the streak just hit a multiple of 30.
- *   First milestone (30 days):  +500 Cogs
- *   Each repeat (60, 90, …):    +300 Cogs
+ *   First milestone (30 days):  +500 Creds
+ *   Each repeat (60, 90, …):    +300 Creds
  *
  * Idempotent — source_id = 'streak_30' / 'streak_60' etc. prevents double-awarding.
  * Called after a student completes all tasks for the day.
@@ -298,7 +298,7 @@ export async function awardWeeklyBonus(studentId: string, weekStart: string, wee
 // ── Manual award ────────────────────────────────────────────────────────────────
 
 /**
- * Award (or deduct) Cogs manually for a one-off achievement.
+ * Award (or deduct) Creds manually for a one-off achievement.
  * Each call inserts a unique row (source_id = new UUID) so multiple awards
  * on the same day are all recorded independently.
  */
@@ -337,7 +337,7 @@ export async function getStudentBalance(studentId: string): Promise<number> {
   // Aggregated in Postgres via get_cogs_balances() (migration 037) instead of
   // fetching every points_log row and summing in JS — an unbounded select
   // here gets silently capped at 1000 rows by PostgREST with no ORDER BY,
-  // which is exactly what caused the Command Center Cogs totals to read
+  // which is exactly what caused the Command Center Creds totals to read
   // wrong once a household ledger passed 1000 rows. Each student's own
   // ledger is approaching that same size, so this fixes it here too before
   // it recurs per-student.

@@ -8,7 +8,7 @@ interface NewPointsModalProps {
 }
 
 const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
-  task_submit: { label: "Task Submitted", icon: "⚙️" },
+  task_submit: { label: "Task Submitted", icon: "✦" },
   task_approve: { label: "Task Approved", icon: "✅" },
   daily_submit_bonus: { label: "All Tasks In — Daily Bonus", icon: "🌟" },
   daily_approve_bonus: { label: "All Tasks Approved — Bonus", icon: "🏆" },
@@ -20,13 +20,13 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
   manual_award: { label: "Special Award", icon: "🏅" },
 };
 
-/** manual_award covers both Award Cogs (positive) and Dock Cogs (negative) —
+/** manual_award covers both Award Creds (positive) and Dock Creds (negative) —
  *  the static label map above doesn't know the sign, so resolve it here instead. */
 function resolveMeta(category: string, points: number): { label: string; icon: string } {
   if (category === "manual_award" && points < 0) {
-    return { label: "Cogs Adjustment", icon: "⚠️" };
+    return { label: "Creds Adjustment", icon: "⚠️" };
   }
-  return CATEGORY_LABELS[category] ?? { label: category, icon: "⚙️" };
+  return CATEGORY_LABELS[category] ?? { label: category, icon: "✦" };
 }
 
 function formatDate(iso: string) {
@@ -74,7 +74,7 @@ export function NewPointsModal({ entries, onDismiss }: NewPointsModalProps) {
         {/* Header */}
         <div style={{ padding: "20px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
           <div className="cinzel" style={{ fontSize: 18, color: "#E8A820", letterSpacing: "0.08em", marginBottom: 4 }}>
-            ⚙️ COGS EARNED
+            CREDS EARNED
           </div>
           <div style={{ fontSize: 13, color: "#7A8B9C" }}>Here's everything you've earned since your last visit</div>
         </div>
@@ -145,7 +145,7 @@ export function NewPointsModal({ entries, onDismiss }: NewPointsModalProps) {
             <div style={{ fontSize: 11, color: "#506070" }}>{total < 0 ? "Net change" : "Total earned"}</div>
             <div className="cinzel" style={{ fontSize: 22, fontWeight: 700, color: total < 0 ? "#F08080" : "#E8A820" }}>
               {total > 0 ? "+" : ""}
-              {total} Cogs
+              {total} Creds
             </div>
           </div>
           <button
@@ -154,7 +154,7 @@ export function NewPointsModal({ entries, onDismiss }: NewPointsModalProps) {
             style={{ fontSize: 14, padding: "10px 24px" }}
             onClick={onDismiss}
           >
-            Collect! ⚙️
+            Collect!
           </button>
         </div>
       </div>

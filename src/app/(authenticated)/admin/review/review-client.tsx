@@ -468,7 +468,7 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
     setSubmitting(false);
     if (result.success) {
       const student = students.find((s) => s.id === selectedId);
-      setFeedback({ ok: true, msg: `${pts > 0 ? "+" : ""}${pts} Cogs awarded to ${student?.name}` });
+      setFeedback({ ok: true, msg: `${pts > 0 ? "+" : ""}${pts} Creds awarded to ${student?.name}` });
       setNote("");
       setAmount("");
       setTimeout(() => setFeedback(null), 4000);
@@ -490,7 +490,7 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
       }}
     >
       <div className="cinzel" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#C8A860", marginBottom: 12 }}>
-        ⚙ AWARD COGS
+        AWARD CREDS
       </div>
 
       {/* Student selector */}
@@ -535,7 +535,7 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
         <input
           className="inp"
           type="number"
-          placeholder="Cogs"
+          placeholder="Creds"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -553,7 +553,7 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
             opacity: submitting ? 0.6 : 1,
           }}
         >
-          {submitting ? "…" : "⚙ Award"}
+          {submitting ? "…" : "Award"}
         </button>
       </div>
 
@@ -580,8 +580,8 @@ function ManualCogsPanel({ students }: { students: { id: string; name: string; c
 
 // ── DockCogsPanel ─────────────────────────────────────────────────────────────
 
-/** One-off Cogs deduction — separate from Award Cogs so a mis-type can't
- *  accidentally hand out Cogs instead of taking them away (and vice versa).
+/** One-off Creds deduction — separate from Award Creds so a mis-type can't
+ *  accidentally hand out Creds instead of taking them away (and vice versa).
  *  Always sends a negative amount to awardManualCogs regardless of what's
  *  typed, and requires an explicit confirm step before it submits. */
 function DockCogsPanel({ students }: { students: { id: string; name: string; color: string }[] }) {
@@ -604,7 +604,7 @@ function DockCogsPanel({ students }: { students: { id: string; name: string; col
     setSubmitting(false);
     setConfirming(false);
     if (result.success) {
-      setFeedback({ ok: true, msg: `-${pts} Cogs removed from ${selectedStudent?.name}` });
+      setFeedback({ ok: true, msg: `-${pts} Creds removed from ${selectedStudent?.name}` });
       setNote("");
       setAmount("");
       setTimeout(() => setFeedback(null), 4000);
@@ -626,7 +626,7 @@ function DockCogsPanel({ students }: { students: { id: string; name: string; col
       }}
     >
       <div className="cinzel" style={{ fontSize: 11, letterSpacing: "0.14em", color: "#E09070", marginBottom: 12 }}>
-        ⚠ DOCK COGS
+        ⚠ DOCK CREDS
       </div>
 
       {/* Student selector */}
@@ -674,7 +674,7 @@ function DockCogsPanel({ students }: { students: { id: string; name: string; col
           }}
         >
           <span style={{ fontSize: 13, color: "#F0B0A0", flex: 1 }}>
-            Remove <strong>{pts.toLocaleString()} Cogs</strong> from {selectedStudent?.name}
+            Remove <strong>{pts.toLocaleString()} Creds</strong> from {selectedStudent?.name}
             {note.trim() ? ` — "${note.trim()}"` : ""}?
           </span>
           <button
@@ -721,7 +721,7 @@ function DockCogsPanel({ students }: { students: { id: string; name: string; col
             className="inp"
             type="number"
             min={1}
-            placeholder="Cogs"
+            placeholder="Creds"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && canSubmit && setConfirming(true)}
@@ -1716,7 +1716,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
           </div>
         )}
 
-        {/* Manual Cogs award */}
+        {/* Manual Creds award */}
         <ManualCogsPanel students={students} />
         <DockCogsPanel students={students} />
       </div>

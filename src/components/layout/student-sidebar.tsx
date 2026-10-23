@@ -98,8 +98,8 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
             >
               <div style={{ position: "relative" }}>
                 <Image
-                  src="/assets/icon_coin.png"
-                  alt="cogs"
+                  src="/assets/icon_creds.png"
+                  alt="creds"
                   width={56}
                   height={56}
                   style={{
@@ -142,7 +142,7 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
                 boxShadow: "0 0 18px rgba(232,168,32,0.08) inset, 0 2px 8px rgba(0,0,0,0.4)",
               }}
             >
-              {/* Single centered row: balance · Cogs · Shop → */}
+              {/* Single centered row: balance · Creds · Shop → */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <span
                   className="cinzel"
@@ -167,7 +167,7 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
                     textShadow: "0 1px 4px rgba(0,0,0,0.8)",
                   }}
                 >
-                  Cogs
+                  Creds
                 </span>
                 <span style={{ color: "rgba(232,168,32,0.3)", fontSize: 10 }}>|</span>
                 <Link

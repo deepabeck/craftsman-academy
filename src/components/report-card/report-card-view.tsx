@@ -261,7 +261,7 @@ export function GradeArchiveView({
                   Generated {formatDate(reportCard.generatedAt.slice(0, 10))} · {reportCard.submissionCount} materials
                   submitted
                   {reportCard.cogsBalanceSnapshot != null &&
-                    ` · Cogs balance at the time: ${reportCard.cogsBalanceSnapshot}`}
+                    ` · Creds balance at the time: ${reportCard.cogsBalanceSnapshot}`}
                 </div>
               </div>
 

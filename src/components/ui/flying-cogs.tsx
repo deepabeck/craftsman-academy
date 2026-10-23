@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { CURRENCY } from "@/lib/currency";
 
 interface FlyingCogsProps {
   points: number;
@@ -66,7 +67,7 @@ export function FlyingCogs({ points, label, onDone }: FlyingCogsProps) {
             whiteSpace: "nowrap",
           }}
         >
-          +{points} {label ?? "Cogs"}
+          +{points} {label ?? CURRENCY.plural}
         </div>
       </div>
 
@@ -89,7 +90,7 @@ export function FlyingCogs({ points, label, onDone }: FlyingCogsProps) {
           }}
         >
           <Image
-            src="/assets/icon_coin.png"
+            src="/assets/icon_creds.png"
             alt=""
             width={56}
             height={56}

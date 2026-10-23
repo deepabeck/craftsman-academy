@@ -1,8 +1,8 @@
 "use server";
 
+import { getStudentBalance } from "@/app/actions/points";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getStudentBalance } from "@/app/actions/points";
 
 export interface MarketplaceItem {
   id: string;
@@ -169,7 +169,7 @@ export async function requestPurchase(itemId: string, note?: string): Promise<{ 
 
   // Check balance
   const balance = await getStudentBalance(user.id);
-  if (balance < contributionAmount) return { success: false, error: "Not enough Cogs" };
+  if (balance < contributionAmount) return { success: false, error: "Not enough Creds" };
 
   const { error } = await supabase.from("marketplace_purchases").insert({
     student_id: user.id,
@@ -298,7 +298,7 @@ export async function approveSharedGroup(
   return { success: true };
 }
 
-/** Admin: reject a purchase — no Cogs deducted. */
+/** Admin: reject a purchase — no Creds deducted. */
 export async function rejectPurchase(
   purchaseId: string,
   adminNote?: string,

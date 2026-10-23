@@ -207,7 +207,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 <div style={{ fontSize: 11, color: "#8090A0" }}>{gradeLabel(s.currentGrade)}</div>
               </div>
 
-              {/* Cogs — centered in the remaining space between name and percentages */}
+              {/* Creds — centered in the remaining space between name and percentages */}
               <div
                 style={{
                   flex: 1,
@@ -218,8 +218,8 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 }}
               >
                 <Image
-                  src="/assets/icon_coin.png"
-                  alt="cogs"
+                  src="/assets/icon_creds.png"
+                  alt="creds"
                   width={22}
                   height={22}
                   style={{
@@ -248,7 +248,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                     textShadow: "0 1px 5px rgba(0,0,0,0.9)",
                   }}
                 >
-                  COGS
+                  CREDS
                 </span>
               </div>
               {/* Today % and Week % */}

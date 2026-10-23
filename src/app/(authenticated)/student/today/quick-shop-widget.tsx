@@ -14,7 +14,7 @@ interface Props {
 
 /** Compact "quick buy" widget for the Today dashboard — shows balance + the
  *  cheapest affordable, non-shared items so kids can redeem right from the
- *  spot where they're already watching their Cogs add up, instead of having
+ *  spot where they're already watching their Creds add up, instead of having
  *  to remember to click into the separate Shop page. Shared items and the
  *  full catalog still live on the full Shop page (linked below). */
 export function QuickShopWidget({ items, purchases: initialPurchases }: Props) {
@@ -57,7 +57,7 @@ export function QuickShopWidget({ items, purchases: initialPurchases }: Props) {
           Quick Shop
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Image src="/assets/icon_coin.png" alt="cogs" width={16} height={16} />
+          <Image src="/assets/icon_creds.png" alt="creds" width={16} height={16} />
           <span className="cinzel" style={{ fontSize: 14, fontWeight: 700, color: "#E8A820" }}>
             {balance?.toLocaleString() ?? "—"}
           </span>
@@ -89,8 +89,8 @@ export function QuickShopWidget({ items, purchases: initialPurchases }: Props) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#EEE4CC" }}>{item.name}</div>
                 <div style={{ fontSize: 11, color: "#C8860A", display: "flex", alignItems: "center", gap: 4 }}>
-                  <Image src="/assets/icon_coin.png" alt="" width={10} height={10} />
-                  {item.price.toLocaleString()} Cogs
+                  <Image src="/assets/icon_creds.png" alt="" width={10} height={10} />
+                  {item.price.toLocaleString()} Creds
                 </div>
               </div>
               {isApproved ? (

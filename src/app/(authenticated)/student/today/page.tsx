@@ -203,7 +203,7 @@ export default async function TodayPage() {
       };
     });
 
-    // Actual Cogs earned from this week's bonus categories (set by awardWeeklyBonus),
+    // Actual Creds earned from this week's bonus categories (set by awardWeeklyBonus),
     // so the Saturday card can say a real number instead of a generic "great job."
     if (dayOfWeek === 6) {
       const { data: bonusRows } = await supabase

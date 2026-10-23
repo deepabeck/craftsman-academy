@@ -209,7 +209,7 @@ export function TodayClient({
             <div style={{ fontSize: 12, color: "#9AABBC", marginTop: 6 }}>
               {allDone
                 ? "Nice work finishing today's missions!"
-                : "Finish all of today's missions to lock in your daily bonus Cogs."}
+                : "Finish all of today's missions to lock in your daily bonus Creds."}
             </div>
           </>
         )}
@@ -272,7 +272,7 @@ export function TodayClient({
                       className="glass"
                       style={{ padding: "20px 18px", textAlign: "center", borderColor: rgba(student.color, 0.25) }}
                     >
-                      <div style={{ fontSize: 32, marginBottom: 8 }}>⚙</div>
+                      <img src="/assets/icon_creds.png" alt="" width={32} height={32} style={{ marginBottom: 8 }} />
                       <div className="cinzel" style={{ fontSize: 15, fontWeight: 700, color: student.color }}>
                         Weekend Rest
                       </div>
@@ -357,7 +357,7 @@ export function TodayClient({
                           }}
                         >
                           {lateTasks.length} mission{lateTasks.length === 1 ? "" : "s"} left unfinished this week — the
-                          weekly bonus Cogs only unlock when every mission for the week is checked off, so it
+                          weekly bonus Creds only unlock when every mission for the week is checked off, so it
                           wasn&apos;t earned this time.
                         </div>
                       </div>
@@ -392,11 +392,11 @@ export function TodayClient({
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             {/* biome-ignore lint/performance/noImgElement: small inline icon, no next/image benefit here */}
                             <img
-                              src="/assets/icon_coin.png"
+                              src="/assets/icon_creds.png"
                               alt=""
                               style={{ width: 16, height: 16, objectFit: "contain" }}
                             />
-                            +{weeklyBonusEarned.toLocaleString()} Cogs weekly bonus earned!
+                            +{weeklyBonusEarned.toLocaleString()} Creds weekly bonus earned!
                           </div>
                         )}
                       </div>

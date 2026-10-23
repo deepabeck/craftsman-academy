@@ -114,26 +114,17 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
                         width: 44,
                         height: 44,
                         borderRadius: "50%",
-                        border: "2px solid rgba(10, 14, 22, 0.55)",
-                        background: "rgba(255, 255, 255, 0.14)",
+                        border: "2px solid rgba(232, 168, 32, 0.75)",
+                        background: "rgba(8, 5, 3, 0.55)",
                         backdropFilter: "blur(4px)",
                         WebkitBackdropFilter: "blur(4px)",
-                        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
+                        boxShadow: "0 0 10px rgba(232, 168, 32, 0.22), inset 0 0 0 1px rgba(232,168,32,0.18)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <span
-                        className="cinzel"
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          color: "rgba(10, 14, 22, 0.8)",
-                          textShadow: "0 1px 0 rgba(255,255,255,0.35)",
-                        }}
-                      >
+                      <span className="cinzel brass" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1 }}>
                         ?
                       </span>
                     </div>

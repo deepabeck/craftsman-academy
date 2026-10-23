@@ -162,40 +162,58 @@ export function TodayClient({
         <PageHeader
           icon="today"
           title="Today's Missions"
-          sub={`${getTodayLabel()} · ${done}/${tasks.length} complete`}
+          sub={getTodayLabel()}
           color={student.color}
+          right={
+            (streak > 0 || tasks.length > 0) && (
+              <div
+                className="glass"
+                title={
+                  streak > 0
+                    ? `${streak} school ${streak === 1 ? "day" : "days"} in a row with every mission done`
+                    : "Finish all of today's missions to start a streak"
+                }
+                style={{
+                  padding: "8px 18px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  borderColor: streak > 0 ? "rgba(232,168,32,0.4)" : undefined,
+                  opacity: streak > 0 ? 1 : 0.7,
+                }}
+              >
+                <span style={{ fontSize: 26, lineHeight: 1 }}>🔥</span>
+                <div style={{ textAlign: "center", lineHeight: 1 }}>
+                  <div className="cinzel" style={{ fontSize: 26, fontWeight: 700, color: "#E8C870" }}>
+                    {streak}
+                  </div>
+                  <div className="cinzel brass" style={{ fontSize: 10, letterSpacing: "0.12em", marginTop: 3 }}>
+                    DAY STREAK
+                  </div>
+                </div>
+              </div>
+            )
+          }
         />
-        <ProgBar value={tasks.length ? (done / tasks.length) * 100 : 0} color={student.color} style={{ height: 10 }} />
+        {tasks.length > 0 && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <span className="cinzel brass" style={{ fontSize: 12, letterSpacing: "0.1em" }}>
+                TODAY&apos;S PROGRESS
+              </span>
+              <span style={{ fontSize: 13, color: "#C8B080", fontWeight: 600 }}>
+                {done} of {tasks.length} complete · {Math.round((done / tasks.length) * 100)}%
+              </span>
+            </div>
+            <ProgBar value={(done / tasks.length) * 100} color={student.color} style={{ height: 10 }} />
+            <div style={{ fontSize: 12, color: "#9AABBC", marginTop: 6 }}>
+              {allDone
+                ? "Nice work finishing today's missions!"
+                : "Finish all of today's missions to lock in your daily bonus Cogs."}
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Streak + daily-bonus reminder — quick engagement nudge, always visible */}
-      {tasks.length > 0 && (
-        <div
-          className="glass"
-          style={{
-            padding: "10px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            borderColor: streak > 0 ? "rgba(232,168,32,0.35)" : undefined,
-          }}
-        >
-          {streak > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#E8A820", whiteSpace: "nowrap" }}>
-              🔥 {streak} day streak
-            </span>
-          )}
-          {streak > 0 && !allDone && <span style={{ color: "#506070" }}>·</span>}
-          {!allDone && (
-            <span style={{ fontSize: 13, color: "#9AABBC" }}>
-              Finish today&apos;s missions to lock in your daily bonus Cogs!
-            </span>
-          )}
-          {allDone && streak === 0 && (
-            <span style={{ fontSize: 13, color: "#9AABBC" }}>Nice work finishing today&apos;s missions!</span>
-          )}
-        </div>
-      )}
 
       {/* Main row: missions (left) + widgets column (right) */}
       <div style={{ display: "grid", gridTemplateColumns: "1.25fr 1fr", gap: 14, alignItems: "start" }}>

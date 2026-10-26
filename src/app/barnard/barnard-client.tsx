@@ -298,7 +298,7 @@ export function BarnardLoginClient({ profileMap }: Props) {
             </>
           )}
         </div>
-        <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#3A4858", letterSpacing: "0.12em" }}>
+        <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#8A9BB2", letterSpacing: "0.12em" }}>
           CRAFTSMAN ACADEMY &middot; HOMESCHOOL PORTAL
         </div>
       </div>

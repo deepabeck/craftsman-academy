@@ -310,7 +310,7 @@ export function LoginClient({ profileMap }: Props) {
             </>
           )}
         </div>
-        <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#3A4858", letterSpacing: "0.12em" }}>
+        <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#8A9BB2", letterSpacing: "0.12em" }}>
           {(process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "CRAFTSMAN ACADEMY").toUpperCase()} &middot; HOMESCHOOL PORTAL
         </div>
       </div>

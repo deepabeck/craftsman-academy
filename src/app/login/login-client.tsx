@@ -97,8 +97,17 @@ export function LoginClient({ profileMap }: Props) {
           <img
             src="/assets/logo-craftsmanacademy.png"
             alt="Craftsman Academy"
-            style={{ width: 216, display: "block", margin: "0 auto" }}
+            style={{ width: 128, display: "block", margin: "0 auto" }}
           />
+          <div
+            className="cinzel brass"
+            style={{ fontSize: 26, fontWeight: 700, letterSpacing: "0.1em", lineHeight: 1.1, marginTop: 8 }}
+          >
+            CRAFTSMAN
+          </div>
+          <div className="cinzel text-dim" style={{ fontSize: 13, letterSpacing: "0.32em", marginTop: 3 }}>
+            ACADEMY
+          </div>
         </div>
         <div
           style={{

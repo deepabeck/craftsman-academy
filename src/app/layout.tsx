@@ -29,7 +29,11 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    apple: "/assets/logo-craftsmanacademy.png",
+    icon: [
+      { url: "/assets/favicon-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/assets/app-icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/assets/app-icon-180.png",
   },
 };
 

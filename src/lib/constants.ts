@@ -34,7 +34,7 @@ export const ICON_MAP: Record<string, string> = {
   add: "/assets/icon-add.png",
   coin: "/assets/icon_creds.png",
   "todays-tasks": "/assets/icon-todays-tasks.png",
-  logo: "/assets/icon_creds.png",
+  logo: "/assets/logo-craftsmanacademy.png",
 };
 
 /** All subjects in the curriculum. */

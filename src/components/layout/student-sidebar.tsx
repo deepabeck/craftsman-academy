@@ -35,7 +35,7 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
         <div style={{ margin: "18px 0 10px" }}>
           <PortraitFrame src={student.avatar} name={student.name} />
         </div>
-        <div style={{ padding: "4px 14px 6px", flexShrink: 0 }}>
+        <div style={{ padding: "4px 14px 14px", flexShrink: 0 }}>
           <div
             className="cinzel"
             style={{
@@ -82,7 +82,7 @@ export function StudentSidebar({ student, collectionComplete = false }: StudentS
           )}
         </div>
         {pointsBalance !== null && (
-          <div style={{ margin: "4px 12px 4px 28px", position: "relative" }}>
+          <div style={{ margin: "18px 12px 22px 28px", position: "relative" }}>
             {/* Coin overlapping the left border, centred vertically — same pattern as task cards */}
             <Link
               href="/student/shop"

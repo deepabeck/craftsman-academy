@@ -871,7 +871,7 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <PageHeader
-        icon="coin"
+        icon="shop"
         title="Shop"
         sub={pending.length > 0 ? `${pending.length} pending approval` : "Manage items & approve requests"}
       />

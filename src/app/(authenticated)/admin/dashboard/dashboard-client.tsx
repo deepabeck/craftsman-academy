@@ -165,7 +165,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
             role="button"
             tabIndex={0}
             style={{
-              padding: "11px 14px",
+              padding: "10px 14px",
               cursor: "pointer",
               borderRadius: 10,
               background: activeId === s.id ? rgba(s.color, 0.28) : undefined,
@@ -174,26 +174,28 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
               boxShadow: activeId === s.id ? `0 0 24px ${rgba(s.color, 0.32)}` : "none",
             }}
           >
-            {/* Top row: avatar · name/grade · today% · week% */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Photo fills the card height; name/grade + creds in the middle; progress to the right */}
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
               {/* biome-ignore lint/performance/noImgElement: dynamic Supabase signed URL */}
               <img
                 src={s.avatarUrl ?? `/assets/profile-${s.studentKey}-framed.png`}
                 alt={s.name}
                 style={{
-                  width: 36,
-                  height: "auto",
-                  borderRadius: 4,
+                  width: 51,
+                  height: 68,
+                  objectFit: "cover",
+                  borderRadius: 6,
                   border: `2px solid ${rgba(s.color, 0.55)}`,
                   flexShrink: 0,
                 }}
               />
-              {/* Name + grade — auto width, no flex */}
-              <div style={{ minWidth: 0 }}>
+
+              {/* Name, grade, creds */}
+              <div style={{ minWidth: 0, flexShrink: 0 }}>
                 <div
                   className="cinzel"
                   style={{
-                    fontSize: 13,
+                    fontSize: 17,
                     fontWeight: 700,
                     color: s.color,
                     whiteSpace: "nowrap",
@@ -204,71 +206,45 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 >
                   {s.name}
                 </div>
-                <div style={{ fontSize: 11, color: "#8090A0" }}>{gradeLabel(s.currentGrade)}</div>
+                <div style={{ fontSize: 13, color: "#8A9BB2", marginTop: 1 }}>{gradeLabel(s.currentGrade)}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                  <Image
+                    src="/assets/icon_creds.png"
+                    alt="creds"
+                    width={24}
+                    height={24}
+                    style={{ display: "block", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.8))" }}
+                  />
+                  <span
+                    className="cinzel"
+                    style={{ fontSize: 17, fontWeight: 700, color: "#E8A820", letterSpacing: "0.02em" }}
+                  >
+                    {s.cogsBalance.toLocaleString()}
+                  </span>
+                  <span className="cinzel" style={{ fontSize: 12, color: "#C8B080", letterSpacing: "0.1em" }}>
+                    CREDS
+                  </span>
+                </div>
               </div>
 
-              {/* Creds — centered in the remaining space between name and percentages */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 5,
-                }}
-              >
-                <Image
-                  src="/assets/icon_creds.png"
-                  alt="creds"
-                  width={22}
-                  height={22}
-                  style={{
-                    display: "block",
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.9)) drop-shadow(0 0 8px rgba(232,168,32,0.5))",
-                  }}
-                />
-                <span
-                  className="cinzel"
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#E8A820",
-                    letterSpacing: "0.02em",
-                    textShadow: "0 1px 8px rgba(0,0,0,0.95), 0 0 16px rgba(0,0,0,0.8)",
-                  }}
-                >
-                  {s.cogsBalance.toLocaleString()}
-                </span>
-                <span
-                  className="cinzel"
-                  style={{
-                    fontSize: 11,
-                    color: "#C8860A",
-                    letterSpacing: "0.1em",
-                    textShadow: "0 1px 5px rgba(0,0,0,0.9)",
-                  }}
-                >
-                  CREDS
-                </span>
-              </div>
-              {/* Today % and Week % */}
-              <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.todayPct}%</div>
-                  <div style={{ fontSize: 10, color: "#506070", letterSpacing: "0.04em" }}>today</div>
-                </div>
-                <div style={{ width: 1, background: "rgba(255,255,255,0.08)", alignSelf: "stretch" }} />
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: s.color, opacity: 0.7, lineHeight: 1 }}>
-                    {s.weekPct}%
+              {/* Progress: today / week numbers over the bar */}
+              <div style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 16 }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.todayPct}%</div>
+                    <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>today</div>
                   </div>
-                  <div style={{ fontSize: 10, color: "#506070", letterSpacing: "0.04em" }}>week</div>
+                  <div style={{ width: 1, background: "rgba(255,255,255,0.1)", alignSelf: "stretch" }} />
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: s.color, opacity: 0.7, lineHeight: 1 }}>
+                      {s.weekPct}%
+                    </div>
+                    <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>week</div>
+                  </div>
                 </div>
+                <ProgBar value={s.todayPct} color={s.color} />
               </div>
             </div>
-
-            {/* Progress bar */}
-            <ProgBar value={s.todayPct} color={s.color} style={{ marginTop: 10 }} />
           </div>
         ))}
       </div>

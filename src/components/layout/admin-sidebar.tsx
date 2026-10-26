@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { id: "subjects", path: "/admin/subjects", label: "Subjects", icon: "subjects" },
   { id: "schedule", path: "/admin/lessons", label: "Schedule", icon: "schedule" },
   { id: "review", path: "/admin/review", label: "Review Queue", icon: "review" },
-  { id: "shop", path: "/admin/shop", label: "Shop", icon: "coin" },
+  { id: "shop", path: "/admin/shop", label: "Shop", icon: "shop" },
   { id: "submissions", path: "/admin/submissions", label: "Submissions", icon: "history" },
   { id: "archive", path: "/admin/archive", label: "Past Grades", icon: "completed" },
   { id: "profiles", path: "/admin/profiles", label: "Profiles", icon: "profile" },
@@ -54,9 +54,12 @@ export function AdminSidebar() {
           </div>
         </div>
         {/* Compact academy logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 14px 5px", flexShrink: 0 }}>
-          <Icon name="logo" size={22} />
-          <div className="cinzel" style={{ fontSize: 13, color: "#506070", letterSpacing: "0.2em" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 6px", flexShrink: 0 }}>
+          <Icon name="logo" size={38} />
+          <div
+            className="cinzel"
+            style={{ fontSize: 11, fontWeight: 600, color: "#C8B080", letterSpacing: "0.05em", whiteSpace: "nowrap" }}
+          >
             {SCHOOL_NAME.toUpperCase()}
           </div>
         </div>

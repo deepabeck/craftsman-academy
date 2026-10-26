@@ -45,6 +45,7 @@ export const ICON_MAP: Record<string, string> = {
   outdoors: "/assets/icons/outdoors.svg",
   reading: "/assets/icons/language-arts.svg",
   "reading-writing": "/assets/icons/journal.svg",
+  shop: "/assets/icons/shop.svg",
   coin: "/assets/icon_creds.png",
   logo: "/assets/logo-craftsmanacademy.png",
 };

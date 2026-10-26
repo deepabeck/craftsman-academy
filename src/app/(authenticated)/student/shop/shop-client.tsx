@@ -48,7 +48,7 @@ export function ShopClient({ items, weeklyPurchases: initialPurchases, sharedCon
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
       >
-        <PageHeader icon="coin" title="Creds Shop" sub="Spend your earned Creds on rewards" />
+        <PageHeader icon="shop" title="Creds Shop" sub="Spend your earned Creds on rewards" />
         <div
           style={{
             display: "flex",

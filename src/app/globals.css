@@ -477,6 +477,16 @@ textarea.inp {
   animation: gearSpin 1.8s linear infinite;
   display: inline-block;
 }
+.gear-spin-svg {
+  transform-box: view-box;
+  transform-origin: 512px 512px;
+  animation: gearSpin 6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gear-spin-svg {
+    animation: none;
+  }
+}
 
 .scroll {
   overflow-y: auto;

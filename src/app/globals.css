@@ -494,16 +494,16 @@ textarea.inp {
 }
 
 /* ── BRASS HEADING TEXT ──
-   Soft diagonal brass (same ramp as the Creds seal and CA logo) with a light
-   shadow for depth, instead of the old high-contrast reflective metal. */
+   Soft vertical brass gradient with a light shadow for depth, instead of the
+   old high-contrast reflective metal. */
 .metal-text {
-  background: linear-gradient(135deg, #f6d77a 0%, #e8a820 55%, #b87a10 100%);
+  background: linear-gradient(180deg, #f0c04e 0%, #e3a826 55%, #c98f1a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .metal-wrap {
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 
 /* ── REVIEW THUMBNAIL HOVER ── */

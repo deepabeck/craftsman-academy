@@ -235,7 +235,7 @@ export function TodayClient({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {/* biome-ignore lint/performance/noImgElement: animated asset */}
                     <img
-                      src="/assets/icon-techtime-unlocked.png"
+                      src="/assets/icons/techtime.svg"
                       alt="Tech Time"
                       className="coin-spin"
                       style={{ width: 54, height: 54, objectFit: "contain", marginBottom: 14 }}
@@ -290,7 +290,7 @@ export function TodayClient({
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src="/assets/icon-techtime-unlocked.png"
+                          src="/assets/icons/techtime.svg"
                           alt=""
                           style={{
                             width: 16,
@@ -550,7 +550,7 @@ export function TodayClient({
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/assets/icon-techtime-unlocked.png"
+                  src="/assets/icons/techtime.svg"
                   alt="Tech Time"
                   className={isEvening ? "coin-spin" : undefined}
                   style={{

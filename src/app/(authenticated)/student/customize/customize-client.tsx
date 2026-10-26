@@ -13,6 +13,7 @@ interface Props {
   initialColor: string;
   initialBgColor: string;
   studentKey: string;
+  avatarUrl?: string | null;
   displayName: string;
   ownedBackgroundIds: string[];
   initialBackground: string | null;
@@ -22,6 +23,7 @@ export function CustomizeClient({
   initialColor,
   initialBgColor,
   studentKey,
+  avatarUrl,
   displayName,
   ownedBackgroundIds,
   initialBackground,
@@ -83,7 +85,7 @@ export function CustomizeClient({
     }, 600);
   };
 
-  const avatarSrc = `/assets/profile-${studentKey}.png`;
+  const avatarSrc = avatarUrl ?? `/assets/profile-${studentKey}.png`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

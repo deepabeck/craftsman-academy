@@ -11,7 +11,7 @@ export default async function CustomizePage() {
   const [{ data: profile }, { data: settings }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("color, display_name, student_key")
+      .select("color, display_name, student_key, avatar_url")
       .eq("id", user?.id ?? "")
       .single(),
     supabase
@@ -30,6 +30,7 @@ export default async function CustomizePage() {
       initialColor={profile?.color ?? "#4A90D0"}
       initialBgColor={settings?.bg_color ?? "#1A3A5C"}
       studentKey={profile?.student_key ?? "deven"}
+      avatarUrl={profile?.avatar_url ?? null}
       displayName={profile?.display_name ?? "Student"}
     />
   );

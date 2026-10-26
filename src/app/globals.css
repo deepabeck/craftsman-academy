@@ -511,3 +511,16 @@ button:has(> .thumb-hover):hover .thumb-hover {
   background: rgba(0, 0, 0, 0.45) !important;
   opacity: 1 !important;
 }
+
+/* Command Center student cards: tighten when the card itself is narrow (tablet) */
+.dash-card {
+  container-type: inline-size;
+}
+@container (max-width: 440px) {
+  .dash-card .creds-word {
+    display: none;
+  }
+  .dash-card .pct-num {
+    font-size: 19px !important;
+  }
+}

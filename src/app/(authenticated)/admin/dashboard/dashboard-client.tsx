@@ -159,7 +159,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
         {students.map((s) => (
           <div
             key={s.id}
-            className="glass"
+            className="glass dash-card"
             onClick={() => setActiveId(s.id)}
             onKeyDown={(e) => e.key === "Enter" && setActiveId(s.id)}
             role="button"
@@ -175,7 +175,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
             }}
           >
             {/* Photo fills the card height; name/grade + creds in the middle; progress to the right */}
-            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               {/* biome-ignore lint/performance/noImgElement: dynamic Supabase signed URL */}
               <img
                 src={s.avatarUrl ?? `/assets/profile-${s.studentKey}-framed.png`}
@@ -190,58 +190,72 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                 }}
               />
 
-              {/* Name, grade, creds */}
-              <div style={{ minWidth: 0, flexShrink: 0 }}>
-                <div
-                  className="cinzel"
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 700,
-                    color: s.color,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    textShadow: "0 1px 6px rgba(0,0,0,0.8)",
-                  }}
-                >
-                  {s.name}
-                </div>
-                <div style={{ fontSize: 13, color: "#8A9BB2", marginTop: 1 }}>{gradeLabel(s.currentGrade)}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                  <Image
-                    src="/assets/icon_creds.png"
-                    alt="creds"
-                    width={24}
-                    height={24}
-                    style={{ display: "block", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.8))" }}
-                  />
-                  <span
-                    className="cinzel"
-                    style={{ fontSize: 17, fontWeight: 700, color: "#E8A820", letterSpacing: "0.02em" }}
-                  >
-                    {s.cogsBalance.toLocaleString()}
-                  </span>
-                  <span className="cinzel" style={{ fontSize: 12, color: "#C8B080", letterSpacing: "0.1em" }}>
-                    CREDS
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress: today / week numbers over the bar */}
-              <div style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 16 }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.todayPct}%</div>
-                    <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>today</div>
-                  </div>
-                  <div style={{ width: 1, background: "rgba(255,255,255,0.1)", alignSelf: "stretch" }} />
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: s.color, opacity: 0.7, lineHeight: 1 }}>
-                      {s.weekPct}%
+              {/* Right side: name/grade · creds (centered) · today/week %, with the bar underneath */}
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ minWidth: 0, flexShrink: 0 }}>
+                    <div
+                      className="cinzel"
+                      style={{
+                        fontSize: 17,
+                        fontWeight: 700,
+                        color: s.color,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+                      }}
+                    >
+                      {s.name}
                     </div>
-                    <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>week</div>
+                    <div style={{ fontSize: 13, color: "#8A9BB2", marginTop: 1 }}>{gradeLabel(s.currentGrade)}</div>
+                  </div>
+
+                  {/* Creds — centered between the name and the percentages */}
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <Image
+                      src="/assets/icon_creds.png"
+                      alt="creds"
+                      width={26}
+                      height={26}
+                      style={{ display: "block", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.8))" }}
+                    />
+                    <span
+                      className="cinzel"
+                      style={{ fontSize: 18, fontWeight: 700, color: "#E8A820", letterSpacing: "0.02em" }}
+                    >
+                      {s.cogsBalance.toLocaleString()}
+                    </span>
+                    <span
+                      className="cinzel creds-word"
+                      style={{ fontSize: 12, color: "#C8B080", letterSpacing: "0.1em" }}
+                    >
+                      CREDS
+                    </span>
+                  </div>
+
+                  {/* Today % and Week % */}
+                  <div style={{ display: "flex", gap: 14, flexShrink: 0 }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div className="pct-num" style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>
+                        {s.todayPct}%
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>today</div>
+                    </div>
+                    <div style={{ width: 1, background: "rgba(255,255,255,0.1)", alignSelf: "stretch" }} />
+                    <div style={{ textAlign: "center" }}>
+                      <div
+                        className="pct-num"
+                        style={{ fontSize: 22, fontWeight: 700, color: s.color, opacity: 0.7, lineHeight: 1 }}
+                      >
+                        {s.weekPct}%
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>week</div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Bar runs from under the name to under the week % */}
                 <ProgBar value={s.todayPct} color={s.color} />
               </div>
             </div>

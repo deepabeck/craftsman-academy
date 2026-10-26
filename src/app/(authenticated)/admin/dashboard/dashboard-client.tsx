@@ -168,7 +168,7 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
               padding: "10px 14px",
               cursor: "pointer",
               borderRadius: 10,
-              background: activeId === s.id ? rgba(s.color, 0.28) : undefined,
+              background: activeId === s.id ? `color-mix(in srgb, ${s.color} 34%, #0B1626)` : undefined,
               transition: "all 0.2s",
               borderColor: rgba(s.color, activeId === s.id ? 0.65 : 0.2),
               boxShadow: activeId === s.id ? `0 0 24px ${rgba(s.color, 0.32)}` : "none",
@@ -208,7 +208,9 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                     >
                       {s.name}
                     </div>
-                    <div style={{ fontSize: 13, color: "#8A9BB2", marginTop: 1 }}>{gradeLabel(s.currentGrade)}</div>
+                    <div style={{ fontSize: 13, color: activeId === s.id ? "#C9D5E4" : "#8A9BB2", marginTop: 1 }}>
+                      {gradeLabel(s.currentGrade)}
+                    </div>
                   </div>
 
                   {/* Creds — centered between the name and the percentages */}
@@ -240,7 +242,16 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                       <div className="pct-num" style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>
                         {s.todayPct}%
                       </div>
-                      <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>today</div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: activeId === s.id ? "#C9D5E4" : "#8A9BB2",
+                          letterSpacing: "0.04em",
+                          marginTop: 3,
+                        }}
+                      >
+                        today
+                      </div>
                     </div>
                     <div style={{ width: 1, background: "rgba(255,255,255,0.1)", alignSelf: "stretch" }} />
                     <div style={{ textAlign: "center" }}>
@@ -250,7 +261,16 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                       >
                         {s.weekPct}%
                       </div>
-                      <div style={{ fontSize: 11, color: "#8A9BB2", letterSpacing: "0.04em", marginTop: 3 }}>week</div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: activeId === s.id ? "#C9D5E4" : "#8A9BB2",
+                          letterSpacing: "0.04em",
+                          marginTop: 3,
+                        }}
+                      >
+                        week
+                      </div>
                     </div>
                   </div>
                 </div>

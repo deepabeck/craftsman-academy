@@ -17,7 +17,7 @@ export function PageHeader({ icon, title, sub, right }: PageHeaderProps) {
       <div className="metal-wrap">
         <div
           className="cinzel metal-text"
-          style={{ fontSize: 30, fontWeight: 900, letterSpacing: "0.05em", lineHeight: 1.1 }}
+          style={{ fontSize: 30, fontWeight: 700, letterSpacing: "0.05em", lineHeight: 1.1 }}
         >
           {title}
         </div>

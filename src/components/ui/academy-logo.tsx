@@ -29,8 +29,8 @@ export function AcademyLogo({ size = 32 }: AcademyLogoProps) {
         </div>
         {SCHOOL_LINE2 && (
           <div
-            className="cinzel"
-            style={{ fontSize: size * 0.24, fontWeight: 600, letterSpacing: "0.2em", lineHeight: 1, color: "#A4AD52" }}
+            className="cinzel brass"
+            style={{ fontSize: size * 0.24, fontWeight: 600, letterSpacing: "0.2em", lineHeight: 1 }}
           >
             {SCHOOL_LINE2}
           </div>

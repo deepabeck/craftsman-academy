@@ -105,8 +105,8 @@ export function BarnardLoginClient({ profileMap }: Props) {
             CRAFTSMAN
           </div>
           <div
-            className="cinzel"
-            style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.32em", marginTop: 3, color: "#A4AD52" }}
+            className="cinzel brass"
+            style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.32em", marginTop: 3 }}
           >
             ACADEMY
           </div>

@@ -8,7 +8,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div style={{ height: "100vh", display: "flex", overflow: "hidden" }}>
       <AdminSidebar />
       <div className="main-scroll">
-        <div className="content-wrap">{children}</div>
+        <div className="content-wrap admin-narrow">{children}</div>
       </div>
     </div>
   );

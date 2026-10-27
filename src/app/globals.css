@@ -163,6 +163,12 @@ body {
   width: 100%;
   margin: 0 auto;
 }
+/* Admin pages: about 30% narrower than the full width (never under 820px), left-aligned,
+   so the background art on the right has room. */
+.content-wrap.admin-narrow {
+  max-width: max(70%, 820px);
+  margin: 0;
+}
 /* Keeps a page's content to the left so the background art on the right stays visible. */
 .page-narrow {
   max-width: 860px;

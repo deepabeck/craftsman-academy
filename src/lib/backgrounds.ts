@@ -26,7 +26,8 @@ export const BACKGROUNDS: BackgroundDef[] = [
   { id: "terracotta-canyon", name: "Terracotta Canyon" },
   { id: "tropical-beach", name: "Tropical Beach" },
   { id: "rocky-mountains", name: "Rocky Mountains" },
-  { id: "golden-aspens", name: "Golden Aspens" },
+  { id: "rainforest", name: "Rainforest Waterfall" },
+  { id: "baseball-stadium", name: "Baseball Stadium" },
 ];
 
 /**

@@ -169,7 +169,7 @@ export function CustomizeClient({
         <div style={{ fontSize: 13, color: "#9AABBC", marginBottom: 14, lineHeight: 1.6 }}>
           {ownedBackgroundIds.length >= BACKGROUNDS.length
             ? "You've collected every background. Collection complete!"
-            : "Finish every task Monday through Friday and a mystery background unlocks at the end of the week. Tap one you've unlocked to use it."}
+            : "Finish every task Monday through Friday and one of these unlocks at the end of the week. You won't know which one! Tap one you've unlocked to use it."}
         </div>
         {backgroundError && <div style={{ fontSize: 12, color: "#F08080", marginBottom: 10 }}>{backgroundError}</div>}
         <BackgroundPicker

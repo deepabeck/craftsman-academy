@@ -21,9 +21,9 @@ const tileBase = {
 };
 
 /**
- * Grid of every background in the catalog. Unlocked ones can be picked; locked
- * ones show as dark silhouettes with the name hidden, so what's left to unlock
- * stays a surprise.
+ * Grid of every background in the catalog. Everything is visible so kids can see
+ * what's in the collection; unlocked ones can be picked, locked ones are shown
+ * slightly dimmed with a padlock. Which one unlocks next stays a surprise.
  */
 export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: BackgroundPickerProps) {
   const owned = new Set(ownedIds);
@@ -62,7 +62,7 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
               disabled={!unlocked}
               onClick={() => unlocked && onSelect(b.id)}
               aria-pressed={selected}
-              aria-label={unlocked ? `Use ${b.name}` : "Locked background"}
+              aria-label={unlocked ? `Use ${b.name}` : `${b.name} (locked)`}
               style={{
                 ...tileBase,
                 background: bgColor,
@@ -82,54 +82,41 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  // Locked: only a soft, blurred gray shape of the art shows through, never the details.
-                  ...(unlocked
-                    ? {}
-                    : { filter: "grayscale(1) blur(7px) brightness(0.75) contrast(0.8)", opacity: 0.6 }),
+                  // Locked: full picture, just a little dimmer than the unlocked ones.
+                  ...(unlocked ? {} : { filter: "brightness(0.62) saturate(0.8)" }),
                 }}
               />
               {!unlocked && (
-                <>
-                  {/* translucent gray veil */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "rgba(150, 158, 170, 0.28)",
-                      backdropFilter: "blur(2px)",
-                      WebkitBackdropFilter: "blur(2px)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 6,
+                    bottom: 6,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    border: "1.5px solid rgba(232, 168, 32, 0.75)",
+                    background: "rgba(8, 5, 3, 0.65)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="#E8A820"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
                   >
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "50%",
-                        border: "2px solid rgba(232, 168, 32, 0.75)",
-                        background: "rgba(8, 5, 3, 0.55)",
-                        backdropFilter: "blur(4px)",
-                        WebkitBackdropFilter: "blur(4px)",
-                        boxShadow: "0 0 10px rgba(232, 168, 32, 0.22), inset 0 0 0 1px rgba(232,168,32,0.18)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span className="cinzel brass" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1 }}>
-                        ?
-                      </span>
-                    </div>
-                  </div>
-                </>
+                    <rect x="5" y="11" width="14" height="10" rx="2" />
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                  </svg>
+                </div>
               )}
             </button>
             <div
@@ -137,12 +124,12 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
               style={{
                 fontSize: 11,
                 textAlign: "center",
-                color: unlocked ? "#C8B080" : "#506070",
+                color: unlocked ? "#C8B080" : "#7F8FA3",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
               }}
             >
-              {unlocked ? b.name : "???"}
+              {b.name}
             </div>
           </div>
         );

@@ -83,15 +83,15 @@ export function BackgroundPicker({ ownedIds, selectedId, bgColor, onSelect }: Ba
                   height: "100%",
                   objectFit: "cover",
                   // Locked: full picture, just a little dimmer than the unlocked ones.
-                  ...(unlocked ? {} : { filter: "brightness(0.62) saturate(0.8)" }),
+                  ...(unlocked ? {} : { filter: "brightness(0.72) saturate(0.85)" }),
                 }}
               />
               {!unlocked && (
                 <div
                   style={{
                     position: "absolute",
-                    right: 6,
-                    bottom: 6,
+                    left: 6,
+                    top: 6,
                     width: 26,
                     height: 26,
                     borderRadius: "50%",

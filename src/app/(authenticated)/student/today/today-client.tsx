@@ -157,7 +157,7 @@ export function TodayClient({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="page-narrow" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <PageHeader
           icon="today"
@@ -216,7 +216,7 @@ export function TodayClient({
       </div>
 
       {/* Main row: missions (left) + widgets column (right) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.25fr 1fr", gap: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 14, alignItems: "start" }}>
         {/* LEFT — mission cards or weekend panel */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ paddingLeft: tasks.length > 0 ? 36 : 0 }}>

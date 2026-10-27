@@ -163,6 +163,10 @@ body {
   width: 100%;
   margin: 0 auto;
 }
+/* Keeps a page's content to the left so the background art on the right stays visible. */
+.page-narrow {
+  max-width: 860px;
+}
 
 /* ── DIVIDER ── */
 .divider {

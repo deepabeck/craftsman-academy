@@ -66,7 +66,7 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
   const sentenceColor = sentences >= 3 && sentences <= 5 ? "#70E090" : sentences > 5 ? "#F08080" : "#9AABBC";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="page-narrow" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <PageHeader icon="reading-writing" title="Writing Journal" sub={`${formatDate(today)} · write 3–5 sentences`} />
 
       {/* ── Today's entry ────────────────────────────────────────────── */}

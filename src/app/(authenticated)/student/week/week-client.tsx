@@ -122,7 +122,7 @@ export function WeekClient({ tasks: initialTasks, student, weekStart }: WeekClie
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div className="page-narrow" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <PageHeader
         icon="week"
         title="This Week"

@@ -18,6 +18,7 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
   weekly_perfect: { label: "Perfect Week!", icon: "💎" },
   streak_milestone: { label: "Streak Milestone 🔥", icon: "🔥" },
   manual_award: { label: "Special Award", icon: "🏅" },
+  extra_creds: { label: "Extra Creds — bonus job", icon: "➕" },
 };
 
 /** manual_award covers both Award Creds (positive) and Dock Creds (negative) —

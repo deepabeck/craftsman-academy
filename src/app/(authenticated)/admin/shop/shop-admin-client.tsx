@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import type { ExtraCredsClaim, ExtraCredsTask } from "@/app/actions/extra-creds";
 import type { MarketplaceItem, MarketplacePurchase, SkippableTask } from "@/app/actions/marketplace";
 import {
   approvePurchase,
@@ -15,12 +16,16 @@ import {
 } from "@/app/actions/marketplace";
 import type { LedgerEntry } from "@/app/actions/points";
 import { PageHeader } from "@/components/ui";
+import { ExtraCredsClaimsPanel, ExtraCredsJobsPanel } from "./extra-creds-admin";
 
 interface Props {
   pending: MarketplacePurchase[];
   history: MarketplacePurchase[];
   items: (MarketplaceItem & { isActive: boolean })[];
   ledger: LedgerEntry[];
+  extraTasks: ExtraCredsTask[];
+  extraPending: ExtraCredsClaim[];
+  extraHistory: ExtraCredsClaim[];
 }
 
 function formatDate(iso: string) {
@@ -806,6 +811,8 @@ const LEDGER_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = 
   weekly_perfect: { label: "Perfect Week", icon: "💎" },
   streak_milestone: { label: "Streak Milestone", icon: "🔥" },
   marketplace_purchase: { label: "Shop Purchase", icon: "🛒" },
+  extra_creds: { label: "Extra Creds", icon: "➕" },
+  purchase: { label: "Shop Purchase", icon: "🛒" },
 };
 
 function formatLedgerTime(iso: string) {
@@ -816,10 +823,20 @@ function formatLedgerDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-export function ShopAdminClient({ pending: initialPending, history, items: initialItems, ledger }: Props) {
+export function ShopAdminClient({
+  pending: initialPending,
+  history,
+  items: initialItems,
+  ledger,
+  extraTasks,
+  extraPending,
+  extraHistory,
+}: Props) {
   const [pending, setPending] = useState(initialPending);
   const [items, setItems] = useState(initialItems);
-  const [tab, setTab] = useState<"pending" | "history" | "items" | "ledger">("items");
+  const [tab, setTab] = useState<"pending" | "history" | "items" | "ledger" | "extra" | "extra-review">(
+    extraPending.length > 0 && initialPending.length === 0 ? "extra-review" : "items",
+  );
 
   // Ledger: student filter
   const studentNames = Array.from(new Set(ledger.map((e) => e.studentName))).sort();
@@ -873,10 +890,14 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
       <PageHeader
         icon="shop"
         title="Shop"
-        sub={pending.length > 0 ? `${pending.length} pending approval` : "Manage items & approve requests"}
+        sub={
+          pending.length + extraPending.length > 0
+            ? `${pending.length + extraPending.length} pending approval`
+            : "Manage items & approve requests"
+        }
       />
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {(["items", "pending", "history", "ledger"] as const).map((t) => (
+        {(["items", "pending", "extra", "extra-review", "history", "ledger"] as const).map((t) => (
           <button
             key={t}
             type="button"
@@ -888,9 +909,13 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
               ? "Manage Items"
               : t === "pending"
                 ? `Pending${pending.length > 0 ? ` (${pending.length})` : ""}`
-                : t === "history"
-                  ? "History"
-                  : "Ledger"}
+                : t === "extra"
+                  ? "Extra Creds Jobs"
+                  : t === "extra-review"
+                    ? `Extra Creds Review${extraPending.length > 0 ? ` (${extraPending.length})` : ""}`
+                    : t === "history"
+                      ? "History"
+                      : "Ledger"}
           </button>
         ))}
       </div>
@@ -911,6 +936,9 @@ export function ShopAdminClient({ pending: initialPending, history, items: initi
             ))}
           </div>
         ))}
+
+      {tab === "extra" && <ExtraCredsJobsPanel initialTasks={extraTasks} />}
+      {tab === "extra-review" && <ExtraCredsClaimsPanel initialPending={extraPending} history={extraHistory} />}
 
       {/* ── Manage Items tab ── */}
       {tab === "items" && (

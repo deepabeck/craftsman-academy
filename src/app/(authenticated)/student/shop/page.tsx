@@ -1,3 +1,4 @@
+import { getExtraCredsBoard } from "@/app/actions/extra-creds";
 import { getMarketplaceItems, getMyWeeklyPurchases, getSharedItemContributions } from "@/app/actions/marketplace";
 import { createClient } from "@/lib/supabase/server";
 import { ShopClient } from "./shop-client";
@@ -10,10 +11,11 @@ export default async function ShopPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [items, weeklyPurchases, sharedContributions] = await Promise.all([
+  const [items, weeklyPurchases, sharedContributions, extraBoard] = await Promise.all([
     getMarketplaceItems(),
     getMyWeeklyPurchases(),
     getSharedItemContributions(),
+    getExtraCredsBoard(),
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function ShopPage() {
       weeklyPurchases={weeklyPurchases}
       sharedContributions={sharedContributions}
       currentStudentId={user?.id ?? ""}
+      extraBoard={extraBoard}
     />
   );
 }

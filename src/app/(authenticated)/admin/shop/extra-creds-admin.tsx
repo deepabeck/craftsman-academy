@@ -12,25 +12,32 @@ import {
 import { Icon } from "@/components/ui";
 import { computeSplit } from "@/lib/extra-creds";
 
-const JOB_ICONS = [
+const ROOM_ICONS = [
+  "media-room",
+  "game-room",
+  "playroom",
+  "living-room",
+  "bedroom",
+  "bathroom",
+  "kitchen",
+  "mudroom",
+  "garage",
+  "yard",
+];
+
+const TASK_ICONS = [
   "tidy",
   "laundry",
   "dishes",
   "sweep",
   "trash",
-  "bathroom",
   "windows",
   "organize",
-  "mudroom",
-  "game-room",
-  "media-room",
-  "garage",
   "car-wash",
-  "yard",
-  "outdoors",
   "pets",
   "groceries",
   "cooking",
+  "outdoors",
 ];
 
 const REPEAT_LABEL: Record<RepeatRule, string> = {
@@ -135,8 +142,34 @@ function JobEditor({
         onChange={(e) => set("description", e.target.value)}
         style={{ resize: "vertical" }}
       />
+      <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#8A9BB2" }}>ROOMS</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {JOB_ICONS.map((ic) => (
+        {ROOM_ICONS.map((ic) => (
+          <button
+            key={ic}
+            type="button"
+            aria-label={ic}
+            title={ic.replace(/-/g, " ")}
+            onClick={() => set("icon", ic)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              background: form.icon === ic ? "rgba(232,168,32,0.18)" : "rgba(255,255,255,0.04)",
+              border: form.icon === ic ? "1px solid #E8A820" : "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <Icon name={ic} size={24} />
+          </button>
+        ))}
+      </div>
+      <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#8A9BB2" }}>TASKS</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {TASK_ICONS.map((ic) => (
           <button
             key={ic}
             type="button"

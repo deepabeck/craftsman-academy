@@ -2,6 +2,10 @@ import type { AiNote, CalendarEvent, MockWeather, Review, Student, Subject } fro
 
 /** Icon name → image path mapping. All paths are relative to /public. */
 export const ICON_MAP: Record<string, string> = {
+  kitchen: "/assets/icons/kitchen.svg",
+  bedroom: "/assets/icons/bedroom.svg",
+  "living-room": "/assets/icons/living-room.svg",
+  playroom: "/assets/icons/playroom.svg",
   "game-room": "/assets/icons/game-room.svg",
   "media-room": "/assets/icons/media-room.svg",
   mudroom: "/assets/icons/mudroom.svg",

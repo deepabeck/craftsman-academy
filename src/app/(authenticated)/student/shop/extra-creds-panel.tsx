@@ -200,6 +200,29 @@ function JobCard({
         </div>
       )}
 
+      {state === "available" && !open && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+            padding: "8px 10px",
+            borderRadius: 8,
+            background: "rgba(232,168,32,0.14)",
+            border: "1px solid rgba(232,168,32,0.5)",
+            color: "#F2D58A",
+            fontSize: 12,
+            lineHeight: 1.4,
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>📷</span>
+          <span>
+            <strong>Take a BEFORE photo first!</strong> Then do the job, then take an AFTER photo. You need both to get
+            your Creds.
+          </span>
+        </div>
+      )}
+
       {state === "available" &&
         (open ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
@@ -288,6 +311,29 @@ export function ExtraCredsPanel({ board }: { board: ExtraCredsBoard }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {tasks.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            padding: "10px 14px",
+            borderRadius: 10,
+            background: "rgba(8, 17, 30, 0.88)",
+            border: "1px solid rgba(232,168,32,0.5)",
+            color: "#F2D58A",
+            fontSize: 13,
+            maxWidth: 640,
+          }}
+        >
+          <span style={{ fontSize: 22 }}>📷</span>
+          <span>
+            <strong>Every job needs two photos.</strong> Take the BEFORE photo before you start, and the AFTER photo
+            when you finish. No before photo means no Creds, so snap it first!
+          </span>
+        </div>
+      )}
+
       {tasks.length === 0 ? (
         <div style={{ textAlign: "center", padding: 50, color: "#506070" }}>
           No Extra Creds jobs right now. Check back soon!

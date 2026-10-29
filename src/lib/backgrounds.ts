@@ -2,7 +2,7 @@
  * Catalog of unlockable background art.
  *
  * Images live in /public/assets/unlockable-backgrounds/ as <id>.webp (1536x1024,
- * transparent, art hugging the right edge) plus <id>-thumb.webp (384x256) for the
+ * opaque, full-bleed scene shown with background-size: cover) plus <id>-thumb.webp (384x256) for the
  * collection grid. To add a background: drop both files in that folder and add a
  * line below. Students keep everything they've unlocked; new entries simply join
  * the pool of mystery unlocks.

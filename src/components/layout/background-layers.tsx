@@ -20,8 +20,9 @@ export function BackgroundLayers() {
         }}
       />
       {art && (
-        // Unlockable background art: transparent PNG-style artwork hugging the right edge.
-        // Sits above the color tint and below the app (z 2 vs 10) so cards and text stay on top.
+        // Unlockable background art: full-bleed 3:2 artwork covering the whole screen, with a light
+        // dark scrim so page titles stay readable. Lives in the app shell, so it stays on screen
+        // while pages load. Sits above the color tint and below the app (z 2 vs 10).
         <div
           id="bg-art"
           style={{
@@ -29,7 +30,7 @@ export function BackgroundLayers() {
             inset: 0,
             zIndex: 2,
             pointerEvents: "none",
-            background: `url("${backgroundUrl(art.id)}") right center / auto 100% no-repeat`,
+            background: `linear-gradient(rgba(6, 12, 24, 0.25), rgba(6, 12, 24, 0.25)), url("${backgroundUrl(art.id)}") center / cover no-repeat`,
           }}
         />
       )}

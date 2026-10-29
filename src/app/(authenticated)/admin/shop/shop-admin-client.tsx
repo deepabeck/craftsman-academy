@@ -122,7 +122,8 @@ function PurchaseCard({ purchase, onAction }: { purchase: MarketplacePurchase; o
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.28)",
+        background: "rgba(8, 17, 30, 0.86)",
+        backdropFilter: "blur(12px)",
         border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: 10,
         padding: "14px 16px",
@@ -513,11 +514,12 @@ function ItemRow({
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.6)",
+        background: "rgba(8, 17, 30, 0.88)",
+        backdropFilter: "blur(12px)",
         border: `1px solid ${item.isActive ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}`,
         borderRadius: 8,
         padding: "12px 14px",
-        opacity: item.isActive ? 1 : 0.5,
+        opacity: item.isActive ? 1 : 0.8,
       }}
     >
       {!editing ? (
@@ -996,7 +998,8 @@ export function ShopAdminClient({
                             gap: 10,
                             padding: "7px 12px",
                             borderRadius: 7,
-                            background: "rgba(0,0,0,0.45)",
+                            background: "rgba(8, 17, 30, 0.86)",
+                            backdropFilter: "blur(12px)",
                             border: "1px solid rgba(255,255,255,0.08)",
                           }}
                         >
@@ -1074,7 +1077,8 @@ export function ShopAdminClient({
                   alignItems: "flex-start",
                   gap: 12,
                   padding: "10px 14px",
-                  background: "rgba(0,0,0,0.2)",
+                  background: "rgba(8, 17, 30, 0.86)",
+                  backdropFilter: "blur(12px)",
                   border: "1px solid rgba(255,255,255,0.06)",
                   borderRadius: 8,
                 }}

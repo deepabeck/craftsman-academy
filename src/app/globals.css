@@ -239,7 +239,9 @@ body {
   font-family: var(--font-body), "Space Grotesk", sans-serif;
   font-weight: 500;
   font-size: 13px;
-  background: transparent;
+  background: rgba(8, 17, 30, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(184, 134, 11, 0.38);
   color: #d4a830;
   transition: all 0.18s;

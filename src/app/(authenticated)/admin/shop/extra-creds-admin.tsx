@@ -119,7 +119,8 @@ function JobEditor({
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.6)",
+        background: "rgba(8, 17, 30, 0.88)",
+        backdropFilter: "blur(12px)",
         border: "1px solid rgba(232,168,32,0.3)",
         borderRadius: 8,
         padding: 14,
@@ -299,14 +300,15 @@ export function ExtraCredsJobsPanel({ initialTasks }: { initialTasks: ExtraCreds
           <div
             key={t.id}
             style={{
-              background: "rgba(0,0,0,0.6)",
+              background: "rgba(8, 17, 30, 0.88)",
+              backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 8,
               padding: "12px 14px",
               display: "flex",
               alignItems: "center",
               gap: 12,
-              opacity: t.isActive ? 1 : 0.5,
+              opacity: t.isActive ? 1 : 0.8,
             }}
           >
             <Icon name={t.icon} size={30} />
@@ -402,7 +404,8 @@ function ClaimCard({ claim, onDone }: { claim: ExtraCredsClaim; onDone: (id: str
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.65)",
+        background: "rgba(8, 17, 30, 0.88)",
+        backdropFilter: "blur(12px)",
         border: "1px solid rgba(212,168,48,0.3)",
         borderRadius: 10,
         padding: 14,
@@ -529,7 +532,8 @@ export function ExtraCredsClaimsPanel({
                 gap: 10,
                 fontSize: 12,
                 color: "#C9D5E4",
-                background: "rgba(0,0,0,0.45)",
+                background: "rgba(8, 17, 30, 0.86)",
+                backdropFilter: "blur(12px)",
                 borderRadius: 6,
                 padding: "8px 10px",
               }}

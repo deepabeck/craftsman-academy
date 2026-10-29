@@ -309,7 +309,8 @@ export function SubmissionsClient({ items, students }: Props) {
                       key={item.taskId}
                       style={{
                         borderRadius: 9,
-                        background: "rgba(0,0,0,0.28)",
+                        background: "rgba(8, 17, 30, 0.86)",
+                        backdropFilter: "blur(12px)",
                         border: `1px solid ${rgba(item.subject.color, isOpen ? 0.35 : 0.15)}`,
                         overflow: "hidden",
                       }}

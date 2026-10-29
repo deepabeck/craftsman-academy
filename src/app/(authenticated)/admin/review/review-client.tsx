@@ -949,7 +949,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
             onClick={() => changeWeek(weekOffset - 1)}
             disabled={!hasPrevWeek}
             style={{
-              background: hasPrevWeek ? "rgba(232,168,32,0.1)" : "rgba(255,255,255,0.03)",
+              background: hasPrevWeek ? "rgba(48, 34, 10, 0.88)" : "rgba(8, 17, 30, 0.8)",
               border: `1px solid ${hasPrevWeek ? "rgba(232,168,32,0.35)" : "rgba(255,255,255,0.08)"}`,
               borderRadius: 6,
               padding: "5px 14px",
@@ -972,7 +972,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
             onClick={() => changeWeek(weekOffset + 1)}
             disabled={!hasNextWeek}
             style={{
-              background: hasNextWeek ? "rgba(232,168,32,0.1)" : "rgba(255,255,255,0.03)",
+              background: hasNextWeek ? "rgba(48, 34, 10, 0.88)" : "rgba(8, 17, 30, 0.8)",
               border: `1px solid ${hasNextWeek ? "rgba(232,168,32,0.35)" : "rgba(255,255,255,0.08)"}`,
               borderRadius: 6,
               padding: "5px 14px",
@@ -1011,12 +1011,12 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
                   border: `1px solid ${
                     isSel ? "rgba(232,168,32,0.7)" : hasAny ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)"
                   }`,
-                  background: isSel ? "rgba(20,14,4,0.82)" : hasAny ? "rgba(8,17,30,0.68)" : "rgba(8,17,30,0.52)",
+                  background: isSel ? "rgba(20,14,4,0.92)" : hasAny ? "rgba(8,17,30,0.88)" : "rgba(8,17,30,0.74)",
+                  backdropFilter: "blur(12px)",
                   boxShadow: isSel ? "0 0 0 2px rgba(232,168,32,0.2)" : "none",
                   cursor: "pointer",
                   textAlign: "center",
                   outline: "none",
-                  opacity: hasAny ? 1 : 0.4,
                   transition: "all 0.15s",
                 }}
               >
@@ -1026,7 +1026,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
                   style={{
                     fontSize: 13,
                     letterSpacing: "0.12em",
-                    color: isSel ? "#E8A820" : isToday ? "#C8D8E8" : "#7A8B9C",
+                    color: isSel ? "#E8A820" : isToday ? "#C8D8E8" : hasAny ? "#9FB0C6" : "#8393A8",
                     marginBottom: 4,
                     fontWeight: isSel ? 700 : 400,
                   }}
@@ -1038,7 +1038,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: isSel ? "#EEE4CC" : hasAny ? "#B0C0D0" : "#506070",
+                    color: isSel ? "#EEE4CC" : hasAny ? "#C9D5E4" : "#8A9BB2",
                     marginBottom: 8,
                   }}
                 >
@@ -1107,7 +1107,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
                         fontSize: 13,
                         cursor: "pointer",
                         border: `1px solid ${filterStudent === "all" ? "#E8A820" : "rgba(255,255,255,0.12)"}`,
-                        background: filterStudent === "all" ? "rgba(232,168,32,0.12)" : "rgba(255,255,255,0.03)",
+                        background: filterStudent === "all" ? "rgba(232,168,32,0.12)" : "rgba(8, 17, 30, 0.8)",
                         color: filterStudent === "all" ? "#E8A820" : "#7A8B9C",
                       }}
                     >

@@ -1,6 +1,6 @@
 "use server";
 
-import { maybeAwardWeeklyBackground } from "@/lib/background-unlocks";
+import { maybeAwardWeeklyBackground, weekStartOf } from "@/lib/background-unlocks";
 import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -84,6 +84,13 @@ export async function awardSubmissionPoints(taskId: string, studentId: string) {
     });
     // Check if this completed day hit a 30-day streak milestone
     await checkAndAwardStreakMilestone(studentId);
+  }
+
+  // If that was the last open task of the week (and it's Friday or later), unlock the weekly background now.
+  try {
+    await maybeAwardWeeklyBackground(studentId, weekStartOf(date));
+  } catch (e) {
+    console.error("[points] weekly background check on submit failed:", e);
   }
 }
 

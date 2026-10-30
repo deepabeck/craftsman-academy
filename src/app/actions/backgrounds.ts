@@ -1,6 +1,6 @@
 "use server";
 
-import { lastFinishedWeekStart, maybeAwardWeeklyBackground, todayInAppTz } from "@/lib/background-unlocks";
+import { lastFinishedWeekStart, maybeAwardWeeklyBackground, todayInAppTz, weekStartOf } from "@/lib/background-unlocks";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -18,8 +18,9 @@ export interface BackgroundState {
 
 /**
  * Everything the UI needs about the signed-in user's background collection.
- * For students this also checks the most recently finished week, so an unlock
- * lands even if the weekly cron missed it or a task was approved late.
+ * For students this also checks this week (from Friday on) and the most recently
+ * finished week, so an unlock lands as soon as everything is checked off, even if
+ * the weekly cron missed it or a task was approved late.
  */
 export async function getBackgroundState(): Promise<BackgroundState | null> {
   const supabase = await createClient();
@@ -45,10 +46,13 @@ export async function getBackgroundState(): Promise<BackgroundState | null> {
     };
   }
 
-  try {
-    await maybeAwardWeeklyBackground(user.id, lastFinishedWeekStart(todayInAppTz()));
-  } catch (e) {
-    console.error("[backgrounds] weekly check failed:", e);
+  const today = todayInAppTz();
+  for (const week of Array.from(new Set([lastFinishedWeekStart(today), weekStartOf(today)]))) {
+    try {
+      await maybeAwardWeeklyBackground(user.id, week);
+    } catch (e) {
+      console.error("[backgrounds] weekly check failed:", e);
+    }
   }
 
   const { data: rows } = await service

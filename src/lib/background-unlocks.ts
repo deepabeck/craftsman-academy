@@ -26,16 +26,23 @@ export function lastFinishedWeekStart(today: string): string {
   return dow === 6 || dow === 0 ? addDays(today, -daysSinceMonday) : addDays(today, -daysSinceMonday - 7);
 }
 
+/** Monday of the Mon–Fri week that contains `ymd` (Sat/Sun belong to the week that just ended). */
+export function weekStartOf(ymd: string): string {
+  const dow = new Date(`${ymd}T00:00:00Z`).getUTCDay(); // 0=Sun … 6=Sat
+  const daysSinceMonday = dow === 0 ? 6 : dow - 1;
+  return addDays(ymd, -daysSinceMonday);
+}
+
 /**
  * Award one random, not-yet-owned background if the student closed out the whole
- * Mon–Fri week starting `weekStart` (every non-cancelled task submitted: done/review/approved) and
- * the week is over. Idempotent: one award per student per week, never a duplicate.
+ * Mon–Fri week starting `weekStart` (every non-cancelled task submitted: done/review/approved).
+ * It can fire as soon as it is Friday (the last school day), the moment everything is checked off. Idempotent: one award per student per week, never a duplicate.
  * Returns the awarded background id, or null if nothing was awarded.
  */
 export async function maybeAwardWeeklyBackground(studentId: string, weekStart: string): Promise<string | null> {
   if (weekStart < BACKGROUND_UNLOCK_START) return null;
   const weekEnd = addDays(weekStart, 4);
-  if (todayInAppTz() <= weekEnd) return null; // week isn't over yet
+  if (todayInAppTz() < weekEnd) return null; // before Friday: the week isn't finished yet
 
   const service = createServiceClient();
 

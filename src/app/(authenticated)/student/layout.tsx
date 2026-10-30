@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   type BackgroundState,
   getBackgroundState,
@@ -20,19 +21,37 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const { bgColor, setBackground } = useTheme();
   const [bgState, setBgState] = useState<BackgroundState | null>(null);
   const userId = user?.id ?? null;
+  const pathname = usePathname();
+  const lastCheck = useRef(0);
+  const dismissed = useRef(new Set<string>());
 
-  // Load the background collection once per sign-in. Also awards the weekly unlock if
-  // last week was closed out, so a new background shows up the next time the app is opened.
+  // Load the background collection on sign-in, then re-check when the student moves between pages
+  // or returns to the app (at most every 20s). The check also awards the weekly unlock the moment
+  // the week is closed out (Friday or later), so the reveal shows up right away.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the trigger, not a value used inside
   useEffect(() => {
     if (!userId) return;
-    getBackgroundState().then((s) => {
-      if (s) setBgState(s);
-    });
-  }, [userId]);
+    const check = () => {
+      const now = Date.now();
+      if (now - lastCheck.current < 20_000) return;
+      lastCheck.current = now;
+      getBackgroundState().then((s) => {
+        if (!s) return;
+        setBgState({ ...s, pendingReveal: s.pendingReveal.filter((id) => !dismissed.current.has(id)) });
+      });
+    };
+    check();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [userId, pathname]);
 
   const revealId = bgState?.pendingReveal[0] ?? null;
   const finishReveal = (useIt: boolean) => {
     if (!bgState || !revealId) return;
+    dismissed.current.add(revealId);
     markBackgroundsRevealed([revealId]);
     if (useIt) {
       setBackground(revealId);

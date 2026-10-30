@@ -71,32 +71,32 @@ export function GearSpinner({ message = "Loading..." }: { message?: string }) {
           </defs>
           <g className="gear-spin-svg">
             <g transform="translate(512,512)">
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(0)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(15)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(30)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(45)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(60)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(75)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(90)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(105)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(120)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(135)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(150)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(165)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(180)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(195)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(210)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(225)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(240)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(255)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(270)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(285)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(300)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(315)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(330)" />
-              <rect x="-10" y="-402" width="20" height="38" rx="4" fill="url(#ls-br)" transform="rotate(345)" />
-              <circle r="350" fill="none" stroke="url(#ls-br)" strokeWidth="22" />
-              <circle r="316" fill="none" stroke="url(#ls-br)" strokeWidth="9" opacity=".9" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(0)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(15)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(30)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(45)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(60)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(75)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(90)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(105)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(120)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(135)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(150)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(165)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(180)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(195)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(210)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(225)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(240)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(255)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(270)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(285)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(300)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(315)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(330)" />
+              <rect x="-11" y="-402" width="22" height="38" rx="4" fill="url(#ls-br)" transform="rotate(345)" />
+              <circle r="348" fill="none" stroke="url(#ls-br)" strokeWidth="30" />
+              <circle r="314" fill="none" stroke="url(#ls-br)" strokeWidth="14" />
             </g>
           </g>
           <g transform="translate(512,512) scale(1.5) translate(-256,-256)">

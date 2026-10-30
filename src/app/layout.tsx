@@ -30,10 +30,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/assets/favicon-64.png", sizes: "64x64", type: "image/png" },
-      { url: "/assets/app-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/assets/favicon-64.png?v=3", sizes: "64x64", type: "image/png" },
+      { url: "/assets/app-icon-192.png?v=3", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/assets/app-icon-180.png",
+    apple: "/assets/app-icon-180.png?v=3",
   },
 };
 

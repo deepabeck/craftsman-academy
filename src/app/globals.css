@@ -104,6 +104,14 @@ body {
     0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+/* Admin pages: denser card fills so busy background art doesn't bleed through. */
+.admin-narrow .glass {
+  background: rgba(8, 17, 30, 0.92);
+}
+.admin-narrow .glass-warm {
+  background: rgba(18, 12, 4, 0.93);
+}
+
 /* ── SIDEBAR ── */
 .sidebar {
   width: 230px;

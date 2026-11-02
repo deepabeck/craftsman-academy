@@ -31,8 +31,8 @@ export function GearSpinner({ message = "Loading..." }: { message?: string }) {
             position: "absolute",
             top: "50%",
             left: "50%",
-            width: 340,
-            height: 250,
+            width: 230,
+            height: 175,
             transform: "translate(-50%, -50%)",
             borderRadius: "50%",
             background:

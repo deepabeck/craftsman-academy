@@ -147,7 +147,11 @@ Respond ONLY with valid JSON:
     if (wrongItems.length > 0) feedback += ` Review: ${wrongItems.join("; ")}.`;
     if (totalQ !== null && correctQ !== null) feedback = `${correctQ}/${totalQ} correct. ${feedback}`;
 
-    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    await service
+      .from("tasks")
+      .update({ ai_score: score, ai_feedback: feedback, final_score: score })
+      .eq("id", taskId)
+      .neq("status", "approved");
 
     console.log("[manual-score] Scored task", taskId, "→", score, "hasImages:", hasImages);
     return { score, feedback };

@@ -177,6 +177,9 @@ body {
   max-width: max(70%, 820px);
   margin: 0;
 }
+.content-wrap.admin-narrow:has(> .spinner-full) {
+  max-width: none;
+}
 /* Keeps a page's content to the left so the background art on the right stays visible. */
 .page-narrow {
   max-width: 860px;

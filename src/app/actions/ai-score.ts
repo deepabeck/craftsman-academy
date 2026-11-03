@@ -65,7 +65,11 @@ export async function scoreTaskWithAI(
   if (scoring === "completion") {
     const score = 100;
     const feedback = "Task completed — great job!";
-    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    await service
+      .from("tasks")
+      .update({ ai_score: score, ai_feedback: feedback, final_score: score })
+      .eq("id", taskId)
+      .neq("status", "approved");
     return { score, feedback };
   }
 
@@ -82,7 +86,11 @@ export async function scoreTaskWithAI(
         : pct >= 60
           ? `Good effort — you completed ${pct}% of your ${task.duration}-minute goal.`
           : `You worked ${mins}m out of a ${task.duration}-minute goal. Keep building that stamina!`;
-    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    await service
+      .from("tasks")
+      .update({ ai_score: score, ai_feedback: feedback, final_score: score })
+      .eq("id", taskId)
+      .neq("status", "approved");
     return { score, feedback };
   }
 
@@ -108,7 +116,11 @@ export async function scoreTaskWithAI(
   if (!hasContent) {
     const score = 0;
     const feedback = "No submission content was found — please write your response before submitting.";
-    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    await service
+      .from("tasks")
+      .update({ ai_score: score, ai_feedback: feedback, final_score: score })
+      .eq("id", taskId)
+      .neq("status", "approved");
     return { score, feedback };
   }
 
@@ -235,7 +247,11 @@ Respond ONLY with valid JSON, no other text:
       feedback = `${correctQ}/${totalQ} correct. ${feedback}`;
     }
 
-    await service.from("tasks").update({ ai_score: score, ai_feedback: feedback, final_score: score }).eq("id", taskId);
+    await service
+      .from("tasks")
+      .update({ ai_score: score, ai_feedback: feedback, final_score: score })
+      .eq("id", taskId)
+      .neq("status", "approved");
 
     return { score, feedback };
   } catch (err) {

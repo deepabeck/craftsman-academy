@@ -826,8 +826,18 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
 
   // Items for this week (any status)
   const allItems = [...pending, ...done];
-  const hasPrevWeek = getWeekDates(weekOffset - 1).some((d) => allItems.some((i) => i.taskDate === d));
-  const hasNextWeek = getWeekDates(weekOffset + 1).some((d) => allItems.some((i) => i.taskDate === d));
+  // Nearest earlier / later week that has anything in it (gaps of empty weeks are skipped).
+  const weekOffsetOf = (dateStr: string) => {
+    const mondayThen = getMondayOf(new Date(`${dateStr}T12:00:00`));
+    const mondayNow = getMondayOf(new Date());
+    return Math.round((mondayThen.getTime() - mondayNow.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  };
+  const earlierDates = allItems.map((i) => i.taskDate).filter((d) => d < weekDates[0]);
+  const laterDates = allItems.map((i) => i.taskDate).filter((d) => d > weekDates[4]);
+  const prevWeekOffset = earlierDates.length ? weekOffsetOf(earlierDates.reduce((a, b) => (a > b ? a : b))) : null;
+  const nextWeekOffset = laterDates.length ? weekOffsetOf(laterDates.reduce((a, b) => (a < b ? a : b))) : null;
+  const hasPrevWeek = prevWeekOffset !== null;
+  const hasNextWeek = nextWeekOffset !== null;
 
   // Items for selected day
   const dayPending = pending.filter((i) => i.taskDate === selDate);
@@ -875,7 +885,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
     const s = Number.parseInt(score, 10);
     const finalScore = Number.isNaN(s) ? 100 : Math.min(100, Math.max(0, s));
     setPending((p) => p.filter((r) => r.taskId !== item.taskId));
-    setDone((p) => [{ ...item, status: "approved" }, ...p]);
+    setDone((p) => [{ ...item, status: "approved", parentScore: finalScore, adminNote: reviewNote }, ...p]);
     setSelTask(null);
     setScore("100");
     setReviewNote("");
@@ -946,7 +956,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
           <button
             type="button"
-            onClick={() => changeWeek(weekOffset - 1)}
+            onClick={() => prevWeekOffset !== null && changeWeek(prevWeekOffset)}
             disabled={!hasPrevWeek}
             style={{
               background: hasPrevWeek ? "rgba(48, 34, 10, 0.88)" : "rgba(8, 17, 30, 0.8)",
@@ -969,7 +979,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
           </div>
           <button
             type="button"
-            onClick={() => changeWeek(weekOffset + 1)}
+            onClick={() => nextWeekOffset !== null && changeWeek(nextWeekOffset)}
             disabled={!hasNextWeek}
             style={{
               background: hasNextWeek ? "rgba(48, 34, 10, 0.88)" : "rgba(8, 17, 30, 0.8)",

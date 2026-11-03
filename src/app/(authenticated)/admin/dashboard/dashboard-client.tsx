@@ -41,6 +41,9 @@ export interface StudentDashData {
   cogsBalance: number;
   parentNote: string;
   weekStart: string;
+  /** Mean reviewed score of approved tasks this school year (null if none yet). */
+  gradeAvg: number | null;
+  gradedCount: number;
 }
 
 function letterGrade(pct: number): string {
@@ -362,6 +365,43 @@ export function DashboardClient({ students }: { students: StudentDashData[] }) {
                   </div>
                 </div>
                 <ProgBar value={avgPct30} color={gradeColor(avgPct30)} />
+              </div>
+            )}
+
+            {/* Grade average to-date (reviewed scores this school year) */}
+            {active.gradeAvg !== null && (
+              <div>
+                <div
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}
+                >
+                  <span style={{ fontSize: 12, color: "#7090A8", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {active.currentGrade != null ? `${gradeLabel(active.currentGrade)} Avg` : "Grade Avg"} · to date
+                  </span>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: gradeColor(active.gradeAvg),
+                        letterSpacing: "0.04em",
+                        background: `${gradeColor(active.gradeAvg)}18`,
+                        border: `1px solid ${gradeColor(active.gradeAvg)}55`,
+                        borderRadius: 5,
+                        padding: "1px 7px",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {letterGrade(active.gradeAvg)}
+                    </span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: gradeColor(active.gradeAvg) }}>
+                      {active.gradeAvg}%
+                    </span>
+                  </div>
+                </div>
+                <ProgBar value={active.gradeAvg} color={gradeColor(active.gradeAvg)} />
+                <div style={{ fontSize: 11, color: "#506070", marginTop: 4 }}>
+                  Average of {active.gradedCount} reviewed assignments
+                </div>
               </div>
             )}
 

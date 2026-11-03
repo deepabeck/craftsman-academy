@@ -53,13 +53,45 @@ export default async function DashboardPage() {
 
   // ── Step 2: Current grade ────────────────────────────────────────────────
   const gradeMap: Record<string, number | null> = {};
+  const yearStartMap: Record<string, string> = {};
   const { data: schoolYears } = await supabase
     .from("school_years")
-    .select("student_id, grade")
+    .select("student_id, grade, start_date")
     .in("student_id", studentIds)
     .lte("start_date", today)
     .gte("end_date", today);
-  for (const sy of schoolYears ?? []) gradeMap[sy.student_id] = sy.grade;
+  for (const sy of schoolYears ?? []) {
+    gradeMap[sy.student_id] = sy.grade;
+    yearStartMap[sy.student_id] = sy.start_date;
+  }
+
+  // ── Grade average to-date: mean parent-reviewed score of approved tasks this school year.
+  // Paged because PostgREST caps a single response at 1000 rows.
+  const scoreSums: Record<string, { sum: number; n: number }> = {};
+  const earliestStart = Object.values(yearStartMap).sort()[0];
+  if (earliestStart) {
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await supabase
+        .from("tasks")
+        .select("id, student_id, task_date, final_score")
+        .eq("status", "approved")
+        .not("final_score", "is", null)
+        .gte("task_date", earliestStart)
+        .lte("task_date", today)
+        .in("student_id", studentIds)
+        .order("task_date")
+        .order("id")
+        .range(from, from + 999);
+      for (const t of page ?? []) {
+        if (t.task_date < (yearStartMap[t.student_id] ?? "9999")) continue;
+        const acc = scoreSums[t.student_id] ?? { sum: 0, n: 0 };
+        acc.sum += Number(t.final_score);
+        acc.n += 1;
+        scoreSums[t.student_id] = acc;
+      }
+      if (!page || page.length < 1000) break;
+    }
+  }
 
   // ── Step 3: Today's tasks ────────────────────────────────────────────────
   const { data: todayTasksRaw } = await supabase
@@ -196,6 +228,8 @@ export default async function DashboardPage() {
         cogsBalance: cogsMap[profile.id] ?? 0,
         parentNote: aiNotesMap[profile.id] ?? "",
         weekStart,
+        gradeAvg: scoreSums[profile.id] ? Math.round(scoreSums[profile.id].sum / scoreSums[profile.id].n) : null,
+        gradedCount: scoreSums[profile.id]?.n ?? 0,
       };
     }),
   );

@@ -10,6 +10,8 @@ export interface JournalEntry {
   submittedText: string | null;
   status: "pending" | "done" | "review" | "approved" | "missed";
   requiresReview: boolean;
+  /** Parent-reviewed grade (0-100). Only set once the entry is approved. */
+  finalScore: number | null;
 }
 
 export default async function JournalPage() {
@@ -44,7 +46,7 @@ export default async function JournalPage() {
   let journalQuery = supabase
     .from("tasks")
     .select(
-      `id, task_date, lesson_detail, status, requires_review,
+      `id, task_date, lesson_detail, status, requires_review, final_score,
        submissions (submission_type, content)`,
     )
     .eq("student_id", user.id)
@@ -70,6 +72,7 @@ export default async function JournalPage() {
       submittedText: textSub?.content ?? null,
       status: t.status as JournalEntry["status"],
       requiresReview: t.requires_review ?? true,
+      finalScore: t.status === "approved" && t.final_score != null ? Number(t.final_score) : null,
     };
   });
 

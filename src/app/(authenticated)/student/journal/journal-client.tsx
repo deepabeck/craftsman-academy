@@ -18,6 +18,43 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
+function letterGrade(pct: number): string {
+  if (pct >= 90) return "A";
+  if (pct >= 80) return "B";
+  if (pct >= 70) return "C";
+  if (pct >= 60) return "D";
+  return "F";
+}
+
+function gradeColor(pct: number): string {
+  if (pct >= 80) return "#70E090";
+  if (pct >= 70) return "#D4A830";
+  return "#F08080";
+}
+
+function GradeBadge({ score }: { score: number }) {
+  const c = gradeColor(score);
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 6,
+        padding: "3px 10px",
+        borderRadius: 6,
+        background: `${c}18`,
+        border: `1px solid ${c}55`,
+        color: c,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ fontSize: 15 }}>{letterGrade(score)}</span>
+      <span style={{ fontSize: 12 }}>{Math.round(score)}%</span>
+    </span>
+  );
+}
+
 function _formatDateShort(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -269,6 +306,7 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
                       </div>
                     )}
                   </div>
+                  {entry.finalScore !== null && <GradeBadge score={entry.finalScore} />}
                   <StatusBadge status={entry.status as never} />
                   <div style={{ fontSize: 13, color: "#3A4858", marginLeft: 4 }}>{isOpen ? "▲" : "▼"}</div>
                 </button>

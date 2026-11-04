@@ -215,6 +215,8 @@ export async function approveTask(taskId: string, score: number, reviewerNotes?:
       final_score: score,
       overall_score: overallScore,
       admin_note: reviewerNotes ?? "",
+      // ai_score is never touched after this point, so it stays the AI's original.
+      ai_score_locked: true,
     })
     .eq("id", taskId);
   if (error) return { success: false, error: error.message };

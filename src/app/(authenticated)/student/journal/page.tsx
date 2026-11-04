@@ -50,7 +50,7 @@ export default async function JournalPage() {
   let journalQuery = supabase
     .from("tasks")
     .select(
-      `id, task_date, lesson_detail, status, requires_review, final_score, ai_score, ai_feedback, admin_note,
+      `id, task_date, lesson_detail, status, requires_review, final_score, ai_score, ai_score_locked, ai_feedback, admin_note,
        submissions (submission_type, content)`,
     )
     .eq("student_id", user.id)
@@ -77,7 +77,7 @@ export default async function JournalPage() {
       status: t.status as JournalEntry["status"],
       requiresReview: t.requires_review ?? true,
       finalScore: t.status === "approved" && t.final_score != null ? Number(t.final_score) : null,
-      aiScore: t.status === "approved" && t.ai_score != null ? Number(t.ai_score) : null,
+      aiScore: t.status === "approved" && t.ai_score_locked && t.ai_score != null ? Number(t.ai_score) : null,
       aiFeedback: t.status === "approved" ? (t.ai_feedback ?? null) : null,
       parentNote: t.status === "approved" ? t.admin_note?.trim() || null : null,
     };

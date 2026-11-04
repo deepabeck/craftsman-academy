@@ -356,7 +356,7 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
                           gap: 10,
                         }}
                       >
-                        {entry.aiScore !== null && (
+                        {(entry.aiScore !== null || entry.aiFeedback) && (
                           <div
                             style={{
                               borderRadius: 10,
@@ -374,11 +374,13 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
                               }}
                             >
                               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#9BA4F0" }}>
-                                FIRST-PASS AI SCORE
+                                {entry.aiScore !== null ? "FIRST-PASS AI SCORE" : "AI COMMENTS"}
                               </span>
-                              <span style={{ fontSize: 20, fontWeight: 700, color: gradeColor(entry.aiScore) }}>
-                                {Math.round(entry.aiScore)}%
-                              </span>
+                              {entry.aiScore !== null && (
+                                <span style={{ fontSize: 20, fontWeight: 700, color: gradeColor(entry.aiScore) }}>
+                                  {Math.round(entry.aiScore)}%
+                                </span>
+                              )}
                             </div>
                             <div style={{ fontSize: 13, lineHeight: 1.55, color: "#B8C6D6" }}>
                               {entry.aiFeedback || "No AI comments."}

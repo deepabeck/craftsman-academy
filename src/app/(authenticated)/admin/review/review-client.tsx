@@ -932,9 +932,7 @@ export function ReviewClient({ initialItems, completedItems, students }: ReviewC
     setRegrading(false);
     if (result.success) {
       setDone((prev) =>
-        prev.map((r) =>
-          r.taskId === item.taskId ? { ...r, parentScore: finalScore, aiScore: finalScore, adminNote: regradeNote } : r,
-        ),
+        prev.map((r) => (r.taskId === item.taskId ? { ...r, parentScore: finalScore, adminNote: regradeNote } : r)),
       );
       setRegradeTaskId(null);
       setRegradeNote("");

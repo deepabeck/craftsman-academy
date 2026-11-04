@@ -12,6 +12,10 @@ export interface JournalEntry {
   requiresReview: boolean;
   /** Parent-reviewed grade (0-100). Only set once the entry is approved. */
   finalScore: number | null;
+  /** Original AI score + comments, and the parent's approval note. Only set once approved. */
+  aiScore: number | null;
+  aiFeedback: string | null;
+  parentNote: string | null;
 }
 
 export default async function JournalPage() {
@@ -46,7 +50,7 @@ export default async function JournalPage() {
   let journalQuery = supabase
     .from("tasks")
     .select(
-      `id, task_date, lesson_detail, status, requires_review, final_score,
+      `id, task_date, lesson_detail, status, requires_review, final_score, ai_score, ai_feedback, admin_note,
        submissions (submission_type, content)`,
     )
     .eq("student_id", user.id)
@@ -73,6 +77,9 @@ export default async function JournalPage() {
       status: t.status as JournalEntry["status"],
       requiresReview: t.requires_review ?? true,
       finalScore: t.status === "approved" && t.final_score != null ? Number(t.final_score) : null,
+      aiScore: t.status === "approved" && t.ai_score != null ? Number(t.ai_score) : null,
+      aiFeedback: t.status === "approved" ? (t.ai_feedback ?? null) : null,
+      parentNote: t.status === "approved" ? t.admin_note?.trim() || null : null,
     };
   });
 

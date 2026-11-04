@@ -251,7 +251,6 @@ export async function regradeTask(
     .update({
       parent_score: newScore,
       final_score: newScore,
-      ai_score: newScore,
       overall_score: overallScore,
       admin_note: note ?? "",
     })

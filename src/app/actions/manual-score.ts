@@ -1,6 +1,7 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { JOURNAL_RUBRIC } from "@/lib/journal-rubric";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -22,7 +23,7 @@ export async function manualScoreTask(
   const { data: task, error: taskErr } = await service
     .from("tasks")
     .select(
-      `id, lesson_detail, subjects(name),
+      `id, subject_id, lesson_detail, subjects(name),
        submissions(id, submission_type, content, file_url, file_name, file_mime_type, timer_seconds)`,
     )
     .eq("id", taskId)
@@ -39,6 +40,7 @@ export async function manualScoreTask(
   const lessonDetail = (task as any).lesson_detail ?? "";
 
   const textSubs = submissions.filter((s) => s.submission_type === "text" && s.content);
+  const isJournal = (task as { subject_id?: string }).subject_id === "writing-journal" && textSubs.length > 0;
   const imageSubs = submissions.filter(
     (s) => s.file_url && (s.submission_type === "photo" || (s.file_mime_type ?? "").startsWith("image/")),
   );
@@ -106,6 +108,11 @@ export async function manualScoreTask(
 Respond ONLY with valid JSON:
 {"score": <0-100>, "total_questions": <n>, "correct": <n>, "wrong_items": ["<desc>", ...], "feedback": "<1-2 sentences for the student>"}`,
     });
+  } else if (isJournal) {
+    userContent.push({
+      type: "text",
+      text: 'Grade this journal entry using the rubric. Respond ONLY with valid JSON:\n{"score": <0-100>, "total_questions": null, "correct": null, "wrong_items": [], "feedback": "<1-2 sentences to the student>"}',
+    });
   } else {
     userContent.push({
       type: "text",
@@ -118,9 +125,11 @@ Respond ONLY with valid JSON:
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
       max_tokens: 500,
-      system: hasImages
-        ? "You are a precise academic grader. Count every problem, check every answer, and score strictly based on correctness. Wrong answers must lower the score proportionally. Respond ONLY with valid JSON."
-        : "You are a supportive homeschool tutor. Score 0-100 based on quality and effort. Respond ONLY with valid JSON.",
+      system: isJournal
+        ? JOURNAL_RUBRIC
+        : hasImages
+          ? "You are a precise academic grader. Count every problem, check every answer, and score strictly based on correctness. Wrong answers must lower the score proportionally. Respond ONLY with valid JSON."
+          : "You are a supportive homeschool tutor. Score 0-100 based on quality and effort. Respond ONLY with valid JSON.",
       messages: [{ role: "user", content: userContent }],
     });
 

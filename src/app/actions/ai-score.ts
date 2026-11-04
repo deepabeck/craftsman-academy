@@ -3,6 +3,22 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createServiceClient } from "@/lib/supabase/service";
 
+/** Rubric for Writing Journal entries (short, low-stakes, habit-building). */
+const JOURNAL_RUBRIC = `You grade a short Writing Journal entry by a 5th-grade homeschool student (age ~10). The goal is a daily writing habit, not a test. Entries are expected to be about 3-5 sentences, so a few sentences IS a complete answer.
+
+Scoring guide:
+- 95-100: answers the prompt in the student's own words with complete thoughts and some personality or a specific idea. A solid 3-5 sentence on-topic entry belongs here.
+- 88-94: a real, on-topic attempt that is simple or a bit short (2-3 sentences) but clearly the student's own thinking.
+- 78-87: on topic but very brief (about 1-2 sentences) or only partly answers the prompt.
+- 60-77: barely on topic, or one minimal line with little effort.
+- Below 60: blank-ish, off-topic, copied, or clearly dismissive (for example "I don't need to do this").
+
+Never deduct for spelling, grammar, handwriting, or because the entry could have included more examples or detail. Do not use "add more detail" or "give more examples" as your feedback; a short, genuine answer is enough. Judge what is there, not what could be added.
+
+Feedback: 1-2 sentences, spoken to the student, warm and a little playful. Name one specific thing they wrote well (quote a short phrase or the idea). Only add a tip if the score is below 88, framed as a fun idea to try next time, never as a flaw.
+
+Respond ONLY with valid JSON.`;
+
 /**
  * Score a task submission with AI (Claude).
  *
@@ -32,7 +48,7 @@ export async function scoreTaskWithAI(
   const { data: task, error: taskError } = await service
     .from("tasks")
     .select(
-      `id, lesson_detail, scoring_approach, duration, timer_seconds,
+      `id, subject_id, lesson_detail, scoring_approach, duration, timer_seconds,
        subjects (name),
        submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type)`,
     )
@@ -129,6 +145,7 @@ export async function scoreTaskWithAI(
   // answer-checking mode. Text-only submissions (essays, journals) use the
   // encouraging qualitative mode.
   const isPhotoGradedWork = imageSubs.length > 0 && textSubs.length === 0;
+  const isJournal = task.subject_id === "writing-journal" && textSubs.length > 0;
 
   // Build context text
   let context = `Subject: ${subjectName}\n`;
@@ -193,6 +210,11 @@ Your job:
 Respond ONLY with valid JSON, no other text:
 {"score": <0-100>, "total_questions": <n>, "correct": <n>, "wrong_items": ["<description>", ...], "feedback": "<1-2 sentences for the student noting what to review>"}`,
     });
+  } else if (isJournal) {
+    userContent.push({
+      type: "text",
+      text: 'Grade this journal entry using the rubric. Respond with JSON only, no other text:\n{"score": <0-100>, "total_questions": null, "correct": null, "wrong_items": [], "feedback": "<1-2 sentences to the student>"}',
+    });
   } else {
     userContent.push({
       type: "text",
@@ -201,16 +223,18 @@ Respond ONLY with valid JSON, no other text:
   }
 
   // ── Call Claude ─────────────────────────────────────────────────────────────
-  const systemPrompt = isPhotoGradedWork
-    ? "You are a precise academic grader reviewing a homeschool student's handwritten work. " +
-      "Accuracy is the primary metric — count questions, check every answer, and score proportionally based on correctness. " +
-      "Do not inflate scores. Wrong answers must reduce the score. " +
-      "Feedback should be direct but kind — tell the student specifically what to review. " +
-      "Respond ONLY with valid JSON."
-    : "You are a supportive homeschool tutor reviewing a student's submitted work. " +
-      "Score 0–100 based on effort, quality, and how well it matches the assignment. " +
-      "Keep feedback brief, positive, and constructive — the student will read it. " +
-      "Respond ONLY with valid JSON.";
+  const systemPrompt = isJournal
+    ? JOURNAL_RUBRIC
+    : isPhotoGradedWork
+      ? "You are a precise academic grader reviewing a homeschool student's handwritten work. " +
+        "Accuracy is the primary metric — count questions, check every answer, and score proportionally based on correctness. " +
+        "Do not inflate scores. Wrong answers must reduce the score. " +
+        "Feedback should be direct but kind — tell the student specifically what to review. " +
+        "Respond ONLY with valid JSON."
+      : "You are a supportive homeschool tutor reviewing a student's submitted work. " +
+        "Score 0–100 based on effort, quality, and how well it matches the assignment. " +
+        "Keep feedback brief, positive, and constructive — the student will read it. " +
+        "Respond ONLY with valid JSON.";
 
   try {
     const anthropic = new Anthropic({ apiKey });

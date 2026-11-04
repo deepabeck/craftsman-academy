@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminHouseholdId } from "@/lib/get-admin-household";
+import { buildJournalPrompt } from "@/lib/journal-prompts";
 import { createClient } from "@/lib/supabase/server";
 
 export interface LessonPlanRow {
@@ -183,6 +184,19 @@ export async function copyWeekPlans(fromWeek: string, toWeek: string) {
   const plans = await getLessonPlansForWeek(fromWeek);
   if (plans.length === 0) return { success: true, copied: 0 };
 
+  // Writing Journal prompts must never carry forward: generate a fresh, non-repeating
+  // one for each journal slot (sequentially, so they also differ from each other).
+  const freshJournal: Record<string, string> = {};
+  const madeThisRun: string[] = [];
+  for (const p of plans) {
+    if (p.subjectId !== "writing-journal") continue;
+    const res = await buildJournalPrompt(madeThisRun);
+    if (res.prompt) {
+      freshJournal[p.id] = res.prompt;
+      madeThisRun.push(res.prompt);
+    }
+  }
+
   // Insert all, ignoring conflicts (already planned slots stay as-is)
   const rows = plans.map((p) => ({
     subject_id: p.subjectId,
@@ -190,7 +204,10 @@ export async function copyWeekPlans(fromWeek: string, toWeek: string) {
     day_of_week: p.dayOfWeek,
     student_id: p.studentId,
     household_id: householdId,
-    assignment_detail: p.assignmentDetail,
+    assignment_detail:
+      p.subjectId === "writing-journal"
+        ? (freshJournal[p.id] ?? "Write your journal entry for today.")
+        : p.assignmentDetail,
     admin_notes: p.adminNotes,
     proof_types: p.proofTypes,
     duration_minutes: p.durationMinutes,

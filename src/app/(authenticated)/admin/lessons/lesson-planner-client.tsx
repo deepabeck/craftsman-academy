@@ -152,6 +152,7 @@ export function LessonPlannerClient({
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptError, setPromptError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -368,6 +369,7 @@ export function LessonPlannerClient({
 
   // ── Open cell for editing ────────────────────────────────────────────────
   const openEdit = (subject: SubjectInfo, dayOfWeek: number) => {
+    setSaveError(null);
     const existing = getPlan(subject.id, dayOfWeek);
     setEditing({
       subjectId: subject.id,
@@ -395,24 +397,31 @@ export function LessonPlannerClient({
   // ── Save plan ────────────────────────────────────────────────────────────
   const savePlan = () => {
     if (!editing) return;
+    setSaveError(null);
     startSaving(async () => {
-      const result = await upsertLessonPlan({
-        subjectId: editing.subjectId,
-        weekStart,
-        dayOfWeek: editing.dayOfWeek,
-        studentId: null,
-        assignmentDetail: editing.assignmentDetail,
-        adminNotes: editing.adminNotes,
-        proofTypes: editing.proofTypes,
-        durationMinutes: editing.durationMinutes,
-        requiresReview: editing.requiresReview,
-        scoringApproach: editing.scoringApproach,
-      });
-      if (result.success) {
-        // Refresh plans for this week
-        const fresh = await getLessonPlansForWeek(weekStart);
-        setPlans(fresh);
-        setEditing(null);
+      try {
+        const result = await upsertLessonPlan({
+          subjectId: editing.subjectId,
+          weekStart,
+          dayOfWeek: editing.dayOfWeek,
+          studentId: null,
+          assignmentDetail: editing.assignmentDetail,
+          adminNotes: editing.adminNotes,
+          proofTypes: editing.proofTypes,
+          durationMinutes: editing.durationMinutes,
+          requiresReview: editing.requiresReview,
+          scoringApproach: editing.scoringApproach,
+        });
+        if (result.success) {
+          // Refresh plans for this week
+          const fresh = await getLessonPlansForWeek(weekStart);
+          setPlans(fresh);
+          setEditing(null);
+        } else {
+          setSaveError(`Couldn't save: ${result.error ?? "unknown error"}`);
+        }
+      } catch (err) {
+        setSaveError(`Couldn't save: ${err instanceof Error ? err.message : "the request failed — try again"}`);
       }
     });
   };
@@ -1363,6 +1372,8 @@ export function LessonPlannerClient({
               />
             </div>
 
+            {saveError && <div style={{ fontSize: 13, color: "#F08080", marginBottom: 8 }}>{saveError}</div>}
+
             {/* Actions */}
             <div style={{ display: "flex", gap: 10 }}>
               <button
@@ -1370,9 +1381,9 @@ export function LessonPlannerClient({
                 className="btn-brass"
                 style={{ flex: 1, padding: "10px" }}
                 onClick={savePlan}
-                disabled={isSaving}
+                disabled={isSaving || isGenerating}
               >
-                {isSaving ? "Saving…" : "Save Plan"}
+                {isSaving ? "Saving…" : isGenerating ? "Writing prompt…" : "Save Plan"}
               </button>
               {editing.planId && (
                 <button

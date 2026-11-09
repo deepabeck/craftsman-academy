@@ -6,6 +6,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { CalendarEvent } from "@/lib/types";
 import { LessonPlannerClient } from "./lesson-planner-client";
 
+// AI prompt generation runs as a server action on this page; give it room to finish.
+export const maxDuration = 60;
+
 /** Returns the ISO date string for the Monday that starts the current school week.
  *  On Sunday we advance to the *next* Monday (upcoming week). */
 function getCurrentWeekStart(): string {

@@ -66,27 +66,34 @@ async function loadHistory(): Promise<string[]> {
   const service = createServiceClient();
   const out: string[] = [];
   try {
-    const { data: plans } = await service
-      .from("lesson_plans")
-      .select("assignment_detail, week_start")
-      .eq("subject_id", "writing-journal")
-      .order("week_start", { ascending: false })
-      .limit(300);
-    for (const p of plans ?? []) out.push(String(p.assignment_detail ?? ""));
-    const { data: tasks } = await service
-      .from("tasks")
-      .select("lesson_detail, task_date")
-      .eq("subject_id", "writing-journal")
-      .order("task_date", { ascending: false })
-      .limit(300);
-    for (const t of tasks ?? []) out.push(String(t.lesson_detail ?? ""));
+    const [plans, tasks] = await Promise.all([
+      service
+        .from("lesson_plans")
+        .select("assignment_detail")
+        .eq("subject_id", "writing-journal")
+        .order("week_start", { ascending: false })
+        .limit(150),
+      service
+        .from("tasks")
+        .select("lesson_detail")
+        .eq("subject_id", "writing-journal")
+        .order("task_date", { ascending: false })
+        .limit(150),
+    ]);
+    for (const p of plans.data ?? []) out.push(String(p.assignment_detail ?? ""));
+    for (const t of tasks.data ?? []) out.push(String(t.lesson_detail ?? ""));
   } catch {
     // non-fatal: fall through with whatever we have
   }
   const seen = new Set<string>();
-  return out
-    .map((s) => s.trim())
-    .filter((s) => s && s !== JOURNAL_PLACEHOLDER && !seen.has(s) && seen.add(s) !== undefined);
+  const unique: string[] = [];
+  for (const raw of out) {
+    const s = raw.trim();
+    if (!s || s === JOURNAL_PLACEHOLDER || seen.has(s)) continue;
+    seen.add(s);
+    unique.push(s);
+  }
+  return unique;
 }
 
 function weekIndex(): number {
@@ -103,21 +110,22 @@ export async function buildJournalPrompt(alsoAvoid: string[] = []): Promise<{ pr
 
   const service = createServiceClient();
   const today = new Date().toISOString().split("T")[0];
-  let grade = 5;
-  try {
-    const { data: sy } = await service
-      .from("school_years")
-      .select("grade")
-      .lte("start_date", today)
-      .gte("end_date", today)
-      .limit(1)
-      .maybeSingle();
-    if (sy?.grade) grade = sy.grade as number;
-  } catch {
-    // keep default
-  }
-
-  const history = [...alsoAvoid, ...(await loadHistory())];
+  const gradeLookup = (async () => {
+    try {
+      const { data: sy } = await service
+        .from("school_years")
+        .select("grade")
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .limit(1)
+        .maybeSingle();
+      return (sy?.grade as number | undefined) ?? 5;
+    } catch {
+      return 5;
+    }
+  })();
+  const [grade, loaded] = await Promise.all([gradeLookup, loadHistory()]);
+  const history = [...alsoAvoid, ...loaded];
   const recent = history.slice(0, 5);
   const baseballRecently = recent.some((p) => /baseball|little league|softball|\bbat(ting)?\b|\bteam\b/i.test(p));
   // Pick this week's angle, shifted by how many prompts we already made this run.
@@ -141,16 +149,18 @@ Return a JSON array of exactly 5 different candidate prompts, strings only, no o
   const anthropic = new Anthropic({ apiKey });
   const avoidNote = history.length
     ? `\n\nPrompts already used (all new candidates must be clearly different in topic AND wording, not just rephrased):\n${history
-        .slice(0, 80)
+        .slice(0, 40)
         .map((p, i) => `${i + 1}. ${p}`)
         .join("\n")}`
     : "";
 
   try {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    const startedAt = Date.now();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0 && Date.now() - startedAt > 25_000) break;
       const res = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 700,
+        max_tokens: 500,
         temperature: 1,
         system: system + avoidNote,
         messages: [{ role: "user", content: "Give me 5 fresh candidates." }],

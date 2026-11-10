@@ -172,3 +172,127 @@ export async function fulfillTask(taskId: string, eventLabel: string): Promise<{
 
   return { success: true };
 }
+
+function mondayOfIso(iso: string): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().split("T")[0];
+}
+
+/**
+ * One-off move of tasks to a LATER day in the same Mon–Fri week (parent only).
+ * The regular schedule is untouched: the original day's task is kept as a cancelled
+ * "Moved to …" row (so the daily generator doesn't recreate it) and a matching task
+ * is created on — or restored for — the new day.
+ */
+export async function moveTasksToDay(
+  taskIds: string[],
+  toDate: string,
+): Promise<{ success: boolean; moved: number; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, moved: 0, error: "Not authenticated" };
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role !== "admin") return { success: false, moved: 0, error: "Admins only" };
+
+  const toDow = new Date(`${toDate}T12:00:00Z`).getUTCDay();
+  if (toDow < 1 || toDow > 5) return { success: false, moved: 0, error: "Pick a weekday (Mon–Fri)" };
+
+  const service = createServiceClient();
+  const { data: tasks, error: fetchErr } = await service
+    .from("tasks")
+    .select(
+      "id, student_id, subject_id, task_date, status, lesson_plan_id, lesson_detail, proof_type, proof_types, allowed_file_types, scoring_approach, requires_review, duration",
+    )
+    .in("id", taskIds);
+  if (fetchErr) return { success: false, moved: 0, error: fetchErr.message };
+
+  const label = new Date(`${toDate}T12:00:00Z`).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+
+  let moved = 0;
+  const problems: string[] = [];
+  for (const t of tasks ?? []) {
+    if (!["pending", "missed"].includes(t.status)) {
+      problems.push("Only tasks that aren't submitted yet can be moved");
+      continue;
+    }
+    if (toDate <= t.task_date || mondayOfIso(toDate) !== mondayOfIso(t.task_date)) {
+      problems.push("Pick a later day in the same week");
+      continue;
+    }
+
+    const { data: target } = await service
+      .from("tasks")
+      .select("id, status")
+      .eq("student_id", t.student_id)
+      .eq("subject_id", t.subject_id)
+      .eq("task_date", toDate)
+      .maybeSingle();
+
+    if (target && target.status !== "cancelled") {
+      problems.push(`Already has a task on ${label}`);
+      continue;
+    }
+    if (target) {
+      const { error } = await service
+        .from("tasks")
+        .update({
+          status: "pending",
+          cancelled_reason: null,
+          cancelled_at: null,
+          cancelled_by: null,
+          lesson_detail: t.lesson_detail,
+        } as never)
+        .eq("id", target.id);
+      if (error) {
+        problems.push(error.message);
+        continue;
+      }
+    } else {
+      const { error } = await service.from("tasks").insert({
+        student_id: t.student_id,
+        subject_id: t.subject_id,
+        task_date: toDate,
+        lesson_plan_id: t.lesson_plan_id,
+        lesson_detail: t.lesson_detail,
+        proof_type: t.proof_type,
+        proof_types: t.proof_types,
+        allowed_file_types: t.allowed_file_types,
+        scoring_approach: t.scoring_approach,
+        requires_review: t.requires_review,
+        duration: t.duration,
+        status: "pending",
+        source: "manual",
+      } as never);
+      if (error) {
+        problems.push(error.message);
+        continue;
+      }
+    }
+
+    const { error: cancelErr } = await service
+      .from("tasks")
+      .update({
+        status: "cancelled",
+        cancelled_reason: `Moved to ${label}`,
+        cancelled_by: user.id,
+        cancelled_at: new Date().toISOString(),
+      } as never)
+      .eq("id", t.id);
+    if (cancelErr) {
+      problems.push(cancelErr.message);
+      continue;
+    }
+    moved++;
+  }
+
+  if (problems.length > 0) return { success: moved > 0, moved, error: Array.from(new Set(problems)).join("; ") };
+  return { success: true, moved };
+}

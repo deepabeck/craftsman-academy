@@ -7,6 +7,7 @@ import {
   type DayTaskGroup,
   fulfillTask,
   getTasksForDate,
+  moveTasksToDay,
   restoreDayTasks,
   restoreTask,
 } from "@/app/actions/calendar-adjustments";
@@ -168,6 +169,10 @@ export function LessonPlannerClient({
   const [dayMgmtLoading, setDayMgmtLoading] = useState(false);
   const [dayMgmtReason, setDayMgmtReason] = useState("Day off");
   const [dayMgmtCustomReason, setDayMgmtCustomReason] = useState("");
+  const [moveOpen, setMoveOpen] = useState<string | null>(null);
+  const [moveTo, setMoveTo] = useState<string>("");
+  const [moveAlso, setMoveAlso] = useState<string[]>([]);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const [dayMgmtBusy, setDayMgmtBusy] = useState<Set<string>>(new Set()); // taskIds or studentIds being updated
 
   // Build proposals for today's events only (tasks already exist)
@@ -248,6 +253,58 @@ export function LessonPlannerClient({
   };
 
   // ── Day Management handlers ───────────────────────────────────────────────
+  /** Later weekdays in the same Mon–Fri week as `date`. */
+  const laterDaysThisWeek = (date: string) => {
+    const out: { iso: string; label: string }[] = [];
+    const d = new Date(`${date}T12:00:00Z`);
+    for (let i = 1; i <= 4; i++) {
+      const n = new Date(d);
+      n.setUTCDate(d.getUTCDate() + i);
+      const dow = n.getUTCDay();
+      if (dow < 1 || dow > 5) break; // stop at the weekend
+      out.push({
+        iso: n.toISOString().split("T")[0],
+        label: n.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }),
+      });
+    }
+    return out;
+  };
+
+  const openMove = (taskId: string, subjectId: string) => {
+    if (moveOpen === taskId) {
+      setMoveOpen(null);
+      return;
+    }
+    const days = laterDaysThisWeek(dayMgmtDate);
+    setMoveTo(days[0]?.iso ?? "");
+    // Default: also move the same job for the other boy if he still has it pending.
+    setMoveAlso(
+      dayMgmtTasks
+        .flatMap((g) => g.tasks)
+        .filter((t) => t.id !== taskId && t.subjectId === subjectId && ["pending", "missed"].includes(t.status))
+        .map((t) => t.id),
+    );
+    setMoveError(null);
+    setMoveOpen(taskId);
+  };
+
+  const doMove = async (taskId: string) => {
+    if (!moveTo) return;
+    setDayMgmtBusy((p) => new Set([...p, taskId]));
+    setMoveError(null);
+    const res = await moveTasksToDay([taskId, ...moveAlso], moveTo);
+    setDayMgmtBusy((p) => {
+      const n = new Set(p);
+      n.delete(taskId);
+      return n;
+    });
+    if (res.moved > 0) {
+      await loadDayTasks(dayMgmtDate);
+      if (!res.error) setMoveOpen(null);
+    }
+    if (res.error) setMoveError(res.error);
+  };
+
   const loadDayTasks = async (date: string) => {
     setDayMgmtLoading(true);
     const groups = await getTasksForDate(date);
@@ -1082,83 +1139,188 @@ export function LessonPlannerClient({
                       const isCancelled = task.status === "cancelled";
                       const isDone = ["done", "approved", "review"].includes(task.status);
                       return (
-                        <div
-                          key={task.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            padding: "7px 10px",
-                            borderRadius: 6,
-                            background: isCancelled ? "rgba(240,128,128,0.06)" : "rgba(255,255,255,0.03)",
-                            border: `1px solid ${isCancelled ? "rgba(240,128,128,0.2)" : isDone ? "rgba(112,224,144,0.15)" : "rgba(255,255,255,0.07)"}`,
-                          }}
-                        >
-                          {/* Status dot */}
-                          <span
+                        <div key={task.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <div
                             style={{
-                              width: 7,
-                              height: 7,
-                              borderRadius: "50%",
-                              flexShrink: 0,
-                              background: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
-                            }}
-                          />
-                          {/* Subject name */}
-                          <span
-                            style={{
-                              fontSize: 13,
-                              color: isCancelled ? "#506070" : "#C0B080",
-                              flex: 1,
-                              textDecoration: isCancelled ? "line-through" : "none",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "7px 10px",
+                              borderRadius: 6,
+                              background: isCancelled ? "rgba(240,128,128,0.06)" : "rgba(255,255,255,0.03)",
+                              border: `1px solid ${isCancelled ? "rgba(240,128,128,0.2)" : isDone ? "rgba(112,224,144,0.15)" : "rgba(255,255,255,0.07)"}`,
                             }}
                           >
-                            {task.subjectName}
-                          </span>
-                          {/* Cancelled reason */}
-                          {isCancelled && task.cancelledReason && (
-                            <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>
-                              {task.cancelledReason}
-                            </span>
-                          )}
-                          {/* Status badge */}
-                          <span
-                            style={{
-                              fontSize: 11,
-                              padding: "1px 5px",
-                              borderRadius: 3,
-                              background: isCancelled
-                                ? "rgba(240,128,128,0.12)"
-                                : isDone
-                                  ? "rgba(112,224,144,0.12)"
-                                  : "rgba(212,168,48,0.12)",
-                              color: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
-                            }}
-                          >
-                            {task.status}
-                          </span>
-                          {/* Action button */}
-                          {!isDone && (
-                            <button
-                              type="button"
-                              disabled={isBusy}
-                              onClick={() =>
-                                isCancelled ? restoreSingleTask(task.id) : cancelSingleTask(task.id, resolvedReason)
-                              }
+                            {/* Status dot */}
+                            <span
                               style={{
-                                fontSize: 11,
-                                padding: "3px 8px",
-                                borderRadius: 4,
-                                border: `1px solid ${isCancelled ? "rgba(112,224,144,0.3)" : "rgba(240,128,128,0.3)"}`,
-                                background: isCancelled ? "rgba(112,224,144,0.08)" : "rgba(240,128,128,0.08)",
-                                color: isCancelled ? "#70E090" : "#F08080",
-                                cursor: isBusy ? "default" : "pointer",
-                                opacity: isBusy ? 0.5 : 1,
+                                width: 7,
+                                height: 7,
+                                borderRadius: "50%",
                                 flexShrink: 0,
+                                background: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
+                              }}
+                            />
+                            {/* Subject name */}
+                            <span
+                              style={{
+                                fontSize: 13,
+                                color: isCancelled ? "#506070" : "#C0B080",
+                                flex: 1,
+                                textDecoration: isCancelled ? "line-through" : "none",
                               }}
                             >
-                              {isBusy ? "…" : isCancelled ? "Restore" : "Cancel"}
-                            </button>
+                              {task.subjectName}
+                            </span>
+                            {/* Cancelled reason */}
+                            {isCancelled && task.cancelledReason && (
+                              <span style={{ fontSize: 11, color: "#506070", fontStyle: "italic" }}>
+                                {task.cancelledReason}
+                              </span>
+                            )}
+                            {/* Status badge */}
+                            <span
+                              style={{
+                                fontSize: 11,
+                                padding: "1px 5px",
+                                borderRadius: 3,
+                                background: isCancelled
+                                  ? "rgba(240,128,128,0.12)"
+                                  : isDone
+                                    ? "rgba(112,224,144,0.12)"
+                                    : "rgba(212,168,48,0.12)",
+                                color: isCancelled ? "#F08080" : isDone ? "#70E090" : "#D4A830",
+                              }}
+                            >
+                              {task.status}
+                            </span>
+                            {!isDone && !isCancelled && laterDaysThisWeek(dayMgmtDate).length > 0 && (
+                              <button
+                                type="button"
+                                disabled={isBusy}
+                                onClick={() => openMove(task.id, task.subjectId)}
+                                style={{
+                                  fontSize: 11,
+                                  padding: "3px 8px",
+                                  borderRadius: 4,
+                                  border: "1px solid rgba(155,164,240,0.45)",
+                                  background:
+                                    moveOpen === task.id ? "rgba(155,164,240,0.22)" : "rgba(155,164,240,0.08)",
+                                  color: "#9BA4F0",
+                                  cursor: isBusy ? "default" : "pointer",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                Move…
+                              </button>
+                            )}
+                            {/* Action button */}
+                            {!isDone && (
+                              <button
+                                type="button"
+                                disabled={isBusy}
+                                onClick={() =>
+                                  isCancelled ? restoreSingleTask(task.id) : cancelSingleTask(task.id, resolvedReason)
+                                }
+                                style={{
+                                  fontSize: 11,
+                                  padding: "3px 8px",
+                                  borderRadius: 4,
+                                  border: `1px solid ${isCancelled ? "rgba(112,224,144,0.3)" : "rgba(240,128,128,0.3)"}`,
+                                  background: isCancelled ? "rgba(112,224,144,0.08)" : "rgba(240,128,128,0.08)",
+                                  color: isCancelled ? "#70E090" : "#F08080",
+                                  cursor: isBusy ? "default" : "pointer",
+                                  opacity: isBusy ? 0.5 : 1,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {isBusy ? "…" : isCancelled ? "Restore" : "Cancel"}
+                              </button>
+                            )}
+                          </div>
+                          {moveOpen === task.id && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 8,
+                                padding: "10px 12px",
+                                borderRadius: 6,
+                                background: "rgba(155,164,240,0.07)",
+                                border: "1px solid rgba(155,164,240,0.3)",
+                              }}
+                            >
+                              <div style={{ fontSize: 12, color: "#9AABBC" }}>
+                                Move <b style={{ color: "#C0B080" }}>{task.subjectName}</b> to a later day this week.
+                                The regular schedule doesn't change.
+                              </div>
+                              <select
+                                className="inp"
+                                value={moveTo}
+                                onChange={(e) => setMoveTo(e.target.value)}
+                                style={{ fontSize: 13, padding: "6px 10px", maxWidth: 260 }}
+                              >
+                                {laterDaysThisWeek(dayMgmtDate).map((d) => (
+                                  <option key={d.iso} value={d.iso}>
+                                    {d.label}
+                                  </option>
+                                ))}
+                              </select>
+                              {dayMgmtTasks.flatMap((g) =>
+                                g.tasks
+                                  .filter(
+                                    (t) =>
+                                      t.id !== task.id &&
+                                      t.subjectId === task.subjectId &&
+                                      ["pending", "missed"].includes(t.status),
+                                  )
+                                  .map((t) => (
+                                    <label
+                                      key={t.id}
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                        fontSize: 13,
+                                        color: "#C0B080",
+                                        cursor: "pointer",
+                                        textTransform: "capitalize",
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={moveAlso.includes(t.id)}
+                                        onChange={(e) =>
+                                          setMoveAlso((prev) =>
+                                            e.target.checked ? [...prev, t.id] : prev.filter((x) => x !== t.id),
+                                          )
+                                        }
+                                      />
+                                      Also move for {g.studentKey}
+                                    </label>
+                                  )),
+                              )}
+                              {moveError && <div style={{ fontSize: 12, color: "#F08080" }}>{moveError}</div>}
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  type="button"
+                                  className="btn-brass"
+                                  disabled={isBusy || !moveTo}
+                                  onClick={() => doMove(task.id)}
+                                  style={{ fontSize: 12, padding: "5px 14px" }}
+                                >
+                                  {isBusy ? "Moving…" : "Move task"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-ghost"
+                                  onClick={() => setMoveOpen(null)}
+                                  style={{ fontSize: 12, padding: "5px 12px" }}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       );

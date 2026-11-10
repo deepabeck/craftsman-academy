@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon, PageHeader } from "@/components/ui";
+import { todayInAppTz } from "@/lib/background-unlocks";
 import { getCompletedSchoolYears } from "@/lib/school-year";
 import { createClient } from "@/lib/supabase/server";
 import { gradeLabel } from "@/lib/utils";
@@ -26,7 +27,7 @@ export default async function StudentArchivePage() {
 
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
-  const today = localDateStr(new Date());
+  const today = todayInAppTz();
   const years = await getCompletedSchoolYears(supabase, user.id, today);
   const studentColor = profile.color ?? "#4A90D0";
 

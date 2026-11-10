@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
+import { todayInAppTz } from "@/lib/background-unlocks";
 import { getCurrentSchoolYear } from "@/lib/school-year";
 import { createClient } from "@/lib/supabase/server";
 import { gradeLabel, rgba } from "@/lib/utils";
@@ -39,7 +40,7 @@ export default async function HistoryPage() {
 
   // Scope to the current grade's date range — older entries live in the archive
   // (Past Grades) instead, so this view doesn't mix school years together.
-  const today = localDateStr(new Date());
+  const today = todayInAppTz();
   const currentYear = await getCurrentSchoolYear(supabase, user.id, today);
 
   let query = supabase

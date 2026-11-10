@@ -1,3 +1,4 @@
+import { todayInAppTz } from "@/lib/background-unlocks";
 import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const service = createServiceClient();
 
-  const today = localDateStr(new Date());
+  const today = todayInAppTz();
   const weekStart = getWeekStart(today);
 
   const thirtyDaysAgoDate = new Date(`${today}T00:00:00`);

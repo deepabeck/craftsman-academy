@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon, PageHeader, PortraitFrame } from "@/components/ui";
+import { todayInAppTz } from "@/lib/background-unlocks";
 import { getAdminHouseholdId } from "@/lib/get-admin-household";
 import { getCompletedSchoolYears } from "@/lib/school-year";
 import { createClient } from "@/lib/supabase/server";
@@ -13,7 +14,7 @@ function localDateStr(d: Date): string {
 
 export default async function AdminArchivePage() {
   const supabase = await createClient();
-  const today = localDateStr(new Date());
+  const today = todayInAppTz();
 
   const householdId = await getAdminHouseholdId();
   const { data: profiles } = await supabase

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { Icon, PageHeader, ProgBar } from "@/components/ui";
-import { createClient } from "@/lib/supabase/server";
+import { todayInAppTz } from "@/lib/background-unlocks";
 import { computeStreak, localDateStr } from "@/lib/streak";
+import { createClient } from "@/lib/supabase/server";
 import { rgba } from "@/lib/utils";
 
 export default async function ProgressPage() {
@@ -21,7 +22,7 @@ export default async function ProgressPage() {
   if (!profile || profile.student_key === "admin") redirect("/admin/dashboard");
 
   const thirtyDaysAgo = localDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-  const today = localDateStr(new Date());
+  const today = todayInAppTz();
 
   const { data: tasks } = await supabase
     .from("tasks")

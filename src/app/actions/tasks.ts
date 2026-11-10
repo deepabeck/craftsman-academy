@@ -7,10 +7,24 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { scoreTaskWithAI } from "./ai-score";
 import { awardApprovalPoints, awardSubmissionPoints } from "./points";
 
+const APP_TZ = process.env.APP_TIMEZONE ?? "America/Denver";
+
+/**
+ * Yesterday's date in the app's timezone (YYYY-MM-DD).
+ * mark_missed_tasks defaults to the database's UTC "yesterday", which rolls over at
+ * 5pm Mountain and flagged same-day unfinished tasks as missed every evening.
+ */
+function yesterdayInAppTz(): string {
+  const todayLocal = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
+  const d = new Date(`${todayLocal}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().split("T")[0];
+}
+
 /** Called on page load — marks yesterday's missed tasks then generates today's. */
 export async function ensureDailyTasks(date: string) {
   const service = createServiceClient();
-  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  const { error: missedErr } = await service.rpc("mark_missed_tasks", { p_date: yesterdayInAppTz() });
   if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
   const { error: genErr } = await service.rpc("generate_daily_tasks", { p_date: date });
   if (genErr) console.error("generate_daily_tasks error:", genErr.message, "date:", date);
@@ -22,7 +36,7 @@ export async function ensureDailyTasks(date: string) {
  */
 export async function ensureWeekTasks(weekStart: string) {
   const service = createServiceClient();
-  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  const { error: missedErr } = await service.rpc("mark_missed_tasks", { p_date: yesterdayInAppTz() });
   if (missedErr) console.error("mark_missed_tasks error:", missedErr.message);
   for (let i = 0; i <= 4; i++) {
     // weekStart is Monday; Mon–Fri are offsets 0–4
@@ -50,7 +64,7 @@ export async function syncWeekTasksNow(
   let created = 0;
   const errors: string[] = [];
 
-  const { error: missedErr } = await service.rpc("mark_missed_tasks");
+  const { error: missedErr } = await service.rpc("mark_missed_tasks", { p_date: yesterdayInAppTz() });
   if (missedErr) errors.push(`mark_missed_tasks: ${missedErr.message}`);
 
   for (let i = 0; i <= 4; i++) {

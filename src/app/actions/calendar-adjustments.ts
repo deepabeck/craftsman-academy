@@ -19,6 +19,41 @@ export interface DayTaskGroup {
   tasks: DayTaskRow[];
 }
 
+export interface MovedTask {
+  subjectId: string;
+  fromDate: string;
+  toDate: string;
+}
+
+/** One-off moves in a Mon–Fri week: cancelled "Moved to …" rows paired with their new date. */
+export async function getMovedTasksForWeek(weekStart: string): Promise<MovedTask[]> {
+  const service = createServiceClient();
+  const end = new Date(`${weekStart}T12:00:00`);
+  end.setDate(end.getDate() + 4);
+  const endIso = end.toISOString().split("T")[0];
+  const { data } = await service
+    .from("tasks")
+    .select("student_id, subject_id, task_date, status, cancelled_reason")
+    .gte("task_date", weekStart)
+    .lte("task_date", endIso);
+  const rows = data ?? [];
+  const out = new Map<string, MovedTask>();
+  for (const r of rows) {
+    if (r.status !== "cancelled" || !String(r.cancelled_reason ?? "").startsWith("Moved to")) continue;
+    const target = rows.find(
+      (t) =>
+        t.student_id === r.student_id &&
+        t.subject_id === r.subject_id &&
+        t.status !== "cancelled" &&
+        t.task_date > r.task_date,
+    );
+    if (!target) continue;
+    const key = `${r.subject_id}|${r.task_date}|${target.task_date}`;
+    out.set(key, { subjectId: r.subject_id as string, fromDate: r.task_date as string, toDate: target.task_date as string });
+  }
+  return [...out.values()];
+}
+
 /** Fetch all tasks for every student on a given date (admin only). */
 export async function getTasksForDate(date: string): Promise<DayTaskGroup[]> {
   const service = createServiceClient();

@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   cancelDayTasks,
   cancelTask,
   type DayTaskGroup,
   fulfillTask,
+  getMovedTasksForWeek,
   getTasksForDate,
+  type MovedTask,
   moveTasksToDay,
   restoreDayTasks,
   restoreTask,
@@ -147,6 +149,16 @@ export function LessonPlannerClient({
 }: Props) {
   const [weekStart, setWeekStart] = useState(initialWeekStart);
   const [plans, setPlans] = useState<LessonPlanRow[]>(initialPlans);
+  const [moves, setMoves] = useState<MovedTask[]>([]);
+  useEffect(() => {
+    let live = true;
+    getMovedTasksForWeek(weekStart).then((m) => {
+      if (live) setMoves(m);
+    });
+    return () => {
+      live = false;
+    };
+  }, [weekStart]);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [isSaving, startSaving] = useTransition();
   const [isLoading, startLoading] = useTransition();
@@ -300,6 +312,7 @@ export function LessonPlannerClient({
     });
     if (res.moved > 0) {
       await loadDayTasks(dayMgmtDate);
+      setMoves(await getMovedTasksForWeek(weekStart));
       if (!res.error) setMoveOpen(null);
     }
     if (res.error) setMoveError(res.error);
@@ -742,6 +755,19 @@ export function LessonPlannerClient({
               const scheduled = subject.days.includes(dayCode);
               const plan = getPlan(subject.id, dow);
               const isEditing = editing?.subjectId === subject.id && editing?.dayOfWeek === dow;
+              const cellIso = (() => {
+                const d = new Date(`${weekStart}T12:00:00`);
+                d.setDate(d.getDate() + dow);
+                return d.toISOString().split("T")[0];
+              })();
+              const movedOut = moves.find((m) => m.subjectId === subject.id && m.fromDate === cellIso);
+              const movedIn = moves.find((m) => m.subjectId === subject.id && m.toDate === cellIso);
+              const dayName = (iso: string) => DAYS[(new Date(`${iso}T12:00:00`).getDay() + 6) % 7];
+              const moveBadge = movedOut ? (
+                <span style={{ fontSize: 12, color: "#E8A820", fontWeight: 600 }}>→ Moved to {dayName(movedOut.toDate)}</span>
+              ) : movedIn ? (
+                <span style={{ fontSize: 12, color: "#7AB4E0", fontWeight: 600 }}>← Moved from {dayName(movedIn.fromDate)}</span>
+              ) : null;
 
               if (!scheduled) {
                 return (
@@ -750,10 +776,17 @@ export function LessonPlannerClient({
                     style={{
                       height: 56,
                       borderRadius: 7,
-                      background: "rgba(0,0,0,0.15)",
-                      border: "1px solid rgba(255,255,255,0.04)",
+                      background: movedIn ? rgba(subject.color, 0.1) : "rgba(0,0,0,0.15)",
+                      border: movedIn ? `1px dashed ${rgba(subject.color, 0.5)}` : "1px solid rgba(255,255,255,0.04)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 6px",
+                      textAlign: "center",
                     }}
-                  />
+                  >
+                    {moveBadge}
+                  </div>
                 );
               }
 
@@ -831,6 +864,7 @@ export function LessonPlannerClient({
                   ) : (
                     <div style={{ fontSize: 13, color: "#3A4858", textAlign: "center" }}>+ Add plan</div>
                   )}
+                  {moveBadge && <div style={{ marginTop: 2 }}>{moveBadge}</div>}
                 </button>
               );
             })}

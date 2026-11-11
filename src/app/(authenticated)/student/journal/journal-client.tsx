@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitTaskProof } from "@/app/actions/tasks";
+import { GradeCards } from "@/components/grade-cards";
 import { PageHeader, StatusBadge } from "@/components/ui";
 import type { Student } from "@/lib/types";
 import type { JournalEntry } from "./page";
@@ -176,6 +177,17 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
                 />
               </div>
               <div style={{ fontSize: 15, color: "#C8B080", lineHeight: 1.7 }}>{submittedText}</div>
+              {todayEntry.status === "approved" && todayEntry.finalScore !== null && (
+                <div style={{ marginTop: 14 }}>
+                  <GradeCards
+                    aiScore={todayEntry.aiScore}
+                    aiFeedback={todayEntry.aiFeedback}
+                    finalScore={todayEntry.finalScore}
+                    parentNote={todayEntry.parentNote}
+                    parentLabel="YOUR PARENT"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             /* ── Write entry ───────────────────────────────────────── */
@@ -349,79 +361,13 @@ export function JournalClient({ student, todayEntry, pastEntries, today }: Props
                       )}
                     </div>
                     {entry.finalScore !== null && (
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                          gap: 10,
-                        }}
-                      >
-                        {(entry.aiScore !== null || entry.aiFeedback) && (
-                          <div
-                            style={{
-                              borderRadius: 10,
-                              padding: "12px 14px",
-                              background: "rgba(0,0,0,0.38)",
-                              border: "1px solid rgba(155,164,240,0.3)",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginBottom: 8,
-                              }}
-                            >
-                              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#9BA4F0" }}>
-                                {entry.aiScore !== null ? "FIRST-PASS AI SCORE" : "AI COMMENTS"}
-                              </span>
-                              {entry.aiScore !== null && (
-                                <span style={{ fontSize: 20, fontWeight: 700, color: gradeColor(entry.aiScore) }}>
-                                  {Math.round(entry.aiScore)}%
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 13, lineHeight: 1.55, color: "#B8C6D6" }}>
-                              {entry.aiFeedback || "No AI comments."}
-                            </div>
-                          </div>
-                        )}
-                        <div
-                          style={{
-                            borderRadius: 10,
-                            padding: "12px 14px",
-                            background: "rgba(0,0,0,0.38)",
-                            border: "1px solid rgba(232,168,32,0.45)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              marginBottom: 8,
-                            }}
-                          >
-                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#E8A820" }}>
-                              FINAL GRADE · YOUR PARENT
-                            </span>
-                            <span style={{ fontSize: 20, fontWeight: 700, color: gradeColor(entry.finalScore) }}>
-                              {Math.round(entry.finalScore)}%
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 13,
-                              lineHeight: 1.55,
-                              color: entry.parentNote ? "#B8C6D6" : "#8A9BB2",
-                              fontStyle: entry.parentNote ? "normal" : "italic",
-                            }}
-                          >
-                            {entry.parentNote ?? "No comment added."}
-                          </div>
-                        </div>
-                      </div>
+                      <GradeCards
+                        aiScore={entry.aiScore}
+                        aiFeedback={entry.aiFeedback}
+                        finalScore={entry.finalScore}
+                        parentNote={entry.parentNote}
+                        parentLabel="YOUR PARENT"
+                      />
                     )}
                   </div>
                 )}

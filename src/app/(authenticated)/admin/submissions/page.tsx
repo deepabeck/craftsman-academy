@@ -26,7 +26,7 @@ export default async function SubmissionsPage() {
           .from("tasks")
           .select(
             `id, task_date, status, lesson_detail, notes, timer_seconds, admin_note,
-           final_score, overall_score, student_id,
+           final_score, parent_score, overall_score, ai_score, ai_score_locked, ai_feedback, student_id,
            subjects!inner (id, name, icon, color),
            submissions (id, submission_type, content, timer_seconds, file_url, file_name, file_mime_type, created_at)`,
           )
@@ -109,7 +109,11 @@ export default async function SubmissionsPage() {
         notes: t.notes ?? "",
         timerSeconds: t.timer_seconds ?? null,
         adminNote: t.admin_note ?? "",
-        finalScore: t.final_score ?? t.overall_score ?? null,
+        finalScore: t.final_score ?? t.parent_score ?? t.overall_score ?? null,
+        // The original AI score is trustworthy until the parent grades it; after that only if it was locked in.
+        aiScore: t.ai_score != null && (t.status !== "approved" || t.ai_score_locked) ? Number(t.ai_score) : null,
+        aiFeedback: t.ai_feedback ?? null,
+        aiScoreLost: t.ai_score != null && t.status === "approved" && !t.ai_score_locked,
         hasApprovalPoints: approvedTaskIds.has(t.id),
         student: {
           id: t.student_id,

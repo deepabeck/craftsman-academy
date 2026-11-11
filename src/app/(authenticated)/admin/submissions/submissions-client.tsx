@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { approveTask, updateTaskTimer } from "@/app/actions/tasks";
+import { GradeCards } from "@/components/grade-cards";
 import { Icon, PageHeader, StatusBadge } from "@/components/ui";
 import { rgba } from "@/lib/utils";
 
@@ -24,6 +25,10 @@ export interface SubmissionItem {
   timerSeconds: number | null;
   adminNote: string;
   finalScore: number | null;
+  aiScore: number | null;
+  aiFeedback: string | null;
+  /** Approved before original AI scores were preserved, so the AI number may have been overwritten. */
+  aiScoreLost: boolean;
   hasApprovalPoints: boolean;
   student: { id: string; name: string; color: string; avatarUrl: string | null; studentKey: string };
   subject: { id: string; name: string; icon: string; color: string };
@@ -390,6 +395,21 @@ export function SubmissionsClient({ items, students }: Props) {
                       {isOpen && (
                         <div style={{ padding: "0 14px 14px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 12 }}>
+                            {/* Prompt */}
+                            {item.lessonDetail && (
+                              <div>
+                                <div
+                                  style={{ fontSize: 11, color: "#506070", letterSpacing: "0.08em", marginBottom: 4 }}
+                                  className="cinzel"
+                                >
+                                  PROMPT
+                                </div>
+                                <div style={{ fontSize: 13, color: "#9AABBC", fontStyle: "italic", lineHeight: 1.6 }}>
+                                  {item.lessonDetail}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Files */}
                             {item.submissions.filter((s) => s.fileUrl).length > 0 && (
                               <div>
@@ -438,16 +458,31 @@ export function SubmissionsClient({ items, students }: Props) {
                                 </div>
                               ))}
 
-                            {/* Student notes */}
-                            {item.notes && (
+                            {item.submissions.length > 0 && !hasText && !hasFiles && (
+                              <div style={{ fontSize: 12, color: "#506070", fontStyle: "italic" }}>
+                                No written response.
+                              </div>
+                            )}
+
+                            {/* Student notes (skipped when they just repeat the response) */}
+                            {item.notes && !item.submissions.some((s) => s.content?.trim() === item.notes.trim()) && (
                               <div style={{ fontSize: 12, color: "#7A8B9C", fontStyle: "italic" }}>
                                 Notes: {item.notes}
                               </div>
                             )}
 
-                            {/* Admin note */}
-                            {item.adminNote && (
-                              <div style={{ fontSize: 12, color: "#B0A0F0" }}>💬 {item.adminNote}</div>
+                            {/* AI first pass + your grade */}
+                            {(item.aiScore !== null || item.aiFeedback || (hasText && effectiveScore != null)) && (
+                              <GradeCards
+                                aiScore={item.aiScore}
+                                aiFeedback={item.aiFeedback}
+                                aiNote={
+                                  item.aiScoreLost ? "Original AI score wasn't saved for this older entry." : null
+                                }
+                                finalScore={effectiveScore}
+                                parentNote={item.adminNote || null}
+                                parentLabel="YOU"
+                              />
                             )}
 
                             {/* Edit timer */}
